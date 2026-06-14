@@ -295,8 +295,59 @@
 - Xóa hồ sơ = soft delete (isActive = false), không phải hard delete  
 - Không thể xóa hồ sơ đang có lịch khám chưa hoàn tất  
 - Hồ sơ "Bản thân" (relationship = SELF) là hồ sơ mặc định  
- ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/kCmMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4D2Bc8ZGvQ1AAAAAElFTkSuQmCC)  
- **2.7 Reviews (đánh giá bác sĩ)**  
+ ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/kCmMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4D2Bc8ZGvQ1AAAAAElFTkSuQmCC)  **2.7 Reviews (đánh giá bác sĩ)**
+
+```ts
+// Shared review data store (mock)
+export interface Review {
+  id: string;
+  appointmentId: string;
+  doctorId: string;
+  patientId: string;
+  patientName: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+// Global mutable store so reviews persist across components
+let reviewStore: Review[] = [
+  { id: 'rv1', appointmentId: 'a1', doctorId: 'd1', patientId: 'p1', patientName: 'Nguyễn Văn A', rating: 5, comment: 'Bác sĩ rất tận tâm, giải thích rõ ràng và chi tiết. Tôi rất hài lòng với buổi khám.', createdAt: '10/06/2026' },
+  { id: 'rv2', appointmentId: 'a2', doctorId: 'd1', patientId: 'p2', patientName: 'Trần Thị B', rating: 4, comment: 'Khám nhanh, chuyên nghiệp. Bác sĩ có kinh nghiệm và thái độ tốt.', createdAt: '08/06/2026' },
+  { id: 'rv3', appointmentId: 'a3', doctorId: 'd1', patientId: 'p3', patientName: 'Lê Văn C', rating: 5, comment: 'Bác sĩ giỏi, chẩn đoán chính xác và tư vấn rất cụ thể. Sẽ quay lại lần sau.', createdAt: '05/06/2026' },
+  { id: 'rv4', appointmentId: 'a4', doctorId: 'd1', patientId: 'p4', patientName: 'Phạm Thị D', rating: 4, comment: 'Hài lòng với dịch vụ. Chờ đợi hơi lâu nhưng bác sĩ khám kỹ.', createdAt: '03/06/2026' },
+  { id: 'rv5', appointmentId: 'a5', doctorId: 'd1', patientId: 'p5', patientName: 'Hoàng Văn E', rating: 5, comment: 'Xuất sắc! Bác sĩ rất kiên nhẫn lắng nghe và đưa ra phác đồ điều trị phù hợp.', createdAt: '01/06/2026' },
+  { id: 'rv6', appointmentId: 'a6', doctorId: 'd1', patientId: 'p6', patientName: 'Vũ Thị F', rating: 4, comment: 'Tốt, sẽ giới thiệu cho bạn bè. Bác sĩ có chuyên môn cao.', createdAt: '28/05/2026' },
+  { id: 'rv7', appointmentId: 'a7', doctorId: 'd1', patientId: 'p7', patientName: 'Đỗ Văn G', rating: 3, comment: 'Khám ổn, tuy nhiên cần thêm thời gian giải thích cho bệnh nhân.', createdAt: '25/05/2026' },
+  { id: 'rv8', appointmentId: 'a8', doctorId: 'd2', patientId: 'p1', patientName: 'Nguyễn Văn A', rating: 5, comment: 'Bác sĩ rất giỏi, tư vấn chi tiết và nhiệt tình.', createdAt: '12/06/2026' },
+];
+
+export function getReviewsByDoctor(doctorId: string): Review[] {
+  return reviewStore.filter(r => r.doctorId === doctorId);
+}
+
+export function getRatingSummary(doctorId: string): { average: number; count: number } {
+  const reviews = getReviewsByDoctor(doctorId);
+  if (reviews.length === 0) return { average: 0, count: 0 };
+  const total = reviews.reduce((sum, r) => sum + r.rating, 0);
+  return { average: Math.round((total / reviews.length) * 10) / 10, count: reviews.length };
+}
+
+export function hasReviewed(appointmentId: string): boolean {
+  return reviewStore.some(r => r.appointmentId === appointmentId);
+}
+
+export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
+  const newReview: Review = {
+    ...review,
+    id: `rv${Date.now()}`,
+    createdAt: new Date().toLocaleDateString('vi-VN'),
+  };
+  reviewStore = [...reviewStore, newReview];
+  return newReview;
+}
+```
+  
    
  Review {  
    
