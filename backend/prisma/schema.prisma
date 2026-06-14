@@ -1,0 +1,407 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  RECEPTIONIST
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  LOCKED
+}
+
+enum ScheduleStatus {
+  WORKING
+  APPROVED_OFF
+  PENDING
+  CANCELLED
+  REJECTED
+}
+
+enum TimeSlotStatus {
+  AVAILABLE
+  BOOKED
+  LOCKED
+  EXPIRED
+}
+
+enum AppointmentStatus {
+  CONFIRMED
+  CHECKED_IN
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+enum BookingChannel {
+  ONLINE
+  RECEPTION
+}
+
+enum BookingSource {
+  PATIENT_WEB
+  RECEPTIONIST
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum Relationship {
+  SELF
+  CHA
+  ME
+  CON
+  VO
+  CHONG
+  ANH
+  CHI
+  EM
+  ONG
+  BA
+  KHAC
+}
+
+enum ApprovalRequestType {
+  SCHEDULE_EXCEPTION
+  CANCELLATION
+}
+
+enum ExceptionType {
+  ALL_DAY
+  SHIFT
+  TIME_RANGE
+}
+
+enum WorkingShift {
+  MORNING
+  AFTERNOON
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ConversationType {
+  SUPPORT
+  DOCTOR_CONSULTATION
+}
+
+enum ConversationStatus {
+  ACTIVE
+  CLOSED
+}
+
+enum MessageType {
+  TEXT
+  FILE
+}
+
+enum BlogStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model User {
+  id            String     @id @default(uuid())
+  name          String
+  email         String     @unique
+  phone         String
+  role          UserRole
+  status        UserStatus @default(ACTIVE)
+  noShowCount   Int        @default(0)
+  emailVerified Boolean    @default(false)
+  password      String // stored as hash
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  doctorProfile               Doctor?
+  patientProfiles             PatientProfile[]
+  appointmentsAsPatient       Appointment[]      @relation("PatientAppointments")
+  appointmentsAsCreator       Appointment[]      @relation("CreatedAppointments")
+  reviews                     Review[]
+  conversationsAsPatient      Conversation[]     @relation("PatientConversations")
+  conversationsAsReceptionist Conversation[]     @relation("ReceptionistConversations")
+  messages                    Message[]
+  blogPosts                   BlogPost[]
+
+  @@index([role])
+  @@index([status])
+}
+
+model Doctor {
+  id            String   @id @default(uuid())
+  userId        String   @unique
+  title         String // e.g. ThS.BS, TS.BS, BS.CKI, BS.CKII, GS.TS.BS,...
+  name          String
+  specialtyId   String
+  specialtyName String // denormalized for doctor list query
+  experience    Int // years of experience
+  price         Float // consultation fee (VNĐ)
+  rating        Float    @default(0.0) // calculated from reviews
+  reviewCount   Int      @default(0)
+  avatar        String? // URL
+  description   String   @db.Text
+  position      String // e.g. chức vụ
+  active        Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict)
+  specialty        Specialty         @relation(fields: [specialtyId], references: [id], onDelete: Restrict)
+  schedules        Schedule[]
+  appointments     Appointment[]
+  reviews          Review[]
+  approvalRequests ApprovalRequest[]
+  conversations    Conversation[]
+
+  @@index([specialtyId])
+  @@index([userId])
+}
+
+model Specialty {
+  id          String   @id @default(uuid())
+  name        String
+  slug        String   @unique
+  description String   @db.Text
+  icon        String
+  doctorCount Int      @default(0) // denormalized
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  doctors      Doctor[]
+  appointments Appointment[]
+
+  @@index([active])
+}
+
+model Schedule {
+  id          String         @id @default(uuid())
+  doctorId    String
+  workingDate DateTime       @db.Date
+  status      ScheduleStatus @default(WORKING)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  doctor       Doctor        @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  timeSlots    TimeSlot[]
+  appointments Appointment[]
+
+  @@unique([doctorId, workingDate])
+  @@index([doctorId, workingDate])
+  @@index([status])
+}
+
+model TimeSlot {
+  id         String         @id @default(uuid())
+  scheduleId String
+  startTime  String // e.g. "08:00"
+  endTime    String // e.g. "08:30"
+  status     TimeSlotStatus @default(AVAILABLE)
+
+  schedule    Schedule     @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  appointment Appointment? @relation("TimeSlotAppointment")
+
+  @@index([scheduleId])
+  @@index([status])
+}
+
+model Appointment {
+  id               String            @id @default(uuid())
+  code             String            @unique // CP + 10 digits
+  patientId        String
+  patientProfileId String?
+  doctorId         String
+  specialtyId      String
+  scheduleId       String
+  timeSlotId       String            @unique
+  appointmentDate  DateTime          @db.Date
+  startTime        String
+  endTime          String
+  status           AppointmentStatus @default(CONFIRMED)
+  bookingChannel   BookingChannel
+  bookingSource    BookingSource
+  createdBy        String
+  forSelf          Boolean
+  relativeName     String?
+  consultationFee  Float // snapshot fee at booking time
+  patientEmail     String // snapshot email
+  reason           String?           @db.Text
+  note             String?           @db.Text
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+
+  patient        User            @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Restrict)
+  patientProfile PatientProfile? @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
+  doctor         Doctor          @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  specialty      Specialty       @relation(fields: [specialtyId], references: [id], onDelete: Restrict)
+  schedule       Schedule        @relation(fields: [scheduleId], references: [id], onDelete: Restrict)
+  timeSlot       TimeSlot        @relation("TimeSlotAppointment", fields: [timeSlotId], references: [id], onDelete: Restrict)
+  creator        User            @relation("CreatedAppointments", fields: [createdBy], references: [id], onDelete: Restrict)
+  review         Review?
+
+  @@index([patientId, status])
+  @@index([doctorId, appointmentDate])
+  @@index([specialtyId])
+  @@index([scheduleId])
+  @@index([createdBy])
+  @@index([patientProfileId])
+  @@index([status])
+}
+
+model PatientProfile {
+  id           String       @id @default(uuid())
+  userId       String
+  fullName     String
+  phone        String
+  email        String?
+  gender       Gender
+  dateOfBirth  DateTime     @db.Date
+  address      String?      @db.Text
+  relationship Relationship
+  isDefault    Boolean      @default(false)
+  isActive     Boolean      @default(true) // soft delete
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Restrict)
+  appointments Appointment[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+model Review {
+  id            String   @id @default(uuid())
+  appointmentId String   @unique
+  doctorId      String
+  patientId     String
+  patientName   String // denormalized
+  rating        Int // 1 to 5 stars
+  comment       String   @db.Text // 10 to 1000 chars
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Restrict)
+  doctor      Doctor      @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  patient     User        @relation(fields: [patientId], references: [id], onDelete: Restrict)
+
+  @@index([doctorId])
+  @@index([patientId])
+}
+
+model ApprovalRequest {
+  id              String              @id @default(uuid())
+  type            ApprovalRequestType
+  doctorId        String
+  doctorName      String // denormalized
+  date            DateTime?           @db.Date
+  exceptionType   ExceptionType?
+  shift           WorkingShift?
+  startTime       String?
+  endTime         String?
+  reason          String              @db.Text
+  appointmentCode String?
+  status          ApprovalStatus      @default(PENDING)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+
+  @@index([doctorId])
+  @@index([status])
+}
+
+model Conversation {
+  id             String             @id @default(uuid())
+  type           ConversationType
+  patientId      String
+  doctorId       String?
+  receptionistId String?
+  status         ConversationStatus @default(ACTIVE)
+  lastMessage    String?            @db.Text
+  lastMessageAt  DateTime           @default(now())
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  patient      User    @relation("PatientConversations", fields: [patientId], references: [id], onDelete: Restrict)
+  doctor       Doctor? @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  receptionist User?   @relation("ReceptionistConversations", fields: [receptionistId], references: [id], onDelete: Restrict)
+  messages     Message[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([receptionistId])
+  @@index([status])
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String
+  senderId       String
+  senderRole     UserRole
+  message        String      @db.Text
+  messageType    MessageType @default(TEXT)
+  isRead         Boolean     @default(false)
+  createdAt      DateTime    @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Restrict)
+
+  @@index([conversationId])
+  @@index([senderId])
+}
+
+model ClinicInfo {
+  id           String   @id @default(uuid())
+  name         String
+  address      String   @db.Text
+  hotline      String
+  email        String
+  workingHours String
+  description  String   @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String   @db.Text
+  description String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model BlogPost {
+  id        String     @id @default(uuid())
+  title     String
+  slug      String     @unique
+  content   String     @db.LongText
+  summary   String?    @db.Text
+  thumbnail String?
+  status    BlogStatus @default(DRAFT)
+  tags      String? // comma-separated
+  authorId  String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  author User @relation(fields: [authorId], references: [id], onDelete: Restrict)
+
+  @@index([authorId])
+  @@index([status])
+}
