@@ -26,7 +26,9 @@ cd CarePlus
 ```
 ```bash
 git pull origin main
+git fetch origin
 git checkout <ten_nhanh>
+git pull origin main
 ```
 
 ### Bước 2: Cài đặt pnpm trên máy
