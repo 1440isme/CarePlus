@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const uploadRoutes = require('./modules/upload/upload.routes');
 
 // Load environment variables
 dotenv.config();
@@ -31,6 +32,9 @@ app.get('/api/v1', (req, res) => {
     message: 'Welcome to CarePlus Clinic API v1'
   });
 });
+
+// Upload routes
+app.use('/api/v1/upload', uploadRoutes);
 
 // Global 404 Route handler
 app.use((req, res, next) => {
