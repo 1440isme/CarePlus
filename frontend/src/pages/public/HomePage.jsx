@@ -1,10 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import axiosInstance from '../../shared/services/axios.instance';
 import './homepage.css';
-
-// API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -60,7 +57,7 @@ export default function HomePage() {
 
   useEffect(() => {
     // 1. Fetch Specialties
-    axios.get(`${API_BASE_URL}/specialties`)
+    axiosInstance.get('/specialties')
       .then(res => {
         if (res.data && res.data.success) {
           setSpecialties(res.data.data);
@@ -76,7 +73,7 @@ export default function HomePage() {
       .finally(() => setLoadingSpecialties(false));
 
     // 2. Fetch Experienced Doctors
-    axios.get(`${API_BASE_URL}/doctors?sortBy=experience&sortOrder=desc&limit=4`)
+    axiosInstance.get('/doctors?sortBy=experience&sortOrder=desc&limit=4')
       .then(res => {
         if (res.data && res.data.success) {
           setExpDoctors(res.data.data);
@@ -89,7 +86,7 @@ export default function HomePage() {
       .finally(() => setLoadingExpDoctors(false));
 
     // 3. Fetch Favorite Doctors
-    axios.get(`${API_BASE_URL}/doctors?sortBy=rating&sortOrder=desc&limit=4`)
+    axiosInstance.get('/doctors?sortBy=rating&sortOrder=desc&limit=4')
       .then(res => {
         if (res.data && res.data.success) {
           setFavDoctors(res.data.data);
@@ -102,7 +99,7 @@ export default function HomePage() {
       .finally(() => setLoadingFavDoctors(false));
 
     // 4. Fetch Blogs
-    axios.get(`${API_BASE_URL}/blogs?limit=4`)
+    axiosInstance.get('/blogs?limit=4')
       .then(res => {
         if (res.data && res.data.success) {
           setBlogs(res.data.data);
