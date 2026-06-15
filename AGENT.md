@@ -181,6 +181,10 @@ Route → Controller → Service → Repository → Prisma
 | Frontend | Prisma types | Coupling FE-BE, dùng shared DTO types |
 | Socket handler | Repository | Bỏ qua business validation |
 
+### MCP Figma Rule
+Khi dùng MCP Figma thì không được tự gen ảnh mà lấy các icon, tài nguyên từ figma nhé (việc ảnh mock thì thay bằng placeholder và chờ data thật từ database nhé)
+
+
 ---
 
 ## 3. Folder Structure Rules

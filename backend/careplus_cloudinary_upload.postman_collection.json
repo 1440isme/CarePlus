@@ -1,0 +1,108 @@
+{
+	"info": {
+		"_postman_id": "8c4eb5d0-9f5b-4b10-8f9f-7fa9b24479e0",
+		"name": "CarePlus Cloudinary Upload API",
+		"description": "Collection for testing Cloudinary Image Upload & Deletion in CarePlus Clinic system.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Upload Image",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "image",
+							"description": "File ảnh cần upload (JPEG, PNG, WEBP, GIF)",
+							"type": "file",
+							"src": ""
+						},
+						{
+							"key": "type",
+							"value": "avatar",
+							"description": "Loại upload: avatar | blog | clinic (mặc định là clinic)",
+							"type": "text"
+						},
+						{
+							"key": "userId",
+							"value": "12345",
+							"description": "User ID (bắt buộc nếu type=avatar để phân thư mục)",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "{{baseUrl}}/upload/image",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"upload",
+						"image"
+					]
+				},
+				"description": "Upload file ảnh từ client lên hệ thống thông qua Backend. Backend sẽ xử lý lưu ảnh vào Cloudinary theo đúng cấu trúc thư mục quy định."
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Image",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"public_id\": \"careplus/avatars/12345/abcxyz123\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/upload/delete",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"upload",
+						"delete"
+					]
+				},
+				"description": "Xóa ảnh trên Cloudinary bằng public_id khi cập nhật ảnh mới hoặc xóa tài nguyên."
+			},
+			"response": []
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:5000/api/v1",
+			"type": "string"
+		}
+	]
+}
