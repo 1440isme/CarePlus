@@ -124,17 +124,17 @@ model User {
   status        UserStatus @default(ACTIVE)
   noShowCount   Int        @default(0)
   emailVerified Boolean    @default(false)
-  password      String // stored as hash
+  passwordHash  String
   createdAt     DateTime   @default(now())
   updatedAt     DateTime   @updatedAt
 
   doctorProfile               Doctor?
   patientProfiles             PatientProfile[]
-  appointmentsAsPatient       Appointment[]      @relation("PatientAppointments")
-  appointmentsAsCreator       Appointment[]      @relation("CreatedAppointments")
+  appointmentsAsPatient       Appointment[]    @relation("PatientAppointments")
+  appointmentsAsCreator       Appointment[]    @relation("CreatedAppointments")
   reviews                     Review[]
-  conversationsAsPatient      Conversation[]     @relation("PatientConversations")
-  conversationsAsReceptionist Conversation[]     @relation("ReceptionistConversations")
+  conversationsAsPatient      Conversation[]   @relation("PatientConversations")
+  conversationsAsReceptionist Conversation[]   @relation("ReceptionistConversations")
   messages                    Message[]
   blogPosts                   BlogPost[]
 
@@ -338,9 +338,9 @@ model Conversation {
   createdAt      DateTime           @default(now())
   updatedAt      DateTime           @updatedAt
 
-  patient      User    @relation("PatientConversations", fields: [patientId], references: [id], onDelete: Restrict)
-  doctor       Doctor? @relation(fields: [doctorId], references: [id], onDelete: Restrict)
-  receptionist User?   @relation("ReceptionistConversations", fields: [receptionistId], references: [id], onDelete: Restrict)
+  patient      User      @relation("PatientConversations", fields: [patientId], references: [id], onDelete: Restrict)
+  doctor       Doctor?   @relation(fields: [doctorId], references: [id], onDelete: Restrict)
+  receptionist User?     @relation("ReceptionistConversations", fields: [receptionistId], references: [id], onDelete: Restrict)
   messages     Message[]
 
   @@index([patientId])
@@ -379,12 +379,17 @@ model ClinicInfo {
 }
 
 model SystemSetting {
-  id          String   @id @default(uuid())
-  key         String   @unique
-  value       String   @db.Text
-  description String?  @db.Text
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                  String   @id @default(uuid())
+  maxBookingDaysAhead Int      @default(7)
+  slotDurationMinutes Int      @default(30)
+  cancelBeforeHours   Int      @default(2)
+  maxNoShowBeforeLock Int      @default(3)
+  morningShiftStart   String   @default("08:00")
+  morningShiftEnd     String   @default("11:30")
+  afternoonShiftStart String   @default("13:30")
+  afternoonShiftEnd   String   @default("17:00")
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 model BlogPost {
