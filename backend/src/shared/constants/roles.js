@@ -1,0 +1,13 @@
+const USER_ROLES = {
+  PATIENT: 'PATIENT',
+  DOCTOR: 'DOCTOR',
+  RECEPTIONIST: 'RECEPTIONIST',
+  ADMIN: 'ADMIN',
+};
+
+const VALID_USER_ROLES = Object.values(USER_ROLES);
+
+module.exports = {
+  USER_ROLES,
+  VALID_USER_ROLES,
+};

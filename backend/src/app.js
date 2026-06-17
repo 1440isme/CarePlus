@@ -1,7 +1,10 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const authRoutes = require('./modules/auth/auth.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
+const userRoutes = require('./modules/user/user.routes');
 
 // Load environment variables
 dotenv.config();
@@ -12,13 +15,41 @@ const prismaClient = require('./infrastructure/database/prisma.client');
 
 const app = express();
 
+function getAllowedCorsOrigins() {
+  const configuredOrigins = process.env.CORS_ORIGIN;
+
+  if (!configuredOrigins) {
+    return ['http://localhost:5173'];
+  }
+
+  return configuredOrigins
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
+
+const allowedCorsOrigins = getAllowedCorsOrigins();
+
 // Standard middlewares
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
-  credentials: true
+  origin(origin, callback) {
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    if (allowedCorsOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    return callback(new Error('CORS origin is not allowed'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
 
 // Basic health check endpoint
 app.get('/health', async (req, res) => {
@@ -94,7 +125,9 @@ app.get('/api/v1', (req, res) => {
   });
 });
 
-// Upload routes
+// API routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 
 // Global 404 Route handler
