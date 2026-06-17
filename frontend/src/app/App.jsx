@@ -2,6 +2,11 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import PublicLayout from '../shared/components/layout/PublicLayout';
 import HomePage from '../pages/public/HomePage';
 import PlaceholderPage from '../pages/public/PlaceholderPage';
+import RegisterPage from '../pages/public/RegisterPage';
+import VerifyEmailPage from '../pages/public/VerifyEmailPage';
+import LoginPage from '../pages/public/LoginPage';
+import ForgotPasswordPage from '../pages/public/ForgotPasswordPage';
+import ResetPasswordPage from '../pages/public/ResetPasswordPage';
 
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
@@ -10,6 +15,12 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/dang-ky" element={<RegisterPage />} />
+        <Route path="/xac-minh-email" element={<VerifyEmailPage />} />
+        <Route path="/dang-nhap" element={<LoginPage />} />
+        <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
+        <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
+
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<HomePage />} />
           
@@ -26,10 +37,6 @@ function App() {
           <Route path="dat-lich" element={<PlaceholderPage title="Đặt lịch khám trực tuyến" />} />
           
           {/* Auth Routes */}
-          <Route path="dang-nhap" element={<PlaceholderPage title="Đăng nhập tài khoản" />} />
-          <Route path="dang-ky" element={<PlaceholderPage title="Đăng ký tài khoản" />} />
-          <Route path="quen-mat-khau" element={<PlaceholderPage title="Quên mật khẩu" />} />
-
           {/* Catch-all Route */}
           <Route path="*" element={<PlaceholderPage title="404 - Không tìm thấy trang" />} />
         </Route>
