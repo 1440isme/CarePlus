@@ -17,6 +17,33 @@ function isValidVietnamPhone(phone) {
   return /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone);
 }
 
+function isValidDateOfBirth(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return false;
+  }
+
+  const ddmmyyyyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmedValue);
+
+  if (ddmmyyyyMatch) {
+    const day = Number.parseInt(ddmmyyyyMatch[1], 10);
+    const month = Number.parseInt(ddmmyyyyMatch[2], 10);
+    const year = Number.parseInt(ddmmyyyyMatch[3], 10);
+    const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+    return parsedDate.getUTCFullYear() === year
+      && parsedDate.getUTCMonth() === month - 1
+      && parsedDate.getUTCDate() === day
+      && parsedDate.getTime() <= Date.now();
+  }
+  return false;
+}
+
 const updateMeSchema = z.object({
   name: z.string()
     .trim()
@@ -28,6 +55,19 @@ const updateMeSchema = z.object({
     .refine((value) => isValidVietnamPhone(value), {
       message: 'phone must be a valid Vietnamese phone number',
     })
+    .optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'])
+    .optional(),
+  dateOfBirth: z.string()
+    .trim()
+    .refine((value) => isValidDateOfBirth(value), {
+      message: 'dateOfBirth must be a valid date in DD/MM/YYYY format',
+    })
+    .optional(),
+  address: z.string()
+    .trim()
+    .min(1, 'address must not be empty')
+    .max(255, 'address must be at most 255 characters')
     .optional(),
 }).strict().refine(
   (data) => Object.keys(data).length > 0,

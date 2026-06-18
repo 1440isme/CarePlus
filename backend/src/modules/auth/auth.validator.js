@@ -222,6 +222,8 @@ function validateLogin(req, res, next) {
   const details = [];
   const email = typeof req.body.email === 'string' ? req.body.email.trim().toLowerCase() : '';
   const password = typeof req.body.password === 'string' ? req.body.password : '';
+  const hasRememberMe = Object.prototype.hasOwnProperty.call(req.body || {}, 'rememberMe');
+  const rememberMe = req.body?.rememberMe;
 
   if (!isValidEmail(email)) {
     details.push({
@@ -234,6 +236,13 @@ function validateLogin(req, res, next) {
     details.push({
       field: 'password',
       message: 'password must not be empty',
+    });
+  }
+
+  if (hasRememberMe && typeof rememberMe !== 'boolean') {
+    details.push({
+      field: 'rememberMe',
+      message: 'rememberMe must be a boolean value',
     });
   }
 

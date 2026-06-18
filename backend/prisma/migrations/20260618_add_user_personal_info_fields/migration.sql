@@ -1,0 +1,4 @@
+ALTER TABLE `User`
+  ADD COLUMN `gender` ENUM('MALE', 'FEMALE', 'OTHER') NULL,
+  ADD COLUMN `dateOfBirth` DATE NULL,
+  ADD COLUMN `address` TEXT NULL;

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { readStoredAccessToken } from '../../features/auth/store/auth.storage.js';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
 
@@ -13,7 +14,7 @@ const axiosInstance = axios.create({
 // Request Interceptor: Attach Auth Token if exists in localStorage/cookies
 axiosInstance.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
+    const token = readStoredAccessToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
