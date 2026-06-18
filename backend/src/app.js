@@ -3,6 +3,10 @@ const cookieParser = require('cookie-parser');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const authRoutes = require('./modules/auth/auth.routes');
+const doctorRoutes = require('./modules/doctor/doctor.routes');
+const scheduleRoutes = require('./modules/schedule/schedule.routes');
+const timeslotRoutes = require('./modules/timeslot/timeslot.routes');
+const approvalRequestRoutes = require('./modules/approval/approval-request.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
 const userRoutes = require('./modules/user/user.routes');
 
@@ -127,6 +131,10 @@ app.get('/api/v1', (req, res) => {
 
 // API routes
 app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/doctors', doctorRoutes);
+app.use('/api/v1/schedules', scheduleRoutes);
+app.use('/api/v1/timeslots', timeslotRoutes);
+app.use('/api/v1/approval-requests', approvalRequestRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 

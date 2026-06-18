@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
 import { loginSchema } from '../schemas/auth.schema.js';
@@ -33,16 +33,19 @@ export default function LoginForm({
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const loginMutation = useLogin({ onSuccess });
   const {
+    control,
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues,
   });
 
-  const currentEmail = watch('email');
+  const currentEmail = useWatch({
+    control,
+    name: 'email',
+  });
   const loginErrorMessage = useMemo(
     () => getLoginErrorMessage(loginMutation.error),
     [loginMutation.error],
