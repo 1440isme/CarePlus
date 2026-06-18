@@ -1,5 +1,6 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from '../shared/components/layout/PublicLayout';
+import PatientLayout from '../shared/components/layout/PatientLayout';
 import HomePage from '../pages/public/HomePage';
 import PlaceholderPage from '../pages/public/PlaceholderPage';
 import RegisterPage from '../pages/public/RegisterPage';
@@ -7,6 +8,8 @@ import VerifyEmailPage from '../pages/public/VerifyEmailPage';
 import LoginPage from '../pages/public/LoginPage';
 import ForgotPasswordPage from '../pages/public/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/public/ResetPasswordPage';
+import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
+import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
 
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
@@ -20,6 +23,13 @@ function App() {
         <Route path="/dang-nhap" element={<LoginPage />} />
         <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
         <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
+
+        <Route path="/benh-nhan" element={<PatientLayout />}>
+          <Route index element={<Navigate to="thong-tin-ca-nhan" replace />} />
+          <Route path="thong-tin-ca-nhan" element={<PatientPersonalInfoPage />} />
+          <Route path="lich-hen" element={<PlaceholderPage title="Lịch hẹn của tôi" />} />
+          <Route path="nguoi-than" element={<PatientRelativesPage />} />
+        </Route>
 
         <Route path="/" element={<PublicLayout />}>
           <Route index element={<HomePage />} />

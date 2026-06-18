@@ -11,6 +11,30 @@ class UserServiceError extends Error {
   }
 }
 
+function normalizeDateOfBirth(value) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return undefined;
+  }
+
+  const ddmmyyyyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmedValue);
+
+  if (ddmmyyyyMatch) {
+    const day = Number.parseInt(ddmmyyyyMatch[1], 10);
+    const month = Number.parseInt(ddmmyyyyMatch[2], 10);
+    const year = Number.parseInt(ddmmyyyyMatch[3], 10);
+
+    return new Date(Date.UTC(year, month - 1, day));
+  }
+
+  return undefined;
+}
+
 /**
  * User module service.
  * Handles self profile access and admin user management flows for Dev 1.
@@ -211,6 +235,18 @@ class UserService {
 
     if (typeof dto.phone === 'string') {
       data.phone = dto.phone.trim();
+    }
+
+    if (typeof dto.gender === 'string') {
+      data.gender = dto.gender.trim().toUpperCase();
+    }
+
+    if (typeof dto.dateOfBirth === 'string') {
+      data.dateOfBirth = normalizeDateOfBirth(dto.dateOfBirth);
+    }
+
+    if (typeof dto.address === 'string') {
+      data.address = dto.address.trim();
     }
 
     return data;

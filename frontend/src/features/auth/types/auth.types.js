@@ -36,6 +36,7 @@ export const AUTH_ROLE_DEFAULT_ROUTES = {
  * @typedef {Object} LoginRequest
  * @property {string} email
  * @property {string} password
+ * @property {boolean} [rememberMe]
  */
 
 /**

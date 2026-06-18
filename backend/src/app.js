@@ -5,6 +5,7 @@ const dotenv = require('dotenv');
 const authRoutes = require('./modules/auth/auth.routes');
 const uploadRoutes = require('./modules/upload/upload.routes');
 const userRoutes = require('./modules/user/user.routes');
+const patientProfileRoutes = require('./modules/patient-profile/patient-profile.routes');
 
 // Load environment variables
 dotenv.config();
@@ -128,6 +129,7 @@ app.get('/api/v1', (req, res) => {
 // API routes
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
+app.use('/api/v1/patient-profiles', patientProfileRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 
 // Global 404 Route handler

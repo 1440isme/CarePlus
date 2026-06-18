@@ -95,6 +95,9 @@ class AuthService {
     try {
       const normalizedEmail = dto.email.trim().toLowerCase();
       const password = dto.password;
+      const rememberMe = typeof dto.rememberMe === 'boolean'
+        ? dto.rememberMe
+        : AUTH_TOKEN_CONFIG.REMEMBER_ME_DEFAULT;
       const user = await this.authRepository.findUserByEmail(normalizedEmail);
 
       if (!user) {
@@ -154,7 +157,7 @@ class AuthService {
         refreshToken,
         refreshCookie: {
           name: AUTH_TOKEN_CONFIG.REFRESH_TOKEN_COOKIE_NAME,
-          options: this._buildRefreshCookieOptions(),
+          options: this._buildRefreshCookieOptions(rememberMe),
         },
       };
     } catch (error) {
@@ -294,7 +297,7 @@ class AuthService {
     try {
       const refreshCookie = {
         name: AUTH_TOKEN_CONFIG.REFRESH_TOKEN_COOKIE_NAME,
-        options: this._buildRefreshCookieOptions(),
+        options: this._buildRefreshCookieClearOptions(),
       };
 
       if (!refreshToken) {
@@ -673,13 +676,29 @@ class AuthService {
     };
   }
 
-  _buildRefreshCookieOptions() {
+  _buildRefreshCookieBaseOptions() {
     return {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
-      maxAge: AUTH_TOKEN_CONFIG.REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
     };
+  }
+
+  _buildRefreshCookieOptions(rememberMe) {
+    const options = this._buildRefreshCookieBaseOptions();
+
+    if (rememberMe) {
+      return {
+        ...options,
+        maxAge: AUTH_TOKEN_CONFIG.REFRESH_TOKEN_COOKIE_MAX_AGE_MS,
+      };
+    }
+
+    return options;
+  }
+
+  _buildRefreshCookieClearOptions() {
+    return this._buildRefreshCookieBaseOptions();
   }
 
   async _rollbackCreatedUser(userId) {

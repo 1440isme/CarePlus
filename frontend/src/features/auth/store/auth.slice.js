@@ -1,24 +1,5 @@
 import { createSlice } from '@reduxjs/toolkit';
-
-const ACCESS_TOKEN_STORAGE_KEY = 'accessToken';
-const AUTH_USER_STORAGE_KEY = 'authUser';
-
-function readStoredUser() {
-  try {
-    const storedUser = localStorage.getItem(AUTH_USER_STORAGE_KEY);
-    return storedUser ? JSON.parse(storedUser) : null;
-  } catch {
-    return null;
-  }
-}
-
-function readStoredAccessToken() {
-  try {
-    return localStorage.getItem(ACCESS_TOKEN_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
+import { readStoredAccessToken, readStoredUser } from './auth.storage.js';
 
 const storedUser = readStoredUser();
 const storedAccessToken = readStoredAccessToken();
