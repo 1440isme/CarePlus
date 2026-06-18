@@ -27,6 +27,7 @@ export default function LoginForm({
   defaultValues = {
     email: '',
     password: '',
+    rememberMe: false,
   },
   onSuccess,
 }) {
@@ -100,6 +101,17 @@ export default function LoginForm({
           </button>
         </div>
         {errors.password ? <p className="auth-field-error">{errors.password.message}</p> : null}
+      </div>
+
+      <div className="auth-remember-row">
+        <label className="auth-remember-checkbox" htmlFor="login-remember-me">
+          <input
+            id="login-remember-me"
+            type="checkbox"
+            {...register('rememberMe')}
+          />
+          <span>Ghi nhớ đăng nhập</span>
+        </label>
       </div>
 
       {loginMutation.error ? (

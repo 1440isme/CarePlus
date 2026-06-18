@@ -1,6 +1,7 @@
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import LoginForm from '../../features/auth/components/LoginForm.jsx';
 import { AUTH_ROLE_DEFAULT_ROUTES } from '../../features/auth/types/auth.types.js';
+import { getRememberMePreference } from '../../features/auth/store/auth.storage.js';
 import './register-page.css';
 
 const logoIcon = 'https://www.figma.com/api/mcp/asset/1f17b9ca-2d33-4300-891c-4d825ba188a2';
@@ -55,7 +56,14 @@ export default function LoginPage() {
               Đặt lại mật khẩu thành công. Vui lòng đăng nhập lại.
             </p>
           ) : null}
-          <LoginForm onSuccess={handleLoginSuccess} />
+          <LoginForm
+            defaultValues={{
+              email: '',
+              password: '',
+              rememberMe: getRememberMePreference(),
+            }}
+            onSuccess={handleLoginSuccess}
+          />
         </section>
       </div>
     </div>
