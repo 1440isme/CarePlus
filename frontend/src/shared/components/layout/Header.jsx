@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth.js';
 import './layout.css';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const { isAuthenticated, role } = useAuth();
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -14,6 +16,14 @@ export default function Header() {
       setSearchQuery('');
     }
   };
+
+  const portalPath = role === 'DOCTOR'
+    ? '/bac-si-portal'
+    : role === 'RECEPTIONIST'
+      ? '/le-tan'
+      : role === 'ADMIN'
+        ? '/admin'
+        : '/benh-nhan';
 
   return (
     <header className="site-header">
@@ -78,14 +88,24 @@ export default function Header() {
 
           {/* Auth buttons inside navigation (only visible on mobile) */}
           <div className="mobile-auth-buttons">
-            <Link to="/dang-nhap" className="btn btn-outline" onClick={() => setIsMenuOpen(false)}>Đăng nhập</Link>
-            <Link to="/dang-ky" className="btn btn-primary" onClick={() => setIsMenuOpen(false)}>Đăng ký</Link>
+            {isAuthenticated ? (
+              <Link to={portalPath} className="btn btn-primary" onClick={() => setIsMenuOpen(false)}>Vào portal</Link>
+            ) : (
+              <>
+                <Link to="/dang-nhap" className="btn btn-outline" onClick={() => setIsMenuOpen(false)}>Đăng nhập</Link>
+                <Link to="/dang-ky" className="btn btn-primary" onClick={() => setIsMenuOpen(false)}>Đăng ký</Link>
+              </>
+            )}
           </div>
         </nav>
 
         {/* Desktop Auth CTAs */}
         <div className="desktop-auth-actions">
-          <Link to="/dang-nhap" className="btn btn-outline">Đăng nhập</Link>
+          {isAuthenticated ? (
+            <Link to={portalPath} className="btn btn-outline">Vào portal</Link>
+          ) : (
+            <Link to="/dang-nhap" className="btn btn-outline">Đăng nhập</Link>
+          )}
           <Link to="/dat-lich" className="btn btn-primary">Đặt lịch ngay</Link>
         </div>
 
