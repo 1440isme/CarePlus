@@ -932,6 +932,8 @@ Client → Backend API (multer memory storage) → UploadService → Cloudinary 
 - Multer dùng memory storage, KHÔNG lưu file vào disk.
 - UploadService trả về Cloudinary URL + public_id.
 - Lưu URL và public_id vào database.
+- **Bắt buộc**: Toàn bộ tài nguyên ảnh trong hệ thống (avatar, ảnh bài viết, ảnh phòng khám) đều phải sử dụng Cloudinary. Nghiêm cấm lưu trữ hình ảnh dưới dạng raw binary hoặc chuỗi base64 trực tiếp vào database.
+- **Tối ưu hóa tránh ảnh rác (Orphan assets)**: Đối với các ảnh đại diện (thumbnail) hoặc ảnh đi kèm form nhập liệu, frontend chỉ thực hiện upload lên Cloudinary khi người dùng bấm nút Save/Gửi và xác nhận tạo bài viết/tài liệu thành công.
 
 ### Folder Structure trên Cloudinary
 

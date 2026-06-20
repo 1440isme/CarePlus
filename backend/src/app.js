@@ -8,6 +8,8 @@ const userRoutes = require('./modules/user/user.routes');
 const patientProfileRoutes = require('./modules/patient-profile/patient-profile.routes');
 const clinicSettingsRoutes = require('./modules/clinic-settings/clinic-settings.routes');
 const specialtyRoutes = require('./modules/specialty/specialty.routes');
+const blogRoutes = require('./modules/blog/blog.routes');
+const searchRoutes = require('./modules/search/search.routes');
 
 // Load environment variables
 dotenv.config();
@@ -135,6 +137,8 @@ app.use('/api/v1/patient-profiles', patientProfileRoutes);
 app.use('/api/v1/clinic-settings', clinicSettingsRoutes);
 app.use('/api/v1/specialties', specialtyRoutes);
 app.use('/api/v1/upload', uploadRoutes);
+app.use('/api/v1/blogs', blogRoutes);
+app.use('/api/v1/search', searchRoutes);
 
 // Global 404 Route handler
 app.use((req, res, next) => {
