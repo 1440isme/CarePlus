@@ -1,0 +1,121 @@
+.blog-card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+
+.blog-card {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #f3f4f6;
+  border-radius: 15px;
+  overflow: hidden;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.blog-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 20px rgba(0, 0, 0, 0.08);
+  border-color: #e5e7eb;
+}
+
+.blog-card-image-wrapper {
+  position: relative;
+  width: 100%;
+  height: 180px;
+  background: #f8fafc;
+  overflow: hidden;
+}
+
+.blog-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.blog-card:hover .blog-card-img {
+  transform: scale(1.05);
+}
+
+.blog-card-img-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 3rem;
+  background: #ecfef9;
+}
+
+.blog-card-content {
+  display: flex;
+  flex-direction: column;
+  padding: 18.75px;
+  flex-grow: 1;
+}
+
+.blog-card-badge-row {
+  margin-bottom: 7.5px;
+}
+
+.blog-card-category-badge {
+  display: inline-block;
+  background-color: #ecfeff;
+  color: #0092b8;
+  padding: 4px 10px;
+  font-family: 'Inter', Roboto, sans-serif;
+  font-weight: 500;
+  font-size: 11.25px;
+  border-radius: 9999px;
+  text-transform: capitalize;
+}
+
+.blog-card-title {
+  font-family: 'Inter', Roboto, sans-serif;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 22.5px;
+  color: #101828;
+  margin: 0 0 7.5px 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 45px; /* Fixed height for 2 lines */
+}
+
+.blog-card-summary {
+  font-family: 'Inter', Roboto, sans-serif;
+  font-weight: 400;
+  font-size: 13.125px;
+  line-height: 18.75px;
+  color: #6a7282;
+  margin: 0 0 15px 0;
+  flex-grow: 1;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 37.5px; /* Fixed height for 2 lines */
+}
+
+.blog-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid #f3f4f6;
+  padding-top: 11.25px;
+  margin-top: auto;
+}
+
+.blog-card-date {
+  font-family: 'Inter', Roboto, sans-serif;
+  font-weight: 400;
+  font-size: 11.25px;
+  line-height: 15px;
+  color: #99a1af;
+}
