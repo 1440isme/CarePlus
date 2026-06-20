@@ -11,6 +11,7 @@ export { useResendVerificationOtp } from './hooks/useResendVerificationOtp.js';
 export { useForgotPassword } from './hooks/useForgotPassword.js';
 export { useResetPassword } from './hooks/useResetPassword.js';
 export { useLogout } from './hooks/useLogout.js';
+export { useAuthBootstrap } from './hooks/useAuthBootstrap.js';
 
 export * as authService from './services/auth.service.js';
 export * from './schemas/auth.schema.js';

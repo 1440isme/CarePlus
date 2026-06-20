@@ -9,6 +9,7 @@ const initialState = {
   accessToken: storedAccessToken,
   role: storedUser?.role ?? null,
   isAuthenticated: Boolean(storedUser && storedAccessToken),
+  isHydrated: false,
 };
 
 const authSlice = createSlice({
@@ -22,15 +23,20 @@ const authSlice = createSlice({
       state.accessToken = accessToken;
       state.role = user?.role ?? null;
       state.isAuthenticated = Boolean(user && accessToken);
+      state.isHydrated = true;
     },
     clearAuth(state) {
       state.user = null;
       state.accessToken = null;
       state.role = null;
       state.isAuthenticated = false;
+      state.isHydrated = true;
+    },
+    finishAuthHydration(state) {
+      state.isHydrated = true;
     },
   },
 });
 
-export const { setCredentials, clearAuth } = authSlice.actions;
+export const { setCredentials, clearAuth, finishAuthHydration } = authSlice.actions;
 export default authSlice.reducer;

@@ -24,6 +24,20 @@ class UserRepository {
     });
   }
 
+  async findUserByEmail(email) {
+    return prisma.user.findUnique({
+      where: { email },
+      select: USER_SELECT,
+    });
+  }
+
+  async createStaffUser(data) {
+    return prisma.user.create({
+      data,
+      select: USER_SELECT,
+    });
+  }
+
   async findUsers(filters) {
     const {
       skip,
