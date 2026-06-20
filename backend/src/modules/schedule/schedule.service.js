@@ -152,23 +152,16 @@ class ScheduleService {
     }
   }
 
-  generateTimeSlots(shifts = [WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON]) {
+  generateTimeSlots(shifts = [WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON], customTimeWindow) {
     const selectedShifts = Array.from(new Set(shifts));
     const slots = [];
 
-    for (const shift of selectedShifts) {
-      const window = SHIFT_TIME_WINDOWS[shift];
-      let cursor = timeToMinutes(window.start);
-      const endMinutes = timeToMinutes(window.end);
+    if (customTimeWindow?.start && customTimeWindow?.end) {
+      return this._generateSlotsForWindow(customTimeWindow);
+    }
 
-      while ((cursor + SLOT_DURATION_MINUTES) <= endMinutes) {
-        slots.push({
-          startTime: minutesToTime(cursor),
-          endTime: minutesToTime(cursor + SLOT_DURATION_MINUTES),
-          status: 'AVAILABLE',
-        });
-        cursor += SLOT_DURATION_MINUTES;
-      }
+    for (const shift of selectedShifts) {
+      slots.push(...this._generateSlotsForWindow(SHIFT_TIME_WINDOWS[shift]));
     }
 
     return slots;
@@ -188,7 +181,7 @@ class ScheduleService {
       });
     }
 
-    const slots = this.generateTimeSlots(payload.shifts);
+    const slots = this.generateTimeSlots(payload.shifts, this._buildCustomTimeWindow(payload));
     const createdSchedule = await this.scheduleRepository.prisma.$transaction((dbClient) => (
       this.scheduleRepository.createScheduleWithSlots({
         doctorId: doctor.id,
@@ -252,7 +245,7 @@ class ScheduleService {
       });
     }
 
-    const slots = this.generateTimeSlots(payload.shifts);
+    const slots = this.generateTimeSlots(payload.shifts, this._buildCustomTimeWindow(payload));
     const createdSchedules = await this.scheduleRepository.prisma.$transaction(async (dbClient) => {
       const records = [];
       for (const workingDate of targetDates) {
@@ -347,6 +340,61 @@ class ScheduleService {
     }
 
     return dates;
+  }
+
+  _buildCustomTimeWindow(payload) {
+    if (!payload.startTime && !payload.endTime) {
+      return undefined;
+    }
+
+    if (!payload.startTime || !payload.endTime) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.INVALID_SHIFTS,
+        message: 'Vui lòng nhập đầy đủ giờ bắt đầu và giờ kết thúc',
+        statusCode: 400,
+      });
+    }
+
+    const startMinutes = timeToMinutes(payload.startTime);
+    const endMinutes = timeToMinutes(payload.endTime);
+
+    if (startMinutes >= endMinutes) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.INVALID_SHIFTS,
+        message: 'Giờ bắt đầu phải nhỏ hơn giờ kết thúc',
+        statusCode: 400,
+      });
+    }
+
+    if ((endMinutes - startMinutes) < SLOT_DURATION_MINUTES) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.INVALID_SHIFTS,
+        message: 'Khoảng thời gian làm việc phải tối thiểu 30 phút',
+        statusCode: 400,
+      });
+    }
+
+    return {
+      start: payload.startTime,
+      end: payload.endTime,
+    };
+  }
+
+  _generateSlotsForWindow(window) {
+    const slots = [];
+    let cursor = timeToMinutes(window.start);
+    const endMinutes = timeToMinutes(window.end);
+
+    while ((cursor + SLOT_DURATION_MINUTES) <= endMinutes) {
+      slots.push({
+        startTime: minutesToTime(cursor),
+        endTime: minutesToTime(cursor + SLOT_DURATION_MINUTES),
+        status: 'AVAILABLE',
+      });
+      cursor += SLOT_DURATION_MINUTES;
+    }
+
+    return slots;
   }
 
   _wrapUnexpectedError(error, code, message) {

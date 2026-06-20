@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const UserRepository = require('./user.repository');
+const SpecialtyRepository = require('../specialty/specialty.repository');
 const { toUserDto, toUserListDto } = require('./user.dto');
 const {
   USER_ERROR_CODES,
@@ -139,16 +140,17 @@ class UserService {
       }
 
       const passwordHash = await bcrypt.hash(normalizedDto.password, 10);
+      const doctorData = await this._buildDoctorProfileData(normalizedDto);
       const createdUser = await this.userRepository.createStaffUser({
         name: normalizedDto.name,
         email: normalizedDto.email,
         phone: normalizedDto.phone,
         passwordHash,
         role: normalizedDto.role,
-        status: 'ACTIVE',
+        status: normalizedDto.status,
         noShowCount: 0,
         emailVerified: true,
-      });
+      }, doctorData);
 
       return {
         message: 'Tạo tài khoản nhân sự thành công',
@@ -352,12 +354,53 @@ class UserService {
   }
 
   _normalizeCreateStaffUserDto(dto) {
+    const role = dto.role.trim().toUpperCase();
+    const doctorName = typeof dto.doctorName === 'string' ? dto.doctorName.trim() : '';
+    const fallbackName = dto.name.trim();
+
     return {
-      name: dto.name.trim(),
+      name: role === USER_ROLES.DOCTOR && doctorName ? doctorName : fallbackName,
       email: dto.email.trim().toLowerCase(),
       phone: dto.phone.trim(),
       password: dto.password,
-      role: dto.role.trim().toUpperCase(),
+      role,
+      status: dto.status || 'ACTIVE',
+      doctorName,
+      specialtyId: typeof dto.specialtyId === 'string' ? dto.specialtyId.trim() : '',
+      academicTitle: typeof dto.academicTitle === 'string' ? dto.academicTitle.trim() : '',
+      yearsOfExperience: Number.isFinite(dto.yearsOfExperience) ? dto.yearsOfExperience : 0,
+      consultationFee: Number.isFinite(dto.consultationFee) ? dto.consultationFee : 0,
+      avatarUrl: typeof dto.avatarUrl === 'string' ? dto.avatarUrl.trim() : '',
+    };
+  }
+
+  async _buildDoctorProfileData(normalizedDto) {
+    if (normalizedDto.role !== USER_ROLES.DOCTOR) {
+      return undefined;
+    }
+
+    const specialty = await SpecialtyRepository.findSpecialtyById(normalizedDto.specialtyId);
+
+    if (!specialty || specialty.active === false) {
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.VALIDATION_ERROR,
+        message: 'Chuyên khoa của bác sĩ không hợp lệ',
+        statusCode: 400,
+        details: [{ field: 'specialtyId', message: 'specialtyId must reference an active specialty' }],
+      });
+    }
+
+    return {
+      title: normalizedDto.academicTitle,
+      name: normalizedDto.doctorName || normalizedDto.name,
+      specialtyId: specialty.id,
+      specialtyName: specialty.name,
+      experience: normalizedDto.yearsOfExperience,
+      price: normalizedDto.consultationFee,
+      avatar: normalizedDto.avatarUrl || null,
+      description: 'Thông tin bác sĩ đang được cập nhật.',
+      position: normalizedDto.academicTitle,
+      active: normalizedDto.status === 'ACTIVE',
     };
   }
 

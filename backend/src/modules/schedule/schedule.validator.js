@@ -28,6 +28,7 @@ function buildIssueDetails(error) {
 
 const shiftEnumValues = Object.values(WORKING_SHIFTS);
 const scheduleViewValues = Object.values(SCHEDULE_VIEWS);
+const timeSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/, 'time must use HH:mm format');
 
 const idParamSchema = z.object({
   doctorId: z.string().trim().min(1, 'doctorId is required'),
@@ -37,6 +38,8 @@ const singleScheduleSchema = z.object({
   doctorId: z.string().trim().min(1),
   workingDate: z.string().date(),
   shifts: z.array(z.enum(shiftEnumValues)).min(1).optional(),
+  startTime: timeSchema.optional(),
+  endTime: timeSchema.optional(),
 }).strict();
 
 const batchScheduleSchema = z.object({
@@ -44,7 +47,9 @@ const batchScheduleSchema = z.object({
   fromDate: z.string().date(),
   toDate: z.string().date(),
   weekdays: z.array(z.number().int().min(0).max(6)).min(1),
-  shifts: z.array(z.enum(shiftEnumValues)).min(1),
+  shifts: z.array(z.enum(shiftEnumValues)).min(1).optional(),
+  startTime: timeSchema.optional(),
+  endTime: timeSchema.optional(),
 }).strict();
 
 const createScheduleSchema = z.union([singleScheduleSchema, batchScheduleSchema]);

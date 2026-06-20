@@ -24,6 +24,8 @@ import BookingWizardPage from '../pages/public/BookingWizardPage.jsx';
 import NotFoundPage from '../pages/public/NotFoundPage.jsx';
 import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
 import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
+import AdminDoctorManagementPage from '../pages/admin/AdminDoctorManagementPage.jsx';
+import AdminScheduleManagementPage from '../pages/admin/AdminScheduleManagementPage.jsx';
 import AdminSpecialtiesPage from '../pages/admin/AdminSpecialtiesPage.jsx';
 import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
@@ -63,8 +65,8 @@ function App() {
         >
           <Route index element={<PlaceholderPage title="Tổng quan Admin" />} />
           <Route path="chuyen-khoa" element={<AdminSpecialtiesPage />} />
-          <Route path="bac-si" element={<PlaceholderPage title="Quản lý bác sĩ" />} />
-          <Route path="lich-lam-viec" element={<PlaceholderPage title="Lịch làm việc" />} />
+          <Route path="bac-si" element={<AdminDoctorManagementPage />} />
+          <Route path="lich-lam-viec" element={<AdminScheduleManagementPage />} />
           <Route path="lich-hen" element={<PlaceholderPage title="Quản lý lịch hẹn" />} />
           <Route path="duyet-yeu-cau" element={<PlaceholderPage title="Duyệt yêu cầu" />} />
           <Route path="nguoi-dung" element={<AdminUsersPage />} />
@@ -78,16 +80,16 @@ function App() {
           <Route index element={<HomePage />} />
           
           {/* Public Website Routes */}
-          <Route path="chuyen-khoa" element={<PlaceholderPage title="Danh sách Chuyên khoa" />} />
-          <Route path="chuyen-khoa/:slug" element={<PlaceholderPage title="Chi tiết Chuyên khoa" />} />
-          <Route path="bac-si" element={<PlaceholderPage title="Danh sách Bác sĩ" />} />
-          <Route path="bac-si/:id" element={<PlaceholderPage title="Hồ sơ Bác sĩ" />} />
+          <Route path="chuyen-khoa" element={<SpecialtyListPage />} />
+          <Route path="chuyen-khoa/:slug" element={<SpecialtyDetailPage />} />
+          <Route path="bac-si" element={<DoctorListPage />} />
+          <Route path="bac-si/:id" element={<DoctorDetailPage />} />
           <Route path="cam-nang" element={<BlogListPage />} />
           <Route path="cam-nang/:slug" element={<BlogDetailPage />} />
-          <Route path="ve-chung-toi" element={<PlaceholderPage title="Về chúng tôi" />} />
-          <Route path="lien-he" element={<PlaceholderPage title="Liên hệ" />} />
-          <Route path="faq" element={<PlaceholderPage title="FAQ - Câu hỏi thường gặp" />} />
-          <Route path="dat-lich" element={<PlaceholderPage title="Đặt lịch khám trực tuyến" />} />
+          <Route path="ve-chung-toi" element={<AboutPage />} />
+          <Route path="lien-he" element={<ContactPage />} />
+          <Route path="faq" element={<FAQPage />} />
+          <Route path="dat-lich" element={<BookingWizardPage />} />
           
           {/* Auth Routes */}
           {/* Catch-all Route */}

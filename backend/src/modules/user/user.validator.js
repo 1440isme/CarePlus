@@ -103,7 +103,42 @@ const createStaffUserSchema = z.object({
     .refine((value) => STAFF_CREATABLE_ROLES.includes(value), {
       message: 'role must be one of DOCTOR, RECEPTIONIST, ADMIN',
     }),
-}).strict();
+  status: z.enum(VALID_USER_STATUSES).optional(),
+  doctorName: z.string().trim().min(1).max(100).optional(),
+  specialtyId: z.string().trim().min(1).optional(),
+  academicTitle: z.string().trim().min(1).max(100).optional(),
+  yearsOfExperience: z.coerce.number().int().min(0).max(80).optional(),
+  consultationFee: z.coerce.number().min(0).optional(),
+  avatarUrl: z.string().trim().url().optional().or(z.literal('')),
+}).strict().superRefine((value, ctx) => {
+  if (value.role !== 'DOCTOR') {
+    return;
+  }
+
+  if (!value.doctorName) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['doctorName'],
+      message: 'doctorName is required when role is DOCTOR',
+    });
+  }
+
+  if (!value.specialtyId) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['specialtyId'],
+      message: 'specialtyId is required when role is DOCTOR',
+    });
+  }
+
+  if (!value.academicTitle) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['academicTitle'],
+      message: 'academicTitle is required when role is DOCTOR',
+    });
+  }
+});
 
 function validateListUsers(req, res, next) {
   const details = [];
