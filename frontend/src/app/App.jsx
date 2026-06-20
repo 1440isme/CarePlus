@@ -27,8 +27,6 @@ import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
 import AdminSpecialtiesPage from '../pages/admin/AdminSpecialtiesPage.jsx';
 import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
-import BlogListPage from '../pages/public/BlogListPage.jsx';
-import BlogDetailPage from '../pages/public/BlogDetailPage.jsx';
 import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
 
 /**
