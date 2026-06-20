@@ -1,6 +1,13 @@
+const bcrypt = require('bcrypt');
 const UserRepository = require('./user.repository');
 const { toUserDto, toUserListDto } = require('./user.dto');
-const { USER_ERROR_CODES, USER_PAGINATION, VALID_USER_STATUSES } = require('./user.types');
+const {
+  USER_ERROR_CODES,
+  USER_PAGINATION,
+  VALID_USER_STATUSES,
+  STAFF_CREATABLE_ROLES,
+} = require('./user.types');
+const { USER_ROLES } = require('../../shared/constants/roles');
 
 class UserServiceError extends Error {
   constructor({ code, message, statusCode, details = [] }) {
@@ -85,6 +92,81 @@ class UserService {
     }
   }
 
+  async adminUpdateUser(adminUser, userId, dto) {
+    try {
+      await this._getUserOrThrow(userId);
+
+      const updateData = this._buildProfileUpdateData(dto);
+      const updatedUser = await this.userRepository.updateUserProfile(userId, updateData);
+
+      return {
+        message: 'Cập nhật thông tin người dùng thành công',
+        user: toUserDto(updatedUser),
+      };
+    } catch (error) {
+      if (error instanceof UserServiceError) {
+        throw error;
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.ADMIN_UPDATE_USER_FAILED,
+        message: 'Không thể cập nhật thông tin người dùng',
+        statusCode: 500,
+      });
+    }
+  }
+
+  async createStaffUser(adminUser, dto) {
+    try {
+      const normalizedDto = this._normalizeCreateStaffUserDto(dto);
+
+      if (!STAFF_CREATABLE_ROLES.includes(normalizedDto.role) || normalizedDto.role === USER_ROLES.PATIENT) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.INVALID_STAFF_ROLE,
+          message: 'Vai trò tài khoản nhân sự không hợp lệ',
+          statusCode: 400,
+        });
+      }
+
+      const existingUser = await this.userRepository.findUserByEmail(normalizedDto.email);
+
+      if (existingUser) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.EMAIL_ALREADY_EXISTS,
+          message: 'Email đã được sử dụng',
+          statusCode: 409,
+        });
+      }
+
+      const passwordHash = await bcrypt.hash(normalizedDto.password, 10);
+      const createdUser = await this.userRepository.createStaffUser({
+        name: normalizedDto.name,
+        email: normalizedDto.email,
+        phone: normalizedDto.phone,
+        passwordHash,
+        role: normalizedDto.role,
+        status: 'ACTIVE',
+        noShowCount: 0,
+        emailVerified: true,
+      });
+
+      return {
+        message: 'Tạo tài khoản nhân sự thành công',
+        user: toUserDto(createdUser),
+      };
+    } catch (error) {
+      if (error instanceof UserServiceError) {
+        throw error;
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.CREATE_STAFF_USER_FAILED,
+        message: 'Không thể tạo tài khoản nhân sự',
+        statusCode: 500,
+      });
+    }
+  }
+
   async listUsers(query) {
     try {
       const normalizedQuery = this._normalizeListUsersQuery(query);
@@ -118,6 +200,23 @@ class UserService {
       throw new UserServiceError({
         code: USER_ERROR_CODES.LIST_USERS_FAILED,
         message: 'Không thể lấy danh sách người dùng',
+        statusCode: 500,
+      });
+    }
+  }
+
+  async getUserDetail(adminUser, userId) {
+    try {
+      const user = await this._getUserOrThrow(userId);
+      return toUserDto(user);
+    } catch (error) {
+      if (error instanceof UserServiceError) {
+        throw error;
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.GET_USER_DETAIL_FAILED,
+        message: 'Không thể lấy chi tiết người dùng',
         statusCode: 500,
       });
     }
@@ -250,6 +349,16 @@ class UserService {
     }
 
     return data;
+  }
+
+  _normalizeCreateStaffUserDto(dto) {
+    return {
+      name: dto.name.trim(),
+      email: dto.email.trim().toLowerCase(),
+      phone: dto.phone.trim(),
+      password: dto.password,
+      role: dto.role.trim().toUpperCase(),
+    };
   }
 
   _normalizeListUsersQuery(query) {

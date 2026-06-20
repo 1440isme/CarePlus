@@ -35,12 +35,17 @@ export function resetPassword(payload) {
 }
 
 export async function refreshToken() {
-  const response = await axiosInstance.post(AUTH_API_PATHS.refresh, undefined, AUTH_REQUEST_CONFIG);
+  const response = await axiosInstance.post(AUTH_API_PATHS.refresh, undefined, {
+    ...AUTH_REQUEST_CONFIG,
+    skipAuthRefresh: true,
+  });
   return response.data;
 }
 
 export async function logout() {
-  const response = await axiosInstance.post(AUTH_API_PATHS.logout, undefined, AUTH_REQUEST_CONFIG);
+  const response = await axiosInstance.post(AUTH_API_PATHS.logout, undefined, {
+    ...AUTH_REQUEST_CONFIG,
+    skipAuthRefresh: true,
+  });
   return response.data;
 }
-

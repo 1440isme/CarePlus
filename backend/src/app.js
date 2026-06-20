@@ -10,6 +10,8 @@ const approvalRequestRoutes = require('./modules/approval/approval-request.route
 const uploadRoutes = require('./modules/upload/upload.routes');
 const userRoutes = require('./modules/user/user.routes');
 const patientProfileRoutes = require('./modules/patient-profile/patient-profile.routes');
+const clinicSettingsRoutes = require('./modules/clinic-settings/clinic-settings.routes');
+const specialtyRoutes = require('./modules/specialty/specialty.routes');
 
 // Load environment variables
 dotenv.config();
@@ -138,6 +140,8 @@ app.use('/api/v1/timeslots', timeslotRoutes);
 app.use('/api/v1/approval-requests', approvalRequestRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/patient-profiles', patientProfileRoutes);
+app.use('/api/v1/clinic-settings', clinicSettingsRoutes);
+app.use('/api/v1/specialties', specialtyRoutes);
 app.use('/api/v1/upload', uploadRoutes);
 
 // Global 404 Route handler

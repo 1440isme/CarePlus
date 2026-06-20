@@ -1,6 +1,11 @@
 const { z } = require('zod');
 const { VALID_USER_ROLES } = require('../../shared/constants/roles');
-const { USER_ERROR_CODES, USER_PAGINATION, VALID_USER_STATUSES } = require('./user.types');
+const {
+  USER_ERROR_CODES,
+  USER_PAGINATION,
+  VALID_USER_STATUSES,
+  STAFF_CREATABLE_ROLES,
+} = require('./user.types');
 
 function sendValidationError(res, details, code = USER_ERROR_CODES.VALIDATION_ERROR, message = 'Validation failed') {
   return res.status(400).json({
@@ -76,6 +81,30 @@ const updateMeSchema = z.object({
   },
 );
 
+const createStaffUserSchema = z.object({
+  name: z.string()
+    .trim()
+    .min(1, 'name must not be empty')
+    .max(100, 'name must be at most 100 characters'),
+  email: z.string()
+    .trim()
+    .email('email must be a valid email address')
+    .transform((value) => value.toLowerCase()),
+  phone: z.string()
+    .trim()
+    .refine((value) => isValidVietnamPhone(value), {
+      message: 'phone must be a valid Vietnamese phone number',
+    }),
+  password: z.string()
+    .min(6, 'password must be at least 6 characters'),
+  role: z.string()
+    .trim()
+    .transform((value) => value.toUpperCase())
+    .refine((value) => STAFF_CREATABLE_ROLES.includes(value), {
+      message: 'role must be one of DOCTOR, RECEPTIONIST, ADMIN',
+    }),
+}).strict();
+
 function validateListUsers(req, res, next) {
   const details = [];
   const page = req.query.page;
@@ -141,6 +170,40 @@ function validateUpdateMe(req, res, next) {
   return next();
 }
 
+function validateAdminUpdateUser(req, res, next) {
+  const parsedResult = updateMeSchema.safeParse(req.body || {});
+
+  if (!parsedResult.success) {
+    const details = parsedResult.error.issues.map((issue) => ({
+      field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+      message: issue.message,
+    }));
+
+    return sendValidationError(res, details, USER_ERROR_CODES.VALIDATION_ERROR, 'Dữ liệu không hợp lệ');
+  }
+
+  req.body = parsedResult.data;
+
+  return next();
+}
+
+function validateCreateStaffUser(req, res, next) {
+  const parsedResult = createStaffUserSchema.safeParse(req.body || {});
+
+  if (!parsedResult.success) {
+    const details = parsedResult.error.issues.map((issue) => ({
+      field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+      message: issue.message,
+    }));
+
+    return sendValidationError(res, details, USER_ERROR_CODES.VALIDATION_ERROR, 'Dữ liệu không hợp lệ');
+  }
+
+  req.body = parsedResult.data;
+
+  return next();
+}
+
 function validateUpdateUserStatus(req, res, next) {
   const details = [];
   const userId = typeof req.params?.id === 'string' ? req.params.id.trim() : '';
@@ -172,6 +235,24 @@ function validateUpdateUserStatus(req, res, next) {
   return next();
 }
 
+function validateGetUserDetail(req, res, next) {
+  const details = [];
+  const userId = typeof req.params?.id === 'string' ? req.params.id.trim() : '';
+
+  if (!userId) {
+    details.push({
+      field: 'id',
+      message: 'id is required',
+    });
+  }
+
+  if (details.length > 0) {
+    return sendValidationError(res, details, USER_ERROR_CODES.VALIDATION_ERROR, 'Dữ liệu không hợp lệ');
+  }
+
+  return next();
+}
+
 function validateResetNoShowCount(req, res, next) {
   const details = [];
   const userId = typeof req.params?.id === 'string' ? req.params.id.trim() : '';
@@ -193,6 +274,9 @@ function validateResetNoShowCount(req, res, next) {
 module.exports = {
   validateListUsers,
   validateUpdateMe,
+  validateAdminUpdateUser,
+  validateCreateStaffUser,
+  validateGetUserDetail,
   validateUpdateUserStatus,
   validateResetNoShowCount,
 };

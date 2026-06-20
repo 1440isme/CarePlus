@@ -3,6 +3,9 @@ const UserController = require('./user.controller');
 const {
   validateListUsers,
   validateUpdateMe,
+  validateAdminUpdateUser,
+  validateCreateStaffUser,
+  validateGetUserDetail,
   validateUpdateUserStatus,
   validateResetNoShowCount,
 } = require('./user.validator');
@@ -22,6 +25,31 @@ router.get(
   authorize(USER_ROLES.ADMIN),
   validateListUsers,
   UserController.listUsers,
+);
+
+router.post(
+  USER_ROUTE_PATHS.STAFF,
+  authenticate,
+  authorize(USER_ROLES.ADMIN),
+  validateCreateStaffUser,
+  UserController.createStaffUser,
+);
+
+router.get(
+  USER_ROUTE_PATHS.DETAIL,
+  authenticate,
+  authorize(USER_ROLES.ADMIN),
+  validateGetUserDetail,
+  UserController.getUserDetail,
+);
+
+router.patch(
+  USER_ROUTE_PATHS.DETAIL,
+  authenticate,
+  authorize(USER_ROLES.ADMIN),
+  validateGetUserDetail,
+  validateAdminUpdateUser,
+  UserController.adminUpdateUser,
 );
 
 router.patch(
