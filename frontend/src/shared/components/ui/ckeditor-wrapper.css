@@ -1,0 +1,53 @@
+.ckeditor-wrapper {
+  position: relative;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.editor-loading {
+  padding: 20px;
+  background-color: #f9fafb;
+  border: 1px dashed #d1d5db;
+  border-radius: 8px;
+  color: #6b7280;
+  text-align: center;
+  font-size: 14px;
+}
+
+/* Customize CKEditor styles to match CarePlus theme */
+.ck-editor__editable_inline {
+  min-height: 250px;
+  max-height: 500px;
+  border-bottom-left-radius: 8px !important;
+  border-bottom-right-radius: 8px !important;
+  font-family: Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #101828;
+}
+
+.ck.ck-editor__top .ck-member-list, 
+.ck.ck-editor__top .ck-toolbar {
+  border-top-left-radius: 8px !important;
+  border-top-right-radius: 8px !important;
+  background: #f9fafb !important;
+  border-color: #e5e7eb !important;
+}
+
+.ck.ck-editor__main>.ck-editor__editable {
+  border-color: #e5e7eb !important;
+  box-shadow: none !important;
+}
+
+.ck.ck-editor__main>.ck-editor__editable.ck-focused {
+  border-color: #49bce2 !important; /* CarePlus Cyan focus */
+}
+
+/* Styled headings and blockquotes inside CKEditor content */
+.ck-content blockquote {
+  border-left: 4px solid #49bce2 !important;
+  padding-left: 15px;
+  color: #4b5563;
+  font-style: italic;
+  margin: 1.5em 0;
+}
