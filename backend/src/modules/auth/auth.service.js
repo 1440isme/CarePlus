@@ -3,7 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const redis = require('../../infrastructure/cache/redis.client');
 const { randomUUID, randomBytes } = require('crypto');
-const { sendPasswordResetEmail } = require('./auth.email');
+const { mailService, MailServiceError } = require('../../infrastructure/mail/mail.service');
 const {
   createForgotPasswordResponseDto,
   createLoginResponseDto,
@@ -71,6 +71,27 @@ class AuthService {
           statusCode: 503,
           details: [],
         });
+      }
+
+      try {
+        await mailService.sendVerificationOtpEmail({
+          to: createdUser.email,
+          name: createdUser.name,
+          otp,
+          expiresInMinutes: this._convertSecondsToMinutes(AUTH_OTP_CONFIG.EMAIL_VERIFICATION_TTL_SECONDS),
+        });
+      } catch (error) {
+        await this._cleanupEmailVerificationState({
+          userId: createdUser.id,
+          otpKey,
+        });
+
+        throw this._buildMailError(
+          error,
+          AUTH_ERROR_CODES.SEND_VERIFICATION_EMAIL_FAILED,
+          'Gửi email xác minh thất bại',
+          503,
+        );
       }
 
       return createRegisterResponseDto(
@@ -488,7 +509,24 @@ class AuthService {
         });
       }
 
-      // TODO: integrate email sending service from notification module when available.
+      try {
+        await mailService.sendVerificationOtpEmail({
+          to: user.email,
+          name: user.name,
+          otp,
+          expiresInMinutes: this._convertSecondsToMinutes(AUTH_OTP_CONFIG.EMAIL_VERIFICATION_TTL_SECONDS),
+        });
+      } catch (error) {
+        await this._deleteRedisKeyQuietly(otpKey);
+
+        throw this._buildMailError(
+          error,
+          AUTH_ERROR_CODES.SEND_VERIFICATION_EMAIL_FAILED,
+          'Gửi email OTP xác minh thất bại',
+          503,
+        );
+      }
+
       return createResendVerificationOtpResponseDto(
         AUTH_OTP_CONFIG.EMAIL_VERIFICATION_TTL_SECONDS,
       );
@@ -529,11 +567,23 @@ class AuthService {
         });
       }
 
-      await sendPasswordResetEmail({
-        to: normalizedEmail,
-        resetToken,
-        resetUrl: process.env.PASSWORD_RESET_URL || '',
-      });
+      try {
+        await mailService.sendPasswordResetEmail({
+          to: normalizedEmail,
+          name: user.name,
+          resetUrl: this._buildPasswordResetUrl(normalizedEmail, resetToken),
+          expiresInMinutes: this._convertSecondsToMinutes(AUTH_OTP_CONFIG.PASSWORD_RESET_TTL_SECONDS),
+        });
+      } catch (error) {
+        await this._deleteRedisKeyQuietly(resetKey);
+
+        throw this._buildMailError(
+          error,
+          AUTH_ERROR_CODES.SEND_PASSWORD_RESET_EMAIL_FAILED,
+          'Gửi email đặt lại mật khẩu thất bại',
+          503,
+        );
+      }
 
       return createForgotPasswordResponseDto(AUTH_OTP_CONFIG.PASSWORD_RESET_TTL_SECONDS);
     } catch (error) {
@@ -657,6 +707,18 @@ class AuthService {
     return `${AUTH_TOKEN_CONFIG.TOKEN_BLACKLIST_KEY_PREFIX}${jti}`;
   }
 
+  _buildPasswordResetUrl(email, token) {
+    const frontendUrl = process.env.APP_FRONTEND_URL || 'http://localhost:5173';
+    const encodedEmail = encodeURIComponent(email);
+    const encodedToken = encodeURIComponent(token);
+
+    return `${frontendUrl}/dat-lai-mat-khau?email=${encodedEmail}&token=${encodedToken}`;
+  }
+
+  _convertSecondsToMinutes(seconds) {
+    return Math.ceil(seconds / 60);
+  }
+
   _getJwtSecrets() {
     const accessTokenSecret = process.env.JWT_SECRET;
     const refreshTokenSecret = process.env.JWT_REFRESH_SECRET;
@@ -712,6 +774,46 @@ class AuthService {
         details: [],
       });
     }
+  }
+
+  async _cleanupEmailVerificationState({ userId, otpKey }) {
+    await this._deleteRedisKeyQuietly(otpKey);
+    await this._rollbackCreatedUser(userId);
+  }
+
+  async _deleteRedisKeyQuietly(key) {
+    try {
+      await redis.del(key);
+    } catch (error) {
+      throw new AuthServiceError({
+        code: AUTH_ERROR_CODES.REDIS_CONNECTION_ERROR,
+        message: 'Không thể dọn dẹp dữ liệu tạm thời trên Redis',
+        statusCode: 503,
+        details: [],
+      });
+    }
+  }
+
+  _buildMailError(error, code, message, statusCode) {
+    if (error instanceof AuthServiceError) {
+      return error;
+    }
+
+    if (error instanceof MailServiceError) {
+      return new AuthServiceError({
+        code,
+        message,
+        statusCode,
+        details: [],
+      });
+    }
+
+    return new AuthServiceError({
+      code,
+      message,
+      statusCode,
+      details: [],
+    });
   }
 }
 

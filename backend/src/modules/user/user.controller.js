@@ -38,6 +38,42 @@ class UserController {
     }
   }
 
+  async getUserDetail(req, res, next) {
+    try {
+      const data = await UserService.getUserDetail(req.user, req.params.id);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async adminUpdateUser(req, res, next) {
+    try {
+      const data = await UserService.adminUpdateUser(req.user, req.params.id, req.body);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async createStaffUser(req, res, next) {
+    try {
+      const data = await UserService.createStaffUser(req.user, req.body);
+      return res.status(201).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async updateUserStatus(req, res, next) {
     try {
       const data = await UserService.updateUserStatus(req.user, req.params.id, req.body);

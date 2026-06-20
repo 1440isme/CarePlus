@@ -1,6 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PublicLayout from '../shared/components/layout/PublicLayout';
 import PatientLayout from '../shared/components/layout/PatientLayout';
+import AdminLayout from '../shared/components/layout/AdminLayout.jsx';
+import RequireRole from '../shared/components/layout/RequireRole.jsx';
 import HomePage from '../pages/public/HomePage';
 import PlaceholderPage from '../pages/public/PlaceholderPage';
 import RegisterPage from '../pages/public/RegisterPage';
@@ -10,11 +12,16 @@ import ForgotPasswordPage from '../pages/public/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/public/ResetPasswordPage';
 import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
 import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
+import AdminSpecialtiesPage from '../pages/admin/AdminSpecialtiesPage.jsx';
+import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
+import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
 
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
  */
 function App() {
+  useAuthBootstrap();
+
   return (
     <BrowserRouter>
       <Routes>
@@ -29,6 +36,27 @@ function App() {
           <Route path="thong-tin-ca-nhan" element={<PatientPersonalInfoPage />} />
           <Route path="lich-hen" element={<PlaceholderPage title="Lịch hẹn của tôi" />} />
           <Route path="nguoi-than" element={<PatientRelativesPage />} />
+        </Route>
+
+        <Route
+          path="/admin"
+          element={(
+            <RequireRole allowedRoles={['ADMIN']}>
+              <AdminLayout />
+            </RequireRole>
+          )}
+        >
+          <Route index element={<PlaceholderPage title="Tổng quan Admin" />} />
+          <Route path="chuyen-khoa" element={<AdminSpecialtiesPage />} />
+          <Route path="bac-si" element={<PlaceholderPage title="Quản lý bác sĩ" />} />
+          <Route path="lich-lam-viec" element={<PlaceholderPage title="Lịch làm việc" />} />
+          <Route path="lich-hen" element={<PlaceholderPage title="Quản lý lịch hẹn" />} />
+          <Route path="duyet-yeu-cau" element={<PlaceholderPage title="Duyệt yêu cầu" />} />
+          <Route path="nguoi-dung" element={<AdminUsersPage />} />
+          <Route path="blog" element={<PlaceholderPage title="Quản lý bài viết" />} />
+          <Route path="email-preview" element={<PlaceholderPage title="Email Preview" />} />
+          <Route path="phong-kham" element={<PlaceholderPage title="Thông tin phòng khám" />} />
+          <Route path="cai-dat" element={<PlaceholderPage title="Cài đặt hệ thống" />} />
         </Route>
 
         <Route path="/" element={<PublicLayout />}>
