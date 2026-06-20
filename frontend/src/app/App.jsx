@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { GuestOnlyRoute } from './route-guards.jsx';
 import PublicLayout from '../shared/components/layout/PublicLayout';
 import PatientLayout from '../shared/components/layout/PatientLayout';
 import AdminLayout from '../shared/components/layout/AdminLayout.jsx';
@@ -10,6 +11,17 @@ import VerifyEmailPage from '../pages/public/VerifyEmailPage';
 import LoginPage from '../pages/public/LoginPage';
 import ForgotPasswordPage from '../pages/public/ForgotPasswordPage';
 import ResetPasswordPage from '../pages/public/ResetPasswordPage';
+import DoctorListPage from '../pages/public/DoctorListPage.jsx';
+import DoctorDetailPage from '../pages/public/DoctorDetailPage.jsx';
+import SpecialtyListPage from '../pages/public/SpecialtyListPage.jsx';
+import SpecialtyDetailPage from '../pages/public/SpecialtyDetailPage.jsx';
+import BlogListPage from '../pages/public/BlogListPage.jsx';
+import BlogDetailPage from '../pages/public/BlogDetailPage.jsx';
+import AboutPage from '../pages/public/AboutPage.jsx';
+import ContactPage from '../pages/public/ContactPage.jsx';
+import FAQPage from '../pages/public/FAQPage.jsx';
+import BookingWizardPage from '../pages/public/BookingWizardPage.jsx';
+import NotFoundPage from '../pages/public/NotFoundPage.jsx';
 import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
 import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
 import AdminSpecialtiesPage from '../pages/admin/AdminSpecialtiesPage.jsx';
@@ -28,11 +40,13 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/dang-ky" element={<RegisterPage />} />
-        <Route path="/xac-minh-email" element={<VerifyEmailPage />} />
-        <Route path="/dang-nhap" element={<LoginPage />} />
-        <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
-        <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
+        <Route element={<GuestOnlyRoute />}>
+          <Route path="/dang-ky" element={<RegisterPage />} />
+          <Route path="/xac-minh-email" element={<VerifyEmailPage />} />
+          <Route path="/dang-nhap" element={<LoginPage />} />
+          <Route path="/quen-mat-khau" element={<ForgotPasswordPage />} />
+          <Route path="/dat-lai-mat-khau" element={<ResetPasswordPage />} />
+        </Route>
 
         <Route path="/benh-nhan" element={<PatientLayout />}>
           <Route index element={<Navigate to="thong-tin-ca-nhan" replace />} />
@@ -81,6 +95,8 @@ function App() {
           {/* Catch-all Route */}
           <Route path="*" element={<PlaceholderPage title="404 - Không tìm thấy trang" />} />
         </Route>
+
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </BrowserRouter>
   );

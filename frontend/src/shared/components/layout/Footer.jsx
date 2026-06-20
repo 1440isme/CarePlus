@@ -100,11 +100,11 @@ export default function Footer() {
             &copy; {currentYear} CarePlus Clinic. Bảo lưu mọi quyền.
           </p>
           <div className="footer-bottom-links">
-            <Link to="/terms">Điều khoản sử dụng</Link>
+            <Link to="/ve-chung-toi">Về chúng tôi</Link>
             <span className="divider">|</span>
-            <Link to="/privacy">Chính sách bảo mật</Link>
+            <Link to="/faq">Câu hỏi thường gặp</Link>
             <span className="divider">|</span>
-            <Link to="/cancellation-policy">Chính sách hủy lịch</Link>
+            <Link to="/lien-he">Liên hệ</Link>
           </div>
         </div>
       </div>

@@ -3,6 +3,38 @@ import { Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../shared/services/axios.instance';
 import './homepage.css';
 
+const mockSpecialties = [
+  { id: 's1', name: 'Cơ Xương Khớp', slug: 'co-xuong-khop', description: 'Chẩn đoán và điều trị bệnh khớp, xương, cơ, cột sống.', icon: '🦴', doctorCount: 3 },
+  { id: 's2', name: 'Tim mạch', slug: 'tim-mach', description: 'Khám và điều trị các bệnh lý tim mạch, cao huyết áp.', icon: '❤️', doctorCount: 2 },
+  { id: 's3', name: 'Tai Mũi Họng', slug: 'tai-mui-hong', description: 'Điều trị viêm xoang, viêm tai giữa, viêm họng, amidan.', icon: '👂', doctorCount: 2 },
+  { id: 's4', name: 'Nhi khoa', slug: 'nhi-khoa', description: 'Chăm sóc sức khỏe toàn diện cho trẻ sơ sinh đến 15 tuổi.', icon: '👶', doctorCount: 3 },
+  { id: 's5', name: 'Da liễu', slug: 'da-lieu', description: 'Điều trị các bệnh về da, mụn, dị ứng, viêm da cơ địa.', icon: '🩺', doctorCount: 2 },
+  { id: 's6', name: 'Sản phụ khoa', slug: 'san-phu-khoa', description: 'Chăm sóc sức khỏe thai kỳ và các bệnh phụ khoa nữ.', icon: '🤱', doctorCount: 2 },
+  { id: 's7', name: 'Răng Hàm Mặt', slug: 'rang-ham-mat', description: 'Khám răng, niềng răng, nhổ răng khôn và thẩm mỹ nha khoa.', icon: '🦷', doctorCount: 2 },
+  { id: 's8', name: 'Mắt', slug: 'mat', description: 'Đo tật khúc xạ, khám và điều trị đục thủy tinh thể, cận thị.', icon: '👁️', doctorCount: 2 },
+];
+
+const mockExpDoctors = [
+  { id: 'd1', title: 'TS.BS', name: 'Phạm Hoàng Nam', experience: 15, rating: 4.9, reviewCount: 120, price: 350000, specialtyName: 'Cơ Xương Khớp' },
+  { id: 'd2', title: 'BS.CKII', name: 'Trần Quốc Huy', experience: 14, rating: 4.8, reviewCount: 98, price: 300000, specialtyName: 'Tim mạch' },
+  { id: 'd3', title: 'ThS.BS', name: 'Vũ Đức Thành', experience: 12, rating: 4.7, reviewCount: 75, price: 280000, specialtyName: 'Tai Mũi Họng' },
+  { id: 'd4', title: 'BS.CKI', name: 'Nguyễn Thu Hương', experience: 9, rating: 4.6, reviewCount: 64, price: 280000, specialtyName: 'Da liễu' },
+];
+
+const mockFavDoctors = [
+  { id: 'd1', title: 'TS.BS', name: 'Phạm Hoàng Nam', experience: 15, rating: 4.9, reviewCount: 120, price: 350000, specialtyName: 'Cơ Xương Khớp' },
+  { id: 'd5', title: 'ThS.BS', name: 'Nguyễn Minh Anh', experience: 8, rating: 4.8, reviewCount: 88, price: 300000, specialtyName: 'Tim mạch' },
+  { id: 'd2', title: 'BS.CKII', name: 'Trần Quốc Huy', experience: 14, rating: 4.8, reviewCount: 98, price: 300000, specialtyName: 'Tim mạch' },
+  { id: 'd6', title: 'BS', name: 'Lê Thảo Vy', experience: 7, rating: 4.7, reviewCount: 54, price: 250000, specialtyName: 'Nhi khoa' },
+];
+
+const mockBlogs = [
+  { id: 'b1', title: 'Phòng ngừa bệnh tim mạch hiệu quả tại nhà', slug: 'phong-ngua-tim-mach', tag: 'Tim mạch', createdAt: '2026-05-21', icon: '❤️' },
+  { id: 'b2', title: 'Chế độ ăn uống tốt cho người bệnh tiêu hóa', slug: 'che-do-an-tieu-hoa', tag: 'Tiêu hóa', createdAt: '2026-05-16', icon: '🍏' },
+  { id: 'b3', title: 'Cách chăm sóc da đúng cách trong mùa hè', slug: 'cham-soc-da-mua-he', tag: 'Da liễu', createdAt: '2026-05-11', icon: '☀️' },
+  { id: 'b4', title: 'Dinh dưỡng cho trẻ em trong giai đoạn phát triển', slug: 'dinh-duong-cho-tre', tag: 'Nhi khoa', createdAt: '2026-05-08', icon: '👶' },
+];
+
 export default function HomePage() {
   const navigate = useNavigate();
   const [specialtyQuery, setSpecialtyQuery] = useState('');
@@ -21,39 +53,6 @@ export default function HomePage() {
 
   // Connection Error States
   const [isApiOffline, setIsApiOffline] = useState(false);
-
-  // Fallback Mock Data in case API is offline
-  const mockSpecialties = [
-    { id: 's1', name: 'Cơ Xương Khớp', slug: 'co-xuong-khop', description: 'Chẩn đoán và điều trị bệnh khớp, xương, cơ, cột sống.', icon: '🦴', doctorCount: 3 },
-    { id: 's2', name: 'Tim mạch', slug: 'tim-mach', description: 'Khám và điều trị các bệnh lý tim mạch, cao huyết áp.', icon: '❤️', doctorCount: 2 },
-    { id: 's3', name: 'Tai Mũi Họng', slug: 'tai-mui-hong', description: 'Điều trị viêm xoang, viêm tai giữa, viêm họng, amidan.', icon: '👂', doctorCount: 2 },
-    { id: 's4', name: 'Nhi khoa', slug: 'nhi-khoa', description: 'Chăm sóc sức khỏe toàn diện cho trẻ sơ sinh đến 15 tuổi.', icon: '👶', doctorCount: 3 },
-    { id: 's5', name: 'Da liễu', slug: 'da-lieu', description: 'Điều trị các bệnh về da, mụn, dị ứng, viêm da cơ địa.', icon: '🩺', doctorCount: 2 },
-    { id: 's6', name: 'Sản phụ khoa', slug: 'san-phu-khoa', description: 'Chăm sóc sức khỏe thai kỳ và các bệnh phụ khoa nữ.', icon: '🤱', doctorCount: 2 },
-    { id: 's7', name: 'Răng Hàm Mặt', slug: 'rang-ham-mat', description: 'Khám răng, niềng răng, nhổ răng khôn và thẩm mỹ nha khoa.', icon: '🦷', doctorCount: 2 },
-    { id: 's8', name: 'Mắt', slug: 'mat', description: 'Đo tật khúc xạ, khám và điều trị đục thủy tinh thể, cận thị.', icon: '👁️', doctorCount: 2 },
-  ];
-
-  const mockExpDoctors = [
-    { id: 'd1', title: 'TS.BS', name: 'Phạm Hoàng Nam', experience: 15, rating: 4.9, reviewCount: 120, price: 350000, specialtyName: 'Cơ Xương Khớp' },
-    { id: 'd2', title: 'BS.CKII', name: 'Trần Quốc Huy', experience: 14, rating: 4.8, reviewCount: 98, price: 300000, specialtyName: 'Tim mạch' },
-    { id: 'd3', title: 'ThS.BS', name: 'Vũ Đức Thành', experience: 12, rating: 4.7, reviewCount: 75, price: 280000, specialtyName: 'Tai Mũi Họng' },
-    { id: 'd4', title: 'BS.CKI', name: 'Nguyễn Thu Hương', experience: 9, rating: 4.6, reviewCount: 64, price: 280000, specialtyName: 'Da liễu' },
-  ];
-
-  const mockFavDoctors = [
-    { id: 'd1', title: 'TS.BS', name: 'Phạm Hoàng Nam', experience: 15, rating: 4.9, reviewCount: 120, price: 350000, specialtyName: 'Cơ Xương Khớp' },
-    { id: 'd5', title: 'ThS.BS', name: 'Nguyễn Minh Anh', experience: 8, rating: 4.8, reviewCount: 88, price: 300000, specialtyName: 'Tim mạch' },
-    { id: 'd2', title: 'BS.CKII', name: 'Trần Quốc Huy', experience: 14, rating: 4.8, reviewCount: 98, price: 300000, specialtyName: 'Tim mạch' },
-    { id: 'd6', title: 'BS', name: 'Lê Thảo Vy', experience: 7, rating: 4.7, reviewCount: 54, price: 250000, specialtyName: 'Nhi khoa' },
-  ];
-
-  const mockBlogs = [
-    { id: 'b1', title: 'Phòng ngừa bệnh tim mạch hiệu quả tại nhà', slug: 'phong-ngua-tim-mach', tag: 'Tim mạch', createdAt: '2026-05-21', icon: '❤️' },
-    { id: 'b2', title: 'Chế độ ăn uống tốt cho người bệnh tiêu hóa', slug: 'che-do-an-tieu-hoa', tag: 'Tiêu hóa', createdAt: '2026-05-16', icon: '🍏' },
-    { id: 'b3', title: 'Cách chăm sóc da đúng cách trong mùa hè', slug: 'cham-soc-da-mua-he', tag: 'Da liễu', createdAt: '2026-05-11', icon: '☀️' },
-    { id: 'b4', title: 'Dinh dưỡng cho trẻ em trong giai đoạn phát triển', slug: 'dinh-duong-cho-tre', tag: 'Nhi khoa', createdAt: '2026-05-08', icon: '👶' },
-  ];
 
   useEffect(() => {
     // 1. Fetch Specialties
