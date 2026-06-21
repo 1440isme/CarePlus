@@ -3,6 +3,7 @@ const prisma = require('../../infrastructure/database/prisma.client');
 const USER_SELECT = {
   id: true,
   name: true,
+  avatarUrl: true,
   email: true,
   phone: true,
   gender: true,
@@ -43,10 +44,37 @@ class UserRepository {
     });
   }
 
-  async createStaffUser(data) {
-    return prisma.user.create({
-      data,
-      select: USER_SELECT,
+  async createStaffUser(data, doctorData) {
+    if (!doctorData) {
+      return prisma.user.create({
+        data,
+        select: USER_SELECT,
+      });
+    }
+
+    return prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data,
+        select: USER_SELECT,
+      });
+
+      await tx.doctor.create({
+        data: {
+          ...doctorData,
+          userId: user.id,
+        },
+      });
+
+      await tx.specialty.update({
+        where: { id: doctorData.specialtyId },
+        data: {
+          doctorCount: {
+            increment: 1,
+          },
+        },
+      });
+
+      return user;
     });
   }
 
@@ -90,6 +118,14 @@ class UserRepository {
     return prisma.user.update({
       where: { id: userId },
       data,
+      select: USER_SELECT,
+    });
+  }
+
+  async updateUserAvatar(userId, avatarUrl) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
       select: USER_SELECT,
     });
   }

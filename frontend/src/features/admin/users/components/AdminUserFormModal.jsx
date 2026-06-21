@@ -81,6 +81,11 @@ function formatCurrencyWithDots(value) {
   return digitsOnly.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
 }
 
+function parseCurrencyNumber(value) {
+  const digitsOnly = String(value ?? '').replace(/\D/g, '');
+  return digitsOnly ? Number(digitsOnly) : 0;
+}
+
 function FormField({ label, error, required = false, children }) {
   return (
     <div className="admin-user-form-field">
@@ -198,13 +203,25 @@ export default function AdminUserFormModal({
         ? values.doctorName.trim()
         : values.name.trim();
 
-      createAdminStaffUserMutation.mutate({
+      const payload = {
         name: normalizedName,
         email: values.email.trim().toLowerCase(),
         phone: values.phone.trim(),
         password: values.temporaryPassword,
         role: values.role,
-      });
+        status: values.status,
+      };
+
+      if (values.role === 'DOCTOR') {
+        payload.doctorName = values.doctorName.trim();
+        payload.specialtyId = values.specialty;
+        payload.academicTitle = values.academicTitle;
+        payload.yearsOfExperience = Number(values.yearsOfExperience || 0);
+        payload.consultationFee = parseCurrencyNumber(values.consultationFee);
+        payload.avatarUrl = values.avatarUrl?.trim() || '';
+      }
+
+      createAdminStaffUserMutation.mutate(payload);
 
       return;
     }

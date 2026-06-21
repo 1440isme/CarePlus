@@ -1,6 +1,9 @@
 import { Link, useParams, useSearchParams } from 'react-router-dom';
+import { useMemo } from 'react';
 import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { buildVirtualSlots, mergePersistedSlots } from '../../features/timeslot/utils/virtual-slots.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './public-pages.css';
@@ -9,18 +12,67 @@ function getDefaultDate(searchParams) {
   return searchParams.get('date') || new Date().toISOString().slice(0, 10);
 }
 
+function buildDateOptions(count = 7) {
+  return Array.from({ length: count }).map((_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() + index);
+    const value = date.toISOString().slice(0, 10);
+
+    return {
+      value,
+      weekday: date.toLocaleDateString('vi-VN', { weekday: 'short' }),
+      day: date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' }),
+    };
+  });
+}
+
+function SlotButton({ slot }) {
+  const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
+
+  return (
+    <button
+      type="button"
+      className={`slot-button status-${slot.status}`}
+      disabled={isBooked}
+      aria-label={`${slot.startTime} đến ${slot.endTime}`}
+    >
+      <span>{slot.startTime}</span>
+      {isBooked ? <small>Đã đặt</small> : null}
+    </button>
+  );
+}
+
 export default function DoctorDetailPage() {
   const { id } = useParams();
   const [searchParams, setSearchParams] = useSearchParams();
   const selectedDate = getDefaultDate(searchParams);
   const { data: doctorResponse, isLoading, error } = useDoctorDetail(id);
   const doctor = doctorResponse?.data;
+  const { data: systemSettingsResponse } = usePublicSystemSettings();
   const { data: slotResponse, isLoading: isLoadingSlots } = useTimeSlots({ doctorId: id, date: selectedDate });
-  const slots = slotResponse?.data?.slots || [];
+  const slotData = slotResponse?.data;
+  const dateOptions = useMemo(() => buildDateOptions(systemSettingsResponse?.data?.maxBookingDaysAhead || 7), [systemSettingsResponse?.data?.maxBookingDaysAhead]);
+  const slotGroups = useMemo(() => {
+    if (!slotData?.scheduleId || slotData.scheduleStatus !== 'WORKING') {
+      return { morning: [], afternoon: [] };
+    }
+
+    return mergePersistedSlots(
+      buildVirtualSlots(systemSettingsResponse?.data),
+      slotData.slots || [],
+    );
+  }, [slotData, systemSettingsResponse?.data]);
+  const visibleSlotCount = slotGroups.morning.length + slotGroups.afternoon.length;
 
   const handleDateChange = (event) => {
     const next = new URLSearchParams(searchParams);
     next.set('date', event.target.value);
+    setSearchParams(next);
+  };
+
+  const handleDateSelect = (value) => {
+    const next = new URLSearchParams(searchParams);
+    next.set('date', value);
     setSearchParams(next);
   };
 
@@ -57,26 +109,50 @@ export default function DoctorDetailPage() {
           </section>
 
           <section className="detail-tab-grid">
-            <div className="surface-card">
-              <div className="page-header-block">
+            <div className="surface-card doctor-schedule-panel">
+              <div className="page-header-block schedule-heading">
                 <div>
                   <h2>Lịch khám</h2>
-                  <p>API timeslot trả về trạng thái chính xác để Dev 3 tiếp tục booking flow.</p>
+                  <p>Khung giờ được hiển thị theo cấu hình hệ thống, trạng thái đặt/nghỉ đọc từ dữ liệu thực.</p>
                 </div>
                 <input type="date" value={selectedDate} onChange={handleDateChange} />
+              </div>
+
+              <div className="date-pill-row" aria-label="Chọn ngày khám">
+                {dateOptions.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={option.value === selectedDate ? 'is-active' : ''}
+                    onClick={() => handleDateSelect(option.value)}
+                  >
+                    <span>{option.weekday}</span>
+                    <strong>{option.day}</strong>
+                  </button>
+                ))}
               </div>
 
               {isLoadingSlots ? <LoadingBlock label="Đang tải lịch khám..." /> : null}
 
               {!isLoadingSlots ? (
-                slots.length > 0 ? (
-                  <div className="slot-grid">
-                    {slots.map((slot) => (
-                      <div key={slot.timeSlotId} className={`slot-button status-${slot.status}`}>
-                        <div>{slot.startTime} - {slot.endTime}</div>
-                        <small>{slot.status}</small>
+                visibleSlotCount > 0 ? (
+                  <div className="doctor-slot-sections">
+                    <section>
+                      <h3>Buổi sáng</h3>
+                      <div className="slot-grid figma-slot-grid">
+                        {slotGroups.morning.map((slot) => (
+                          <SlotButton key={`${slot.startTime}-${slot.endTime}`} slot={slot} />
+                        ))}
                       </div>
-                    ))}
+                    </section>
+                    <section>
+                      <h3>Buổi chiều</h3>
+                      <div className="slot-grid figma-slot-grid">
+                        {slotGroups.afternoon.map((slot) => (
+                          <SlotButton key={`${slot.startTime}-${slot.endTime}`} slot={slot} />
+                        ))}
+                      </div>
+                    </section>
                   </div>
                 ) : (
                   <StateBlock title="Chưa có lịch làm việc" description="Bác sĩ chưa được mở lịch trong ngày bạn chọn." />

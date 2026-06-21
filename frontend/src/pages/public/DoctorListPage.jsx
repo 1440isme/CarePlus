@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useDoctorList } from '../../features/doctor/index.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { buildVirtualSlots, flattenSlotGroups } from '../../features/timeslot/utils/virtual-slots.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './public-pages.css';
@@ -21,7 +23,12 @@ export default function DoctorListPage() {
   }), [searchParams]);
 
   const { data, isLoading, error } = useDoctorList(query);
+  const { data: systemSettingsResponse } = usePublicSystemSettings();
   const doctors = data?.data || [];
+  const previewSlots = useMemo(
+    () => flattenSlotGroups(buildVirtualSlots(systemSettingsResponse?.data)).slice(0, 6),
+    [systemSettingsResponse?.data],
+  );
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -80,12 +87,17 @@ export default function DoctorListPage() {
 
               <div className="doctor-card-schedule">
                 <h4>Lịch khám nhanh</h4>
-                <p className="helper-text">Khung giờ theo API timeslot sẽ hiển thị chi tiết trong trang bác sĩ.</p>
-                <div className="slot-grid">
-                  <Link className="slot-button status-AVAILABLE" to={`/bac-si/${doctor.id}`}>08:00 - 08:30</Link>
-                  <span className="slot-button status-BOOKED">08:30 - 09:00</span>
-                  <span className="slot-button status-LOCKED">13:30 - 14:00</span>
-                  <Link className="slot-button status-AVAILABLE" to={`/bac-si/${doctor.id}`}>14:00 - 14:30</Link>
+                <p className="helper-text">Khung giờ gợi ý theo cấu hình phòng khám. Vào chi tiết để xem trạng thái còn trống.</p>
+                <div className="slot-grid figma-slot-grid is-preview">
+                  {previewSlots.map((slot) => (
+                    <Link
+                      key={`${doctor.id}-${slot.startTime}-${slot.endTime}`}
+                      className="slot-button status-AVAILABLE"
+                      to={`/bac-si/${doctor.id}?date=${getTodayDateString()}`}
+                    >
+                      <span>{slot.startTime}</span>
+                    </Link>
+                  ))}
                 </div>
               </div>
             </article>

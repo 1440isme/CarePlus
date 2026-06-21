@@ -6,9 +6,6 @@ const {
   SCHEDULE_PAGINATION,
   SCHEDULE_STATUSES,
   SCHEDULE_VIEWS,
-  SHIFT_TIME_WINDOWS,
-  SLOT_DURATION_MINUTES,
-  WORKING_SHIFTS,
 } = require('./schedule.types');
 const { USER_ROLES } = require('../../shared/constants/roles');
 
@@ -54,17 +51,6 @@ function getViewRange(view, value) {
   }
 
   return { startDate: baseDate, endDate: baseDate };
-}
-
-function timeToMinutes(value) {
-  const [hours, minutes] = value.split(':').map((item) => Number.parseInt(item, 10));
-  return (hours * 60) + minutes;
-}
-
-function minutesToTime(value) {
-  const hours = String(Math.floor(value / 60)).padStart(2, '0');
-  const minutes = String(value % 60).padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 class ScheduleService {
@@ -152,28 +138,6 @@ class ScheduleService {
     }
   }
 
-  generateTimeSlots(shifts = [WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON]) {
-    const selectedShifts = Array.from(new Set(shifts));
-    const slots = [];
-
-    for (const shift of selectedShifts) {
-      const window = SHIFT_TIME_WINDOWS[shift];
-      let cursor = timeToMinutes(window.start);
-      const endMinutes = timeToMinutes(window.end);
-
-      while ((cursor + SLOT_DURATION_MINUTES) <= endMinutes) {
-        slots.push({
-          startTime: minutesToTime(cursor),
-          endTime: minutesToTime(cursor + SLOT_DURATION_MINUTES),
-          status: 'AVAILABLE',
-        });
-        cursor += SLOT_DURATION_MINUTES;
-      }
-    }
-
-    return slots;
-  }
-
   async _createSingleSchedule(payload) {
     const doctor = await this._getDoctorOrThrow(payload.doctorId);
     const workingDate = parseDateOnly(payload.workingDate);
@@ -188,13 +152,11 @@ class ScheduleService {
       });
     }
 
-    const slots = this.generateTimeSlots(payload.shifts);
     const createdSchedule = await this.scheduleRepository.prisma.$transaction((dbClient) => (
-      this.scheduleRepository.createScheduleWithSlots({
+      this.scheduleRepository.createSchedule({
         doctorId: doctor.id,
         workingDate,
         status: SCHEDULE_STATUSES.WORKING,
-        slots,
       }, dbClient)
     ));
 
@@ -252,15 +214,13 @@ class ScheduleService {
       });
     }
 
-    const slots = this.generateTimeSlots(payload.shifts);
     const createdSchedules = await this.scheduleRepository.prisma.$transaction(async (dbClient) => {
       const records = [];
       for (const workingDate of targetDates) {
-        const createdSchedule = await this.scheduleRepository.createScheduleWithSlots({
+        const createdSchedule = await this.scheduleRepository.createSchedule({
           doctorId: doctor.id,
           workingDate,
           status: SCHEDULE_STATUSES.WORKING,
-          slots,
         }, dbClient);
         records.push(createdSchedule);
       }

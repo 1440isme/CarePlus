@@ -16,11 +16,10 @@ class UploadService {
         },
         (error, result) => {
           if (error) {
-            console.error('Cloudinary upload error:', error);
             const uploadError = new Error('Failed to upload image to Cloudinary');
             uploadError.statusCode = 500;
             uploadError.code = 'UPLOAD_FAILED';
-            uploadError.details = error.message;
+            uploadError.details = null;
             return reject(uploadError);
           }
           
@@ -46,11 +45,10 @@ class UploadService {
     return new Promise((resolve, reject) => {
       cloudinary.uploader.destroy(publicId, (error, result) => {
         if (error) {
-          console.error('Cloudinary destroy error:', error);
           const deleteError = new Error('Failed to delete image from Cloudinary');
           deleteError.statusCode = 500;
           deleteError.code = 'DELETE_FAILED';
-          deleteError.details = error.message;
+          deleteError.details = null;
           return reject(deleteError);
         }
         resolve(result);

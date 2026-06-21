@@ -55,6 +55,8 @@
   color: var(--text-h);
   font-weight: 700;
   text-align: center;
+  cursor: pointer;
+  text-decoration: none;
 }
 
 .slot-button.status-AVAILABLE {
@@ -66,6 +68,118 @@
 .slot-button.status-LOCKED,
 .slot-button.status-EXPIRED {
   opacity: 0.7;
+}
+
+.doctor-schedule-panel {
+  overflow: hidden;
+}
+
+.schedule-heading {
+  align-items: flex-start;
+  border-bottom: 1px solid #eef2f7;
+  margin: -24px -24px 0;
+  padding: 22px 24px 18px;
+}
+
+.date-pill-row {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 22px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.date-pill-row button {
+  min-width: 76px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  color: #667085;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.date-pill-row button span,
+.date-pill-row button strong {
+  display: block;
+}
+
+.date-pill-row button span {
+  margin-bottom: 5px;
+  font-size: 0.78rem;
+  text-transform: capitalize;
+}
+
+.date-pill-row button strong {
+  color: #101828;
+  font-size: 0.98rem;
+}
+
+.date-pill-row button.is-active {
+  border-color: #0092b8;
+  background: #0092b8;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0, 146, 184, 0.2);
+}
+
+.date-pill-row button.is-active strong {
+  color: #fff;
+}
+
+.doctor-slot-sections {
+  display: grid;
+  gap: 24px;
+}
+
+.doctor-slot-sections h3 {
+  margin: 0 0 12px;
+  color: #101828;
+  font-size: 1rem;
+}
+
+.figma-slot-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.figma-slot-grid .slot-button {
+  min-height: 46px;
+  border-radius: 12px;
+  border-color: #d7f0f5;
+  background: #f0fbfd;
+  color: #047c9b;
+  box-shadow: none;
+}
+
+.figma-slot-grid .slot-button:hover:not(:disabled) {
+  border-color: #0092b8;
+  background: #0092b8;
+  color: #fff;
+}
+
+.figma-slot-grid .slot-button span,
+.figma-slot-grid .slot-button small {
+  display: block;
+}
+
+.figma-slot-grid .slot-button small {
+  margin-top: 3px;
+  color: inherit;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.figma-slot-grid .slot-button.status-BOOKED,
+.figma-slot-grid .slot-button.status-EXPIRED {
+  border-color: #e5e7eb;
+  background: #f3f4f6;
+  color: #98a2b3;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.figma-slot-grid.is-preview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .split-hero {
@@ -100,5 +214,10 @@
   .doctor-card,
   .split-hero {
     grid-template-columns: 1fr;
+  }
+
+  .figma-slot-grid,
+  .figma-slot-grid.is-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
