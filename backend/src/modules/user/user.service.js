@@ -1,6 +1,7 @@
 const bcrypt = require('bcrypt');
 const UserRepository = require('./user.repository');
 const { toUserDto, toUserListDto } = require('./user.dto');
+const UploadService = require('../upload/upload.service');
 const {
   USER_ERROR_CODES,
   USER_PAGINATION,
@@ -115,6 +116,38 @@ class UserService {
       throw new UserServiceError({
         code: USER_ERROR_CODES.UPDATE_ME_FAILED,
         message: 'Không thể cập nhật thông tin cá nhân',
+        statusCode: 500,
+      });
+    }
+  }
+
+  async updateMyAvatar(currentUser, file) {
+    try {
+      await this._getUserOrThrow(currentUser.userId);
+
+      if (!file) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.AVATAR_FILE_REQUIRED,
+          message: 'Vui lòng chọn ảnh đại diện cần tải lên',
+          statusCode: 400,
+        });
+      }
+
+      const uploadResult = await this._uploadAvatarOrThrow(currentUser.userId, file);
+      const updatedUser = await this.userRepository.updateUserAvatar(currentUser.userId, uploadResult.url);
+
+      return {
+        message: 'Cập nhật ảnh đại diện thành công',
+        user: toUserDto(updatedUser),
+      };
+    } catch (error) {
+      if (error instanceof UserServiceError) {
+        throw error;
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.UPDATE_AVATAR_FAILED,
+        message: 'Không thể cập nhật ảnh đại diện',
         statusCode: 500,
       });
     }
@@ -430,6 +463,27 @@ class UserService {
     }
 
     return data;
+  }
+
+  async _uploadAvatarOrThrow(userId, file) {
+    try {
+      return await UploadService.uploadImage(file.buffer, `careplus/avatars/${userId}`);
+    } catch (error) {
+      if (error?.code === USER_ERROR_CODES.INVALID_FILE_TYPE || error?.code === USER_ERROR_CODES.FILE_TOO_LARGE) {
+        throw new UserServiceError({
+          code: error.code,
+          message: error.message,
+          statusCode: error.statusCode || 400,
+          details: error.details || [],
+        });
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.CLOUDINARY_UPLOAD_FAILED,
+        message: 'Không thể tải ảnh đại diện lên Cloudinary',
+        statusCode: 500,
+      });
+    }
   }
 
   _normalizeCreateStaffUserDto(dto) {

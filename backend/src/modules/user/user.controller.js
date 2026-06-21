@@ -25,6 +25,18 @@ class UserController {
     }
   }
 
+  async updateMyAvatar(req, res, next) {
+    try {
+      const data = await UserService.updateMyAvatar(req.user, req.file);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async changeMyPassword(req, res, next) {
     try {
       const data = await UserService.changeMyPassword(req.user, req.body);

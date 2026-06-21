@@ -71,6 +71,10 @@
   flex: 0 0 auto;
 }
 
+.patient-portal-profile-avatar-image {
+  object-fit: cover;
+}
+
 .patient-portal-profile-copy {
   min-width: 0;
 }
@@ -323,6 +327,104 @@
   line-height: 1;
   font-weight: 700;
   flex: 0 0 auto;
+}
+
+.patient-profile-avatar-upload {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.patient-profile-avatar-upload.is-compact {
+  gap: 10px;
+}
+
+.patient-profile-avatar-shell {
+  width: 70px;
+  height: 70px;
+}
+
+.patient-profile-avatar-shell .patient-profile-avatar {
+  width: 100%;
+  height: 100%;
+}
+
+.patient-profile-avatar-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  object-fit: cover;
+  display: block;
+  border: 2px solid #dff4fb;
+}
+
+.patient-profile-avatar-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 1px solid #d7e7ef;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #2b8db4;
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.patient-profile-avatar-button:hover {
+  background: #f2fbff;
+  border-color: #b9dfee;
+}
+
+.patient-profile-avatar-button svg {
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.patient-profile-avatar-button[aria-disabled="true"] {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.patient-profile-avatar-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.patient-profile-avatar-feedback {
+  margin: 0;
+  text-align: center;
+  font-size: 12px;
+  line-height: 16px;
+}
+
+.patient-profile-avatar-feedback {
+  max-width: 180px;
+  color: #dc2626;
+}
+
+.patient-profile-identity-copy.has-avatar-meta {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .patient-profile-identity-copy {

@@ -24,6 +24,7 @@ function toUserDto(user) {
   return {
     id: user.id,
     name: user.name,
+    avatarUrl: user.avatarUrl ?? null,
     email: user.email,
     phone: user.phone,
     gender: user.gender,
