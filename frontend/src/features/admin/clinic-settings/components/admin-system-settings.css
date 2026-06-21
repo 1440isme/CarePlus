@@ -1,0 +1,309 @@
+.admin-system-settings-page {
+  max-width: 100%;
+}
+
+.admin-system-settings-page-header {
+  margin-bottom: 22.5px;
+}
+
+.admin-system-settings-page-title {
+  margin: 0;
+  color: #101828;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 22.5px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.admin-system-settings-shell {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-system-settings-feedback {
+  padding: 12px 14px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.admin-system-settings-feedback.is-success {
+  background: #ecfdf3;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.admin-system-settings-feedback.is-error {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.admin-system-settings-feedback-text {
+  margin: 0;
+}
+
+.admin-system-settings-feedback-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  padding: 0;
+  background: transparent;
+  color: currentColor;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.admin-system-settings-feedback-close svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-system-settings-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-system-settings-card-section {
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 28px 30px 30px;
+}
+
+.admin-system-settings-card-title {
+  margin: 0 0 20px;
+  color: #101828;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 18px;
+  line-height: 26px;
+  font-weight: 700;
+}
+
+.admin-system-settings-card-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 22px;
+}
+
+.admin-system-settings-card-fields.is-time-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.admin-system-settings-field {
+  min-width: 0;
+}
+
+.admin-system-settings-label,
+.admin-system-settings-error,
+.admin-system-settings-submit-error {
+  font-family: Inter, Roboto, Arial, sans-serif;
+}
+
+.admin-system-settings-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  margin-bottom: 8px;
+  color: #344054;
+  font-size: 13px;
+  line-height: 19px;
+  font-weight: 500;
+}
+
+.admin-system-settings-required {
+  color: #ef4444;
+}
+
+.admin-system-settings-input {
+  width: 100%;
+  height: 44px;
+  border: 1.25px solid #dbe3ea;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #101828;
+  padding: 0 14px;
+  box-sizing: border-box;
+  outline: none;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.admin-system-settings-input:focus {
+  border-color: #86dffa;
+  box-shadow: 0 0 0 3px rgba(73, 188, 226, 0.14);
+}
+
+.admin-system-settings-error,
+.admin-system-settings-submit-error {
+  margin: 6px 0 0;
+  color: #dc2626;
+  font-size: 12px;
+  line-height: 17px;
+}
+
+.admin-system-settings-submit-error {
+  margin-top: 16px;
+}
+
+.admin-system-settings-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.admin-system-settings-button {
+  min-width: 170px;
+  height: 42px;
+  border-radius: 10px;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-system-settings-button.is-secondary {
+  border: 1px solid #dbe3ea;
+  background: #ffffff;
+  color: #475569;
+}
+
+.admin-system-settings-button.is-primary {
+  border: none;
+  background: #0092b8;
+  color: #ffffff;
+}
+
+.admin-system-settings-button.is-primary:disabled {
+  background: #8fd3e6;
+  color: #ffffff;
+  cursor: not-allowed;
+}
+
+.admin-system-settings-button.is-secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-system-settings-state-panel {
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 72px 28px;
+}
+
+.admin-system-settings-state-panel h3,
+.admin-system-settings-state-panel p {
+  margin: 0;
+  font-family: Inter, Roboto, Arial, sans-serif;
+}
+
+.admin-system-settings-state-panel h3 {
+  color: #101828;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.admin-system-settings-state-panel p {
+  margin-top: 8px;
+  color: #667085;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.admin-system-settings-state-button {
+  margin-top: 18px;
+  min-width: 132px;
+  height: 40px;
+  border: none;
+  border-radius: 10px;
+  background: #0092b8;
+  color: #ffffff;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.admin-system-settings-loading {
+  display: grid;
+  gap: 20px;
+}
+
+.admin-system-settings-loading-card {
+  border: 1px solid #f3f4f6;
+  border-radius: 16px;
+  background: #ffffff;
+  padding: 28px 30px 30px;
+}
+
+.admin-system-settings-skeleton {
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f2f4f7 25%, #fafafa 50%, #f2f4f7 75%);
+  background-size: 200% 100%;
+  animation: adminSystemSettingsShimmer 1.4s infinite linear;
+}
+
+.admin-system-settings-skeleton.is-title {
+  width: 240px;
+  height: 28px;
+  margin-bottom: 20px;
+}
+
+.admin-system-settings-skeleton.is-input {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 16px;
+}
+
+@keyframes adminSystemSettingsShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (max-width: 960px) {
+  .admin-system-settings-card-section {
+    padding: 24px;
+  }
+
+  .admin-system-settings-card-fields,
+  .admin-system-settings-card-fields.is-time-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-system-settings-actions {
+    flex-direction: column;
+  }
+
+  .admin-system-settings-button {
+    width: 100%;
+  }
+}

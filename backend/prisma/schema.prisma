@@ -387,6 +387,7 @@ model SystemSetting {
   slotDurationMinutes Int      @default(30)
   cancelBeforeHours   Int      @default(2)
   maxNoShowBeforeLock Int      @default(3)
+  maxActiveAppointmentsPerUser Int @default(5)
   morningShiftStart   String   @default("08:00")
   morningShiftEnd     String   @default("11:30")
   afternoonShiftStart String   @default("13:30")

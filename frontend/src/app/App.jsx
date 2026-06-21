@@ -28,6 +28,8 @@ import AdminDoctorManagementPage from '../pages/admin/AdminDoctorManagementPage.
 import AdminScheduleManagementPage from '../pages/admin/AdminScheduleManagementPage.jsx';
 import AdminSpecialtiesPage from '../pages/admin/AdminSpecialtiesPage.jsx';
 import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
+import AdminClinicInfoPage from '../pages/admin/AdminClinicInfoPage.jsx';
+import AdminSystemSettingsPage from '../pages/admin/AdminSystemSettingsPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
 import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
 
@@ -72,8 +74,8 @@ function App() {
           <Route path="nguoi-dung" element={<AdminUsersPage />} />
           <Route path="blog" element={<BlogManagement />} />
           <Route path="email-preview" element={<PlaceholderPage title="Email Preview" />} />
-          <Route path="phong-kham" element={<PlaceholderPage title="Thông tin phòng khám" />} />
-          <Route path="cai-dat" element={<PlaceholderPage title="Cài đặt hệ thống" />} />
+          <Route path="phong-kham" element={<AdminClinicInfoPage />} />
+          <Route path="cai-dat" element={<AdminSystemSettingsPage />} />
         </Route>
 
         <Route path="/" element={<PublicLayout />}>

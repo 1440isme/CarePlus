@@ -41,6 +41,7 @@ function toSystemSettingDto(systemSetting) {
     slotDurationMinutes: systemSetting.slotDurationMinutes,
     cancelBeforeHours: systemSetting.cancelBeforeHours,
     maxNoShowBeforeLock: systemSetting.maxNoShowBeforeLock,
+    maxActiveAppointmentsPerUser: systemSetting.maxActiveAppointmentsPerUser,
     morningShiftStart: systemSetting.morningShiftStart,
     morningShiftEnd: systemSetting.morningShiftEnd,
     afternoonShiftStart: systemSetting.afternoonShiftStart,

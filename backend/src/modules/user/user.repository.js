@@ -16,11 +16,23 @@ const USER_SELECT = {
   updatedAt: true,
 };
 
+const USER_SELECT_WITH_PASSWORD_HASH = {
+  ...USER_SELECT,
+  passwordHash: true,
+};
+
 class UserRepository {
   async findUserById(userId) {
     return prisma.user.findUnique({
       where: { id: userId },
       select: USER_SELECT,
+    });
+  }
+
+  async findUserByIdWithPasswordHash(userId) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      select: USER_SELECT_WITH_PASSWORD_HASH,
     });
   }
 
@@ -72,10 +84,12 @@ class UserRepository {
       search,
       role,
       status,
+      createdFrom,
+      createdTo,
     } = filters;
 
     return prisma.user.findMany({
-      where: this._buildWhereClause({ search, role, status }),
+      where: this._buildWhereClause({ search, role, status, createdFrom, createdTo }),
       select: USER_SELECT,
       orderBy: {
         createdAt: 'desc',
@@ -90,10 +104,12 @@ class UserRepository {
       search,
       role,
       status,
+      createdFrom,
+      createdTo,
     } = filters;
 
     return prisma.user.count({
-      where: this._buildWhereClause({ search, role, status }),
+      where: this._buildWhereClause({ search, role, status, createdFrom, createdTo }),
     });
   }
 
@@ -101,6 +117,14 @@ class UserRepository {
     return prisma.user.update({
       where: { id: userId },
       data,
+      select: USER_SELECT,
+    });
+  }
+
+  async updateUserPasswordHash(userId, passwordHash) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
       select: USER_SELECT,
     });
   }
@@ -152,6 +176,18 @@ class UserRepository {
 
     if (filters.status) {
       where.status = filters.status;
+    }
+
+    if (filters.createdFrom || filters.createdTo) {
+      where.createdAt = {};
+
+      if (filters.createdFrom) {
+        where.createdAt.gte = filters.createdFrom;
+      }
+
+      if (filters.createdTo) {
+        where.createdAt.lte = filters.createdTo;
+      }
     }
 
     return where;

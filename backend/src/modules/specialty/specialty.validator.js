@@ -72,6 +72,7 @@ const updateSpecialtySchema = z.object({
   (data) => Object.keys(data).length > 0,
   {
     message: 'At least one allowed field is required',
+    path: ['body'],
   },
 );
 

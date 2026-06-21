@@ -1,5 +1,6 @@
 export const USER_API_PATHS = {
   me: '/users/me',
+  changePassword: '/users/me/password',
 };
 
 export const USER_QUERY_KEYS = {
@@ -30,6 +31,18 @@ export const USER_QUERY_KEYS = {
  * @property {'MALE' | 'FEMALE' | 'OTHER'} [gender]
  * @property {string} [dateOfBirth]
  * @property {string} [address]
+ */
+
+/**
+ * @typedef {Object} ChangePasswordRequest
+ * @property {string} currentPassword
+ * @property {string} newPassword
+ * @property {string} confirmPassword
+ */
+
+/**
+ * @typedef {Object} ChangePasswordResponse
+ * @property {string} message
  */
 
 /**
