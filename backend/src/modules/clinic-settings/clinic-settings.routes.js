@@ -25,6 +25,11 @@ router.patch(
 );
 
 router.get(
+  CLINIC_SETTINGS_ROUTE_PATHS.PUBLIC_SYSTEM,
+  ClinicSettingsController.getPublicSystemSetting,
+);
+
+router.get(
   CLINIC_SETTINGS_ROUTE_PATHS.SYSTEM,
   authenticate,
   authorize(USER_ROLES.ADMIN),

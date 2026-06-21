@@ -34,17 +34,14 @@ class ScheduleRepository extends BaseRepository {
     });
   }
 
-  async createScheduleWithSlots(payload, dbClient = this.prisma) {
-    const { doctorId, workingDate, status, slots } = payload;
+  async createSchedule(payload, dbClient = this.prisma) {
+    const { doctorId, workingDate, status } = payload;
 
     return dbClient.schedule.create({
       data: {
         doctorId,
         workingDate,
         status,
-        timeSlots: {
-          create: slots,
-        },
       },
       include: SCHEDULE_INCLUDE,
     });

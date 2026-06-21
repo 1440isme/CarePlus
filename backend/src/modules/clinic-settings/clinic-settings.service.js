@@ -92,6 +92,23 @@ class ClinicSettingsService {
     }
   }
 
+  async getPublicSystemSetting() {
+    try {
+      const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
+      return toSystemSettingDto(systemSetting ?? this._buildDefaultSystemSetting());
+    } catch (error) {
+      if (error instanceof ClinicSettingsServiceError) {
+        throw error;
+      }
+
+      throw new ClinicSettingsServiceError({
+        code: CLINIC_SETTINGS_ERROR_CODES.GET_SYSTEM_SETTING_FAILED,
+        message: 'Không thể lấy cấu hình hệ thống',
+        statusCode: 500,
+      });
+    }
+  }
+
   async updateSystemSetting(adminUser, dto) {
     try {
       void adminUser;

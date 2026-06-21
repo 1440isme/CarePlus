@@ -1,6 +1,7 @@
 const CLINIC_SETTINGS_ROUTE_PATHS = {
   CLINIC_INFO: '/clinic-info',
   SYSTEM: '/system',
+  PUBLIC_SYSTEM: '/system/public',
 };
 
 const CLINIC_SETTINGS_ERROR_CODES = {

@@ -100,6 +100,15 @@ export async function getSystemSettings() {
   };
 }
 
+export async function getPublicSystemSettings() {
+  const response = await axiosInstance.get(SYSTEM_SETTINGS_API_PATHS.publicRoot);
+
+  return {
+    ...response.data,
+    data: normalizeSystemSettingsResponse(response.data?.data),
+  };
+}
+
 export async function updateSystemSettings(payload) {
   const response = await axiosInstance.patch(
     SYSTEM_SETTINGS_API_PATHS.root,

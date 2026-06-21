@@ -4,7 +4,6 @@ const {
   SCHEDULE_PAGINATION,
   SCHEDULE_STATUSES,
   SCHEDULE_VIEWS,
-  WORKING_SHIFTS,
   VALID_WEEKDAYS,
 } = require('./schedule.types');
 
@@ -26,7 +25,6 @@ function buildIssueDetails(error) {
   }));
 }
 
-const shiftEnumValues = Object.values(WORKING_SHIFTS);
 const scheduleViewValues = Object.values(SCHEDULE_VIEWS);
 
 const idParamSchema = z.object({
@@ -36,7 +34,6 @@ const idParamSchema = z.object({
 const singleScheduleSchema = z.object({
   doctorId: z.string().trim().min(1),
   workingDate: z.string().date(),
-  shifts: z.array(z.enum(shiftEnumValues)).min(1).optional(),
 }).strict();
 
 const batchScheduleSchema = z.object({
@@ -44,7 +41,6 @@ const batchScheduleSchema = z.object({
   fromDate: z.string().date(),
   toDate: z.string().date(),
   weekdays: z.array(z.number().int().min(0).max(6)).min(1),
-  shifts: z.array(z.enum(shiftEnumValues)).min(1),
 }).strict();
 
 const createScheduleSchema = z.union([singleScheduleSchema, batchScheduleSchema]);
