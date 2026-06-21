@@ -24,6 +24,12 @@ export default function AdminUsersFilters({
   onRoleChange,
   statusValue,
   onStatusChange,
+  createdFromValue,
+  onCreatedFromChange,
+  createdToValue,
+  onCreatedToChange,
+  onResetFilters,
+  canResetFilters,
   roleOptions,
   statusOptions,
 }) {
@@ -75,6 +81,37 @@ export default function AdminUsersFilters({
           <ChevronDownIcon />
         </span>
       </div>
+
+      <div className="admin-users-filter-control admin-users-filter-control-date">
+        <input
+          className="admin-users-date-input"
+          type="date"
+          value={createdFromValue}
+          max={createdToValue || undefined}
+          onChange={(event) => onCreatedFromChange(event.target.value)}
+          aria-label="Ngày tạo từ"
+        />
+      </div>
+
+      <div className="admin-users-filter-control admin-users-filter-control-date">
+        <input
+          className="admin-users-date-input"
+          type="date"
+          value={createdToValue}
+          min={createdFromValue || undefined}
+          onChange={(event) => onCreatedToChange(event.target.value)}
+          aria-label="Ngày tạo đến"
+        />
+      </div>
+
+      <button
+        className="admin-users-filter-reset"
+        type="button"
+        onClick={onResetFilters}
+        disabled={!canResetFilters}
+      >
+        Đặt lại
+      </button>
     </div>
   );
 }

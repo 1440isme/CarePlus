@@ -25,3 +25,18 @@ export const updateMeSchema = z.object({
     .min(1, 'Địa chỉ không được để trống')
     .max(255, 'Địa chỉ tối đa 255 ký tự'),
 });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z
+    .string()
+    .min(1, 'Mật khẩu hiện tại không được để trống'),
+  newPassword: z
+    .string()
+    .min(6, 'Mật khẩu mới phải có ít nhất 6 ký tự'),
+  confirmPassword: z
+    .string()
+    .min(1, 'Xác nhận mật khẩu không được để trống'),
+}).refine((data) => data.newPassword === data.confirmPassword, {
+  path: ['confirmPassword'],
+  message: 'Xác nhận mật khẩu phải khớp với mật khẩu mới',
+});

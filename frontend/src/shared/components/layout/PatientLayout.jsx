@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
 import '../../../pages/patient/patient-portal.css';
@@ -9,13 +9,6 @@ const navigationItems = [
   { to: '/benh-nhan/nguoi-than', label: 'Hồ sơ người thân', icon: UsersIcon },
   { to: '/benh-nhan/thong-tin-ca-nhan', label: 'Thông tin cá nhân', icon: ProfileIcon },
 ];
-
-const pageTitles = {
-  '/benh-nhan': 'Bệnh nhân - Tổng quan',
-  '/benh-nhan/lich-hen': 'Bệnh nhân - Lịch hẹn của tôi',
-  '/benh-nhan/nguoi-than': 'Bệnh nhân - Hồ sơ người thân',
-  '/benh-nhan/thong-tin-ca-nhan': 'Bệnh nhân - Thông tin cá nhân',
-};
 
 function DashboardIcon() {
   return (
@@ -52,8 +45,8 @@ function ProfileIcon() {
 function BellIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 2.75a3 3 0 0 0-3 3v1.1c0 .58-.16 1.14-.46 1.63L5.4 10.3A2 2 0 0 0 7.1 13.25h5.8a2 2 0 0 0 1.7-2.95l-1.15-1.82A3.13 3.13 0 0 1 13 6.85v-1.1a3 3 0 0 0-3-3Zm0 14.5a2.13 2.13 0 0 1-2-1.5h4a2.13 2.13 0 0 1-2 1.5Z" />
-      <circle cx="15.75" cy="4.25" r="1.75" />
+      <path d="M10 3.25a3.25 3.25 0 0 0-3.25 3.25v1.32c0 .72-.2 1.42-.56 2.03l-.9 1.47a1.5 1.5 0 0 0 1.28 2.28h7.86a1.5 1.5 0 0 0 1.28-2.28l-.9-1.47A3.95 3.95 0 0 1 13.25 7.82V6.5A3.25 3.25 0 0 0 10 3.25Z" />
+      <path d="M8.25 15.5a1.75 1.75 0 0 0 3.5 0" />
     </svg>
   );
 }
@@ -75,15 +68,14 @@ function LogoutIcon() {
 }
 
 export default function PatientLayout() {
-  const location = useLocation();
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
+  const hasNotifications = false;
   const logoutMutation = useLogout({
     onSuccess: () => {
       navigate('/dang-nhap', { replace: true });
     },
   });
-  const pageTitle = pageTitles[location.pathname] ?? 'Bệnh nhân';
 
   const handleLogout = () => {
     if (!logoutMutation.isPending) {
@@ -142,11 +134,12 @@ export default function PatientLayout() {
 
       <div className="patient-portal-shell">
         <header className="patient-portal-header">
-          <h1 className="patient-portal-heading">{pageTitle}</h1>
+          <div className="patient-portal-header-spacer" aria-hidden="true" />
 
           <div className="patient-portal-header-actions">
             <button className="patient-portal-icon-button" type="button" aria-label="Thông báo">
               <BellIcon />
+              {hasNotifications ? <span className="patient-portal-notification-dot" aria-hidden="true" /> : null}
             </button>
             <button
               className="patient-portal-logout-link"
