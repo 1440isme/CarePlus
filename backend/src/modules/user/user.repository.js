@@ -3,6 +3,7 @@ const prisma = require('../../infrastructure/database/prisma.client');
 const USER_SELECT = {
   id: true,
   name: true,
+  avatarUrl: true,
   email: true,
   phone: true,
   gender: true,
@@ -90,6 +91,14 @@ class UserRepository {
     return prisma.user.update({
       where: { id: userId },
       data,
+      select: USER_SELECT,
+    });
+  }
+
+  async updateUserAvatar(userId, avatarUrl) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: { avatarUrl },
       select: USER_SELECT,
     });
   }

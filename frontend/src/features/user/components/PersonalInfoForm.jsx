@@ -1,24 +1,9 @@
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import ProfileAvatarUpload from './ProfileAvatarUpload.jsx';
 import { updateMeSchema } from '../schemas/user.schema.js';
 import { useUpdateMe } from '../hooks/useUpdateMe.js';
-
-function getInitials(name) {
-  if (!name) {
-    return 'BN';
-  }
-
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? '')
-    .join('') || 'BN';
-}
 
 function LockIcon() {
   return (
@@ -140,8 +125,12 @@ export default function PersonalInfoForm({
   return (
     <form className="patient-profile-card patient-profile-edit-card" onSubmit={handleSubmit(submitHandler)} noValidate>
       <div className="patient-profile-identity-card">
-        <div className="patient-profile-avatar">{getInitials(draftValues?.name ?? user?.name)}</div>
-        <div className="patient-profile-identity-copy">
+        <ProfileAvatarUpload
+          name={draftValues?.name ?? user?.name}
+          avatarUrl={user?.avatarUrl}
+          compact
+        />
+        <div className="patient-profile-identity-copy has-avatar-meta">
           <h3 className="patient-profile-name">{draftValues?.name ?? user?.name ?? 'Bệnh nhân'}</h3>
           <p className="patient-profile-role-chip">Bệnh nhân</p>
         </div>

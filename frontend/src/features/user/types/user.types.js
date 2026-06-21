@@ -1,5 +1,6 @@
 export const USER_API_PATHS = {
   me: '/users/me',
+  avatar: '/users/me/avatar',
   changePassword: '/users/me/password',
 };
 
@@ -11,6 +12,7 @@ export const USER_QUERY_KEYS = {
  * @typedef {Object} CurrentUser
  * @property {string} id
  * @property {string} name
+ * @property {string | null | undefined} [avatarUrl]
  * @property {string} email
  * @property {string | null | undefined} [phone]
  * @property {'PATIENT' | 'DOCTOR' | 'RECEPTIONIST' | 'ADMIN'} role
@@ -43,6 +45,12 @@ export const USER_QUERY_KEYS = {
 /**
  * @typedef {Object} ChangePasswordResponse
  * @property {string} message
+ */
+
+/**
+ * @typedef {Object} UpdateMyAvatarResponse
+ * @property {string} message
+ * @property {CurrentUser} user
  */
 
 /**

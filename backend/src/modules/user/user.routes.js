@@ -13,12 +13,14 @@ const {
 const { USER_ROUTE_PATHS } = require('./user.types');
 const { authenticate } = require('../../middleware/auth.middleware');
 const { authorize } = require('../../middleware/rbac.middleware');
+const { uploadAvatar } = require('../../middleware/multer.middleware');
 const { USER_ROLES } = require('../../shared/constants/roles');
 
 const router = express.Router();
 
 router.get(USER_ROUTE_PATHS.ME, authenticate, UserController.getMe);
 router.patch(USER_ROUTE_PATHS.ME, authenticate, validateUpdateMe, UserController.updateMe);
+router.patch(USER_ROUTE_PATHS.ME_AVATAR, authenticate, uploadAvatar, UserController.updateMyAvatar);
 router.patch(
   USER_ROUTE_PATHS.ME_PASSWORD,
   authenticate,

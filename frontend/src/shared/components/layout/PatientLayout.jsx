@@ -67,6 +67,22 @@ function LogoutIcon() {
   );
 }
 
+function getInitials(name) {
+  if (!name) {
+    return 'BN';
+  }
+
+  const words = name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('') || 'BN';
+}
+
 export default function PatientLayout() {
   const navigate = useNavigate();
   const authUser = useSelector((state) => state.auth.user);
@@ -92,9 +108,17 @@ export default function PatientLayout() {
         </div>
 
         <div className="patient-portal-profile-tile">
-          <span className="patient-portal-profile-avatar">
-            {(authUser?.name ?? 'B').trim().charAt(0).toUpperCase()}
-          </span>
+          {authUser?.avatarUrl ? (
+            <img
+              className="patient-portal-profile-avatar patient-portal-profile-avatar-image"
+              src={authUser.avatarUrl}
+              alt={`Ảnh đại diện của ${authUser?.name ?? 'bệnh nhân'}`}
+            />
+          ) : (
+            <span className="patient-portal-profile-avatar">
+              {getInitials(authUser?.name)}
+            </span>
+          )}
           <div className="patient-portal-profile-copy">
             <p className="patient-portal-profile-name">{authUser?.name ?? 'Bệnh nhân'}</p>
             <p className="patient-portal-profile-role">Bệnh nhân</p>

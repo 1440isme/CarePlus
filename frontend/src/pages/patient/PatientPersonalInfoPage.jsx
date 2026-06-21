@@ -4,26 +4,11 @@ import { useSelector } from 'react-redux';
 import {
   ChangePasswordModal,
   PersonalInfoForm,
+  ProfileAvatarUpload,
   SecurityCard,
   useMe,
 } from '../../features/user/index.js';
 import './patient-portal.css';
-
-function getInitials(name) {
-  if (!name) {
-    return 'BN';
-  }
-
-  const words = name
-    .trim()
-    .split(/\s+/)
-    .filter(Boolean);
-
-  return words
-    .slice(0, 2)
-    .map((word) => word[0]?.toUpperCase() ?? '')
-    .join('') || 'BN';
-}
 
 function formatDisplayValue(value) {
   if (value === null || value === undefined || value === '') {
@@ -116,8 +101,8 @@ function PatientProfileView({ profile, onEdit }) {
 
       <article className="patient-profile-card patient-profile-view-card">
         <div className="patient-profile-identity-card">
-          <div className="patient-profile-avatar">{getInitials(profile.name)}</div>
-          <div className="patient-profile-identity-copy">
+          <ProfileAvatarUpload name={profile.name} avatarUrl={profile.avatarUrl} compact />
+          <div className="patient-profile-identity-copy has-avatar-meta">
             <h3 className="patient-profile-name">{profile.name}</h3>
             <p className="patient-profile-role-chip">Bệnh nhân</p>
           </div>
