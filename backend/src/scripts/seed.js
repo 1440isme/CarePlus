@@ -15,10 +15,10 @@ function getEndTime(startTime) {
 
 async function seed() {
   console.log('Seeding database with the user provided dataset...');
-  
+
   try {
     await prisma.$connect();
-    
+
     // 1. Clear database tables in correct order
     console.log('Clearing existing data...');
     await prisma.review.deleteMany({});
@@ -39,7 +39,7 @@ async function seed() {
 
     // Hash password
     const passwordHash = await bcrypt.hash('123456', 10);
-    
+
     // 2. Create Specialties from user dataset
     console.log('Creating specialties...');
     const specialtiesData = [
@@ -52,7 +52,7 @@ async function seed() {
       { id: "s7", name: "Sản Phụ khoa", slug: "san-phu-khoa", description: "Chăm sóc sức khỏe phụ nữ, thai sản, phụ khoa toàn diện.", icon: "HeartPulse", doctorCount: 2, active: true },
       { id: "s8", name: "Nội tổng quát", slug: "noi-tong-quat", description: "Khám tổng quát, tầm soát bệnh, điều trị các bệnh nội khoa.", icon: "Stethoscope", doctorCount: 4, active: true }
     ];
-    
+
     for (const spec of specialtiesData) {
       await prisma.specialty.create({
         data: spec
@@ -70,7 +70,7 @@ async function seed() {
       { id: "u5", name: "Lê Thị Lệ Ngân", email: "letan@careplus.vn", phone: "0965432109", role: "RECEPTIONIST", status: "ACTIVE", gender: "FEMALE", dateOfBirth: new Date("1995-09-01"), noShowCount: 0, emailVerified: true },
       { id: "u6", name: "Admin CarePlus", email: "admin@careplus.vn", phone: "0954321098", role: "ADMIN", status: "ACTIVE", gender: "MALE", dateOfBirth: new Date("1985-01-01"), noShowCount: 0, emailVerified: true },
       { id: "u7", name: "Hoàng Văn F", email: "hoangvanf@email.com", phone: "0945678901", role: "PATIENT", status: "LOCKED", gender: "MALE", dateOfBirth: new Date("1988-12-05"), noShowCount: 3, emailVerified: true },
-      
+
       // Extra doctor users
       { id: 'u_d3', name: 'Lê Thảo Vy', email: 'bsthaovy@careplus.vn', phone: '0933333333', role: 'DOCTOR', status: 'ACTIVE', gender: 'FEMALE', dateOfBirth: new Date('1989-06-25'), noShowCount: 0, emailVerified: true },
       { id: 'u_d4', name: 'Phạm Hoàng Nam', email: 'bshoangnam@careplus.vn', phone: '0944444444', role: 'DOCTOR', status: 'ACTIVE', gender: 'MALE', dateOfBirth: new Date('1975-10-18'), noShowCount: 0, emailVerified: true },
@@ -198,7 +198,7 @@ async function seed() {
     console.log('Generating working schedules and time slots...');
     const start = new Date('2026-06-01');
     const end = new Date('2026-06-28');
-    
+
     const unavailableMap = {
       "d1-2026-06-10": ["09:30", "10:00"],
       "d1-2026-06-11": ["08:00", "13:30"],
@@ -295,7 +295,7 @@ async function seed() {
 
         if (matchesRule || hasAppointment) {
           const scheduleId = `sched_${docId}_${dateStr}`;
-          
+
           schedulesToCreate.push({
             id: scheduleId,
             doctorId: docId,
@@ -316,7 +316,7 @@ async function seed() {
               const endTime = idx === morningHours.length - 1 ? '11:30' : morningHours[idx + 1];
               const slotId = `slot_${docId}_${dateStr}_${time}`;
               const isUnavailable = unavailableMap[`${docId}-${dateStr}`]?.includes(time);
-              
+
               slotsToCreate.push({
                 id: slotId,
                 scheduleId,
@@ -365,7 +365,7 @@ async function seed() {
       const slotId = `slot_${appt.doctorId}_${appt.dateStr}_${appt.time}`;
       const scheduleId = `sched_${appt.doctorId}_${appt.dateStr}`;
       const endTime = getEndTime(appt.time);
-      
+
       const createdBy = appt.bookingChannel === 'ONLINE' ? appt.patientId : 'u5'; // u5 is receptionist
       const bookingSource = appt.bookingChannel === 'ONLINE' ? 'PATIENT_WEB' : 'RECEPTIONIST';
 

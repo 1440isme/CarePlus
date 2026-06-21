@@ -86,6 +86,7 @@ class UserService {
       const user = await this._getUserOrThrow(currentUser.userId);
       return toUserDto(user);
     } catch (error) {
+      console.error('Error in UserService.getMe:', error);
       if (error instanceof UserServiceError) {
         throw error;
       }

@@ -1,20 +1,47 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { z } from 'zod';
 import { useMe } from '../../features/user/hooks/useMe.js';
 import { useUpdateMe } from '../../features/user/hooks/useUpdateMe.js';
-import { updateMeSchema } from '../../features/user/schemas/user.schema.js';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './receptionist.css';
 
+const localUpdateSchema = z.object({
+  name: z.string().trim().min(1, 'Họ tên không được để trống').max(100, 'Họ tên tối đa 100 ký tự'),
+  phone: z.string().trim().regex(/^(0|\+84)(3|5|7|8|9)\d{8}$/, 'Số điện thoại không hợp lệ'),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER'], { message: 'Giới tính không hợp lệ' }),
+  dateOfBirth: z.string().trim().min(1, 'Ngày sinh không được để trống'),
+  address: z.string().trim().min(1, 'Địa chỉ không được để trống').max(255, 'Địa chỉ tối đa 255 ký tự'),
+});
+
 function formatDateForDisplay(dateStr) {
   if (!dateStr) return '';
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '';
   const day = String(date.getDate()).padStart(2, '0');
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const year = date.getFullYear();
   return `${day}/${month}/${year}`;
+}
+
+function convertDmYToYmd(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('/');
+  if (parts.length === 3) {
+    return `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+  }
+  return dateStr;
+}
+
+function convertYmdToDmY(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length === 3) {
+    return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+  }
+  return dateStr;
 }
 
 function getInitials(name) {
@@ -50,7 +77,7 @@ export default function ReceptionistProfilePage() {
     reset,
     formState: { errors, isDirty }
   } = useForm({
-    resolver: zodResolver(updateMeSchema),
+    resolver: zodResolver(localUpdateSchema),
     defaultValues: {
       name: '',
       phone: '',
@@ -66,7 +93,7 @@ export default function ReceptionistProfilePage() {
         name: user.name || '',
         phone: user.phone || '',
         gender: user.gender || '',
-        dateOfBirth: formatDateForDisplay(user.dateOfBirth),
+        dateOfBirth: convertDmYToYmd(user.dateOfBirth),
         address: user.address || ''
       });
     }
@@ -119,17 +146,18 @@ export default function ReceptionistProfilePage() {
       name: user.name || '',
       phone: user.phone || '',
       gender: user.gender || '',
-      dateOfBirth: formatDateForDisplay(user.dateOfBirth),
+      dateOfBirth: convertDmYToYmd(user.dateOfBirth),
       address: user.address || ''
     });
   };
 
   const onSubmit = (values) => {
+    const formattedDob = convertYmdToDmY(values.dateOfBirth);
     const payload = {};
     if (values.name !== user.name) payload.name = values.name.trim();
     if (values.phone !== user.phone) payload.phone = values.phone.trim();
     if (values.gender !== user.gender) payload.gender = values.gender;
-    if (values.dateOfBirth !== formatDateForDisplay(user.dateOfBirth)) payload.dateOfBirth = values.dateOfBirth.trim();
+    if (formattedDob !== user.dateOfBirth) payload.dateOfBirth = formattedDob;
     if (values.address !== user.address) payload.address = values.address.trim();
 
     if (Object.keys(payload).length === 0) {
@@ -258,9 +286,8 @@ export default function ReceptionistProfilePage() {
               {isEditMode ? (
                 <div className="profile-edit-field">
                   <input
-                    type="text"
+                    type="date"
                     className="profile-edit-input"
-                    placeholder="DD/MM/YYYY"
                     {...register('dateOfBirth')}
                   />
                   {errors.dateOfBirth && <span className="profile-edit-error-msg">{errors.dateOfBirth.message}</span>}

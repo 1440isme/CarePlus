@@ -1,24 +1,63 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
-import { useDoctorSchedules } from '../../features/schedule/hooks/useSchedules.js';
+import { useSchedules } from '../../features/schedule/hooks/useSchedules.js';
+import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './receptionist.css';
 
 export default function ReceptionistDoctorSchedulePage() {
   const [baseDate, setBaseDate] = useState(new Date());
+  const [selectedSpecialtyId, setSelectedSpecialtyId] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
+  const [doctorSearchText, setDoctorSearchText] = useState('');
+  const [showSuggestions, setShowSuggestions] = useState(false);
 
-  // 1. Fetch Doctors list for selector
+  // 0. Fetch Specialties list for selector
+  const specialtiesQuery = useSpecialties();
+  const specialtiesList = specialtiesQuery.data?.data || [];
+
+  // 1. Fetch All Doctors list for selector and search autocomplete
   const doctorsQuery = useDoctorList({ limit: 100 });
-  const doctorsList = doctorsQuery.data?.data || [];
+  const allDoctors = doctorsQuery.data?.data || [];
 
-  // Automatically select the first doctor in the list as default
+  // Filter doctors for the dropdown based on selected specialty
+  const visibleDoctorsList = useMemo(() => {
+    if (!selectedSpecialtyId) return allDoctors;
+    return allDoctors.filter(d => d.specialtyId === selectedSpecialtyId);
+  }, [allDoctors, selectedSpecialtyId]);
+
+  // Reset selectedDoctorId if it is not in the filtered doctors list anymore
   useEffect(() => {
-    if (doctorsList.length > 0 && !selectedDoctorId) {
-      setSelectedDoctorId(doctorsList[0].id);
+    if (selectedDoctorId) {
+      const exists = visibleDoctorsList.some(d => d.id === selectedDoctorId);
+      if (!exists) {
+        setSelectedDoctorId('');
+      }
     }
-  }, [doctorsList, selectedDoctorId]);
+  }, [visibleDoctorsList, selectedDoctorId]);
+
+  const handleSpecialtyChange = (e) => {
+    setSelectedSpecialtyId(e.target.value);
+    setSelectedDoctorId('');
+  };
+
+  // Autocomplete suggestion list matching name or specialty
+  const suggestionsList = useMemo(() => {
+    if (!doctorSearchText.trim()) return [];
+    const searchLower = doctorSearchText.toLowerCase();
+    return allDoctors.filter(d => 
+      d.name.toLowerCase().includes(searchLower) ||
+      (d.specialtyName && d.specialtyName.toLowerCase().includes(searchLower))
+    );
+  }, [allDoctors, doctorSearchText]);
+
+  const handleSelectSuggestion = (d) => {
+    setSelectedSpecialtyId(d.specialtyId || '');
+    setSelectedDoctorId(d.id);
+    setDoctorSearchText('');
+    setShowSuggestions(false);
+  };
 
   // Calculate Monday and Sunday for the baseDate week
   const { weekdaysDates, startDateStr, endDateStr, weekLabel } = useMemo(() => {
@@ -58,11 +97,13 @@ export default function ReceptionistDoctorSchedulePage() {
     };
   }, [baseDate]);
 
-  // 2. Fetch Schedules for selected doctor and week dates
-  const schedulesQuery = useDoctorSchedules(selectedDoctorId, {
+  // 2. Fetch Schedules
+  const schedulesQuery = useSchedules({
     startDate: startDateStr,
     endDate: endDateStr,
-    limit: 100
+    doctorId: selectedDoctorId || undefined,
+    specialtyId: selectedSpecialtyId || undefined,
+    limit: 500
   });
 
   const schedulesList = schedulesQuery.data?.data || [];
@@ -87,9 +128,9 @@ export default function ReceptionistDoctorSchedulePage() {
     setBaseDate(new Date());
   };
 
-  // Find schedule record for a specific date YYYY-MM-DD
-  const getDaySchedule = (dateStr) => {
-    return schedulesList.find((s) => {
+  // Find schedule records for a specific date YYYY-MM-DD
+  const getDaySchedules = (dateStr) => {
+    return schedulesList.filter((s) => {
       // Handle date format in DB: might be ISO string or YYYY-MM-DD
       const workingDateStr = s.workingDate ? s.workingDate.slice(0, 10) : '';
       return workingDateStr === dateStr;
@@ -97,96 +138,91 @@ export default function ReceptionistDoctorSchedulePage() {
   };
 
   const renderShiftCell = (dayInfo, shiftType) => {
-    const daySchedule = getDaySchedule(dayInfo.dateStr);
+    const daySchedules = getDaySchedules(dayInfo.dateStr);
     
-    if (!daySchedule) {
-      return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
-          <div className="grid-empty-shift">Nghỉ</div>
-        </div>
-      );
-    }
-
-    // Convert shifts field which could be array or JSON
-    let shiftsArray = [];
-    if (Array.isArray(daySchedule.shifts)) {
-      shiftsArray = daySchedule.shifts;
-    } else if (typeof daySchedule.shifts === 'string') {
-      try {
-        shiftsArray = JSON.parse(daySchedule.shifts);
-      } catch (e) {
-        shiftsArray = [];
+    // Filter down to schedules that have the specified shiftType
+    const activeSchedulesForShift = daySchedules.filter((s) => {
+      let shiftsArray = [];
+      if (Array.isArray(s.shifts)) {
+        shiftsArray = s.shifts;
+      } else if (typeof s.shifts === 'string') {
+        try {
+          shiftsArray = JSON.parse(s.shifts);
+        } catch (e) {
+          shiftsArray = [];
+        }
       }
-    }
+      return shiftsArray.includes(shiftType);
+    });
 
-    const hasShift = shiftsArray.includes(shiftType);
-    if (!hasShift) {
+    if (activeSchedulesForShift.length === 0) {
       return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
+        <div className="grid-cell" key={dayInfo.dateStr} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="grid-empty-shift">Nghỉ</div>
         </div>
       );
     }
 
     const timeText = shiftType === 'MORNING' ? '08:00 - 11:30' : '13:30 - 17:00';
-    const status = daySchedule.status;
-
-    // Display Card depending on Status
-    if (status === 'WORKING') {
-      return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
-          <div className="grid-shift-card shift-working">
-            <span className="shift-card-time">{timeText}</span>
-            <span className="shift-card-desc">Làm việc tại quầy</span>
-          </div>
-        </div>
-      );
-    } else if (status === 'PENDING') {
-      return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
-          <div className="grid-shift-card shift-pending-leave">
-            <span className="shift-card-time">{timeText}</span>
-            <span className="shift-card-desc">Yêu cầu nghỉ chờ duyệt</span>
-          </div>
-        </div>
-      );
-    } else if (status === 'APPROVED_OFF') {
-      return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
-          <div className="grid-shift-card shift-approved-leave">
-            <span className="shift-card-time">{timeText}</span>
-            <span className="shift-card-desc">Nghỉ phép đã duyệt</span>
-          </div>
-        </div>
-      );
-    } else if (status === 'CANCELLED') {
-      return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
-          <div className="grid-shift-card shift-cancelled">
-            <span className="shift-card-time">{timeText}</span>
-            <span className="shift-card-desc">Ca làm việc đã hủy</span>
-          </div>
-        </div>
-      );
-    } else if (status === 'REJECTED') {
-      return (
-        <div className="grid-cell" key={dayInfo.dateStr}>
-          <div className="grid-shift-card shift-rejected-leave">
-            <span className="shift-card-time">{timeText}</span>
-            <span className="shift-card-desc">Yêu cầu nghỉ bị từ chối</span>
-          </div>
-        </div>
-      );
-    }
 
     return (
-      <div className="grid-cell" key={dayInfo.dateStr}>
-        <div className="grid-empty-shift">Nghỉ</div>
+      <div className="grid-cell" key={dayInfo.dateStr} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', minHeight: '100px', overflowY: 'auto' }}>
+        {activeSchedulesForShift.map((s) => {
+          const doctorName = s.doctor?.name || 'Bác sĩ';
+          const status = s.status;
+
+          let cardClass = 'grid-shift-card';
+          let statusText = '';
+
+          if (status === 'WORKING') {
+            cardClass += ' shift-working';
+            statusText = 'Làm việc';
+          } else if (status === 'PENDING') {
+            cardClass += ' shift-pending-leave';
+            statusText = 'Chờ duyệt';
+          } else if (status === 'APPROVED_OFF') {
+            cardClass += ' shift-approved-leave';
+            statusText = 'Nghỉ phép';
+          } else if (status === 'CANCELLED') {
+            cardClass += ' shift-cancelled';
+            statusText = 'Đã hủy';
+          } else if (status === 'REJECTED') {
+            cardClass += ' shift-rejected-leave';
+            statusText = 'Từ chối nghỉ';
+          } else {
+            statusText = 'Nghỉ';
+          }
+
+          return (
+            <div 
+              key={s.id} 
+              className={cardClass} 
+              style={{ 
+                padding: '6px 8px', 
+                borderRadius: '6px', 
+                fontSize: '0.78rem', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                gap: '2px', 
+                margin: 0,
+                height: 'auto'
+              }}
+            >
+              <div style={{ fontWeight: 700, color: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {doctorName}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', opacity: 0.9 }}>
+                <span>{timeText}</span>
+                <span style={{ fontWeight: 600 }}>{statusText}</span>
+              </div>
+            </div>
+          );
+        })}
       </div>
     );
   };
 
-  const selectedDoctor = doctorsList.find(d => d.id === selectedDoctorId);
+  const selectedDoctor = allDoctors.find(d => d.id === selectedDoctorId);
 
   return (
     <div className="content-grid receptionist-page">
@@ -232,24 +268,107 @@ export default function ReceptionistDoctorSchedulePage() {
           </button>
         </div>
 
-        {/* Doctor Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <label htmlFor="doctorSelect" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Bác sĩ:</label>
-          {doctorsQuery.isLoading ? (
-            <span className="helper-text" style={{ fontSize: '0.85rem' }}>Đang tải bác sĩ...</span>
-          ) : (
-            <select
-              id="doctorSelect"
-              value={selectedDoctorId}
-              onChange={(e) => setSelectedDoctorId(e.target.value)}
-              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', minWidth: '200px' }}
-            >
-              <option value="">-- Chọn bác sĩ --</option>
-              {doctorsList.map((d) => (
-                <option key={d.id} value={d.id}>{d.name} ({d.specialtyName || 'Đang cập nhật'})</option>
-              ))}
-            </select>
-          )}
+        {/* Specialty and Doctor Selectors */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          {/* Doctor Search Autocomplete Input */}
+          <div style={{ position: 'relative' }}>
+            <input
+              id="doctorSearchInput"
+              type="text"
+              placeholder="Tìm tên bác sĩ hoặc chuyên khoa..."
+              value={doctorSearchText}
+              onChange={(e) => {
+                setDoctorSearchText(e.target.value);
+                setShowSuggestions(true);
+              }}
+              onFocus={() => setShowSuggestions(true)}
+              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', width: '250px' }}
+            />
+            {showSuggestions && suggestionsList.length > 0 && (
+              <>
+                <div 
+                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} 
+                  onClick={() => setShowSuggestions(false)} 
+                />
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  left: 0,
+                  right: 0,
+                  marginTop: '4px',
+                  backgroundColor: '#ffffff',
+                  border: '1px solid var(--border)',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                  zIndex: 999,
+                  maxHeight: '200px',
+                  overflowY: 'auto'
+                }}>
+                  {suggestionsList.map((d) => (
+                    <div
+                      key={d.id}
+                      onClick={() => handleSelectSuggestion(d)}
+                      style={{
+                        padding: '8px 12px',
+                        cursor: 'pointer',
+                        fontSize: '0.88rem',
+                        borderBottom: '1px solid #f0f0f0',
+                        transition: 'background-color 0.2s',
+                        textAlign: 'left'
+                      }}
+                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
+                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                    >
+                      <div style={{ fontWeight: 600, color: 'var(--text-h)' }}>{d.name}</div>
+                      <div style={{ fontSize: '0.78rem', color: '#777' }}>
+                        {d.specialtyName || d.specialty?.name || 'N/A'}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Specialty Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label htmlFor="specialtySelect" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Chuyên khoa:</label>
+            {specialtiesQuery.isLoading ? (
+              <span className="helper-text" style={{ fontSize: '0.85rem' }}>Đang tải chuyên khoa...</span>
+            ) : (
+              <select
+                id="specialtySelect"
+                value={selectedSpecialtyId}
+                onChange={handleSpecialtyChange}
+                style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', minWidth: '180px' }}
+              >
+                <option value="">-- Tất cả chuyên khoa --</option>
+                {specialtiesList.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* Doctor Selector */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <label htmlFor="doctorSelect" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Bác sĩ:</label>
+            {doctorsQuery.isLoading ? (
+              <span className="helper-text" style={{ fontSize: '0.85rem' }}>Đang tải bác sĩ...</span>
+            ) : (
+              <select
+                id="doctorSelect"
+                value={selectedDoctorId}
+                onChange={(e) => setSelectedDoctorId(e.target.value)}
+                style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', minWidth: '200px' }}
+              >
+                <option value="">-- Tất cả bác sĩ --</option>
+                {visibleDoctorsList.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
         </div>
       </section>
 
@@ -281,16 +400,12 @@ export default function ReceptionistDoctorSchedulePage() {
 
       {/* Grid Weekly Calendar */}
       <section className="surface-card" style={{ padding: 0, overflow: 'hidden' }}>
-        {!selectedDoctorId ? (
-          <div style={{ textAlign: 'center', padding: '64px 0' }} className="helper-text">
-            Vui lòng chọn bác sĩ để xem lịch trực.
-          </div>
-        ) : schedulesQuery.isLoading ? (
-          <LoadingBlock label={`Đang tải lịch bác sĩ ${selectedDoctor?.name || ''}...`} />
+        {schedulesQuery.isLoading ? (
+          <LoadingBlock label={selectedDoctorId ? `Đang tải lịch bác sĩ ${selectedDoctor?.name || ''}...` : 'Đang tải lịch trực bác sĩ...'} />
         ) : schedulesQuery.error ? (
           <StateBlock
             variant="error"
-            title="Lỗi tải lịch bác sĩ"
+            title="Lỗi tải lịch trực"
             description={schedulesQuery.error.message}
           />
         ) : (

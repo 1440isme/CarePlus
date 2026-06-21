@@ -50,6 +50,7 @@ class ScheduleRepository extends BaseRepository {
   async findSchedulesByRange(filters) {
     const {
       doctorId,
+      specialtyId,
       status,
       startDate,
       endDate,
@@ -58,7 +59,7 @@ class ScheduleRepository extends BaseRepository {
     } = filters;
 
     return this.prisma.schedule.findMany({
-      where: this._buildWhereClause({ doctorId, status, startDate, endDate }),
+      where: this._buildWhereClause({ doctorId, specialtyId, status, startDate, endDate }),
       include: SCHEDULE_INCLUDE,
       orderBy: [
         { workingDate: 'asc' },
@@ -70,9 +71,9 @@ class ScheduleRepository extends BaseRepository {
   }
 
   async countSchedulesByRange(filters) {
-    const { doctorId, status, startDate, endDate } = filters;
+    const { doctorId, specialtyId, status, startDate, endDate } = filters;
     return this.prisma.schedule.count({
-      where: this._buildWhereClause({ doctorId, status, startDate, endDate }),
+      where: this._buildWhereClause({ doctorId, specialtyId, status, startDate, endDate }),
     });
   }
 
@@ -102,6 +103,12 @@ class ScheduleRepository extends BaseRepository {
 
     if (filters.doctorId) {
       where.doctorId = filters.doctorId;
+    }
+
+    if (filters.specialtyId) {
+      where.doctor = {
+        specialtyId: filters.specialtyId,
+      };
     }
 
     if (filters.status) {

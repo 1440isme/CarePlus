@@ -23,11 +23,11 @@ const isValidUuid = (val) => {
 const createAppointmentSchema = z.object({
   timeSlotId: z.string()
     .trim()
-    .refine((val) => isValidUuid(val), { message: 'timeSlotId must be a valid UUID' }),
+    .min(1, 'timeSlotId is required'),
   forSelf: z.boolean(),
   patientProfileId: z.string()
     .trim()
-    .refine((val) => isValidUuid(val), { message: 'patientProfileId must be a valid UUID' })
+    .min(1, 'patientProfileId must be a non-empty string')
     .optional(),
   reason: z.string()
     .trim()
@@ -46,14 +46,14 @@ const createAppointmentSchema = z.object({
 const createReceptionistAppointmentSchema = z.object({
   patientId: z.string()
     .trim()
-    .refine((val) => isValidUuid(val), { message: 'patientId must be a valid UUID' }),
+    .min(1, 'patientId is required'),
   timeSlotId: z.string()
     .trim()
-    .refine((val) => isValidUuid(val), { message: 'timeSlotId must be a valid UUID' }),
+    .min(1, 'timeSlotId is required'),
   forSelf: z.boolean(),
   patientProfileId: z.string()
     .trim()
-    .refine((val) => isValidUuid(val), { message: 'patientProfileId must be a valid UUID' })
+    .min(1, 'patientProfileId must be a non-empty string')
     .optional(),
   reason: z.string()
     .trim()
@@ -123,8 +123,15 @@ function validateCreateReceptionistAppointment(req, res, next) {
 }
 
 function validateListAppointments(req, res, next) {
-  const { page, limit, status, date, doctorId, patientId } = req.query;
+  const { page, limit, status, date, doctorId, patientId, specialtyId } = req.query;
   const details = [];
+
+  if (specialtyId !== undefined && (typeof specialtyId !== 'string' || !specialtyId.trim())) {
+    details.push({
+      field: 'specialtyId',
+      message: 'specialtyId must be a non-empty string',
+    });
+  }
 
   if (page !== undefined) {
     const parsedPage = Number.parseInt(page, 10);
@@ -166,17 +173,17 @@ function validateListAppointments(req, res, next) {
     }
   }
 
-  if (doctorId !== undefined && !isValidUuid(doctorId.trim())) {
+  if (doctorId !== undefined && (typeof doctorId !== 'string' || !doctorId.trim())) {
     details.push({
       field: 'doctorId',
-      message: 'doctorId must be a valid UUID',
+      message: 'doctorId must be a non-empty string',
     });
   }
 
-  if (patientId !== undefined && !isValidUuid(patientId.trim())) {
+  if (patientId !== undefined && (typeof patientId !== 'string' || !patientId.trim())) {
     details.push({
       field: 'patientId',
-      message: 'patientId must be a valid UUID',
+      message: 'patientId must be a non-empty string',
     });
   }
 

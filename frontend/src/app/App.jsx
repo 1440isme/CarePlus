@@ -4,7 +4,10 @@ import { APP_ROUTES } from '../shared/constants/routes.js';
 import PublicLayout from '../shared/components/layout/PublicLayout';
 import PatientLayout from '../shared/components/layout/PatientLayout';
 import AdminLayout from '../shared/components/layout/AdminLayout.jsx';
+import ReceptionistLayout from '../shared/components/layout/ReceptionistLayout.jsx';
 import RequireRole from '../shared/components/layout/RequireRole.jsx';
+import DashboardLayout from '../shared/components/layout/DashboardLayout.jsx';
+
 import HomePage from '../pages/public/HomePage';
 import PlaceholderPage from '../pages/public/PlaceholderPage';
 import RegisterPage from '../pages/public/RegisterPage';
@@ -23,19 +26,24 @@ import ContactPage from '../pages/public/ContactPage.jsx';
 import FAQPage from '../pages/public/FAQPage.jsx';
 import BookingWizardPage from '../pages/public/BookingWizardPage.jsx';
 import NotFoundPage from '../pages/public/NotFoundPage.jsx';
+
 import PatientAppointments from '../pages/patient/PatientAppointments.jsx';
 import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
 import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
+
 import DoctorDashboardPage from '../pages/doctor/DoctorDashboardPage.jsx';
 import DoctorAppointmentListPage from '../pages/doctor/DoctorAppointmentListPage.jsx';
 import DoctorWorkSchedulePage from '../pages/doctor/DoctorWorkSchedulePage.jsx';
 import DoctorChatPage from '../pages/doctor/DoctorChatPage.jsx';
 import DoctorProfilePage from '../pages/doctor/DoctorProfilePage.jsx';
+
 import ReceptionistDashboardPage from '../pages/receptionist/ReceptionistDashboardPage.jsx';
 import ReceptionistAppointmentManagementPage from '../pages/receptionist/ReceptionistAppointmentManagementPage.jsx';
 import ReceptionistBookingPage from '../pages/receptionist/ReceptionistBookingPage.jsx';
 import ReceptionistDoctorSchedulePage from '../pages/receptionist/ReceptionistDoctorSchedulePage.jsx';
 import ReceptionistProfilePage from '../pages/receptionist/ReceptionistProfilePage.jsx';
+import ReceptionistChatPage from '../pages/receptionist/ReceptionistChatPage.jsx';
+
 import AdminApprovalRequestsPage from '../pages/admin/AdminApprovalRequestsPage.jsx';
 import AdminAppointmentManagementPage from '../pages/admin/AdminAppointmentManagementPage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
@@ -46,21 +54,8 @@ import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
 import AdminClinicInfoPage from '../pages/admin/AdminClinicInfoPage.jsx';
 import AdminSystemSettingsPage from '../pages/admin/AdminSystemSettingsPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
+
 import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
-import DashboardLayout from '../shared/components/layout/DashboardLayout.jsx';
-
-import ReceptionistDashboardPage from '../pages/receptionist/ReceptionistDashboardPage.jsx';
-import ReceptionistAppointmentManagementPage from '../pages/receptionist/ReceptionistAppointmentManagementPage.jsx';
-import ReceptionistBookingPage from '../pages/receptionist/ReceptionistBookingPage.jsx';
-import ReceptionistDoctorSchedulePage from '../pages/receptionist/ReceptionistDoctorSchedulePage.jsx';
-import ReceptionistProfilePage from '../pages/receptionist/ReceptionistProfilePage.jsx';
-import ReceptionistChatPage from '../pages/receptionist/ReceptionistChatPage.jsx';
-
-import DoctorDashboardPage from '../pages/doctor/DoctorDashboardPage.jsx';
-import DoctorAppointmentListPage from '../pages/doctor/DoctorAppointmentListPage.jsx';
-import DoctorWorkSchedulePage from '../pages/doctor/DoctorWorkSchedulePage.jsx';
-import DoctorChatPage from '../pages/doctor/DoctorChatPage.jsx';
-import DoctorProfilePage from '../pages/doctor/DoctorProfilePage.jsx';
 
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
@@ -105,7 +100,7 @@ function App() {
           path={APP_ROUTES.receptionistRoot}
           element={(
             <RequireRole allowedRoles={['RECEPTIONIST']}>
-              <DashboardLayout />
+              <ReceptionistLayout />
             </RequireRole>
           )}
         >
@@ -113,6 +108,7 @@ function App() {
           <Route path="lich-hen" element={<ReceptionistAppointmentManagementPage />} />
           <Route path="dat-lich" element={<ReceptionistBookingPage />} />
           <Route path="lich-bac-si" element={<ReceptionistDoctorSchedulePage />} />
+          <Route path="tin-nhan" element={<ReceptionistChatPage />} />
           <Route path="thong-tin-ca-nhan" element={<ReceptionistProfilePage />} />
         </Route>
 
@@ -137,37 +133,6 @@ function App() {
           <Route path="cai-dat" element={<AdminSystemSettingsPage />} />
         </Route>
 
-        <Route
-          path="/le-tan"
-          element={(
-            <RequireRole allowedRoles={['RECEPTIONIST']}>
-              <ReceptionistLayout />
-            </RequireRole>
-          )}
-        >
-          <Route index element={<ReceptionistDashboardPage />} />
-          <Route path="lich-hen" element={<ReceptionistAppointmentManagementPage />} />
-          <Route path="dat-lich" element={<ReceptionistBookingPage />} />
-          <Route path="lich-bac-si" element={<ReceptionistDoctorSchedulePage />} />
-          <Route path="tin-nhan" element={<ReceptionistChatPage />} />
-          <Route path="thong-tin-ca-nhan" element={<ReceptionistProfilePage />} />
-        </Route>
-
-        <Route
-          path="/bac-si-portal"
-          element={(
-            <RequireRole allowedRoles={['DOCTOR']}>
-              <DashboardLayout />
-            </RequireRole>
-          )}
-        >
-          <Route index element={<DoctorDashboardPage />} />
-          <Route path="lich-hen" element={<DoctorAppointmentListPage />} />
-          <Route path="lich-lam-viec" element={<DoctorWorkSchedulePage />} />
-          <Route path="tin-nhan" element={<DoctorChatPage />} />
-          <Route path="thong-tin-ca-nhan" element={<DoctorProfilePage />} />
-        </Route>
-
         <Route path={APP_ROUTES.home} element={<PublicLayout />}>
           <Route index element={<HomePage />} />
 
@@ -183,7 +148,6 @@ function App() {
           <Route path="faq" element={<FAQPage />} />
           <Route path="dat-lich" element={<BookingWizardPage />} />
 
-          {/* Auth Routes */}
           {/* Catch-all Route */}
           <Route path="*" element={<PlaceholderPage title="404 - Không tìm thấy trang" />} />
         </Route>

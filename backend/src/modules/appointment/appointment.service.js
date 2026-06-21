@@ -506,6 +506,10 @@ class AppointmentService {
         where.appointmentDate = new Date(`${query.date.trim()}T00:00:00.000Z`);
       }
 
+      if (query.specialtyId) {
+        where.specialtyId = query.specialtyId.trim();
+      }
+
       if (query.search) {
         const searchTrim = query.search.trim();
         where.OR = [

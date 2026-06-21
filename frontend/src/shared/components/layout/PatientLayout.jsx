@@ -1,13 +1,14 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
+import { APP_ROUTES } from '../../constants/routes.js';
 import '../../../pages/patient/patient-portal.css';
 
 const navigationItems = [
-  { to: '/benh-nhan', label: 'Tổng quan', icon: DashboardIcon },
-  { to: '/benh-nhan/lich-hen', label: 'Lịch hẹn của tôi', icon: CalendarIcon },
-  { to: '/benh-nhan/nguoi-than', label: 'Hồ sơ người thân', icon: UsersIcon },
-  { to: '/benh-nhan/thong-tin-ca-nhan', label: 'Thông tin cá nhân', icon: ProfileIcon },
+  { to: APP_ROUTES.patientRoot, label: 'Tổng quan', icon: DashboardIcon },
+  { to: `${APP_ROUTES.patientRoot}/lich-hen`, label: 'Lịch hẹn của tôi', icon: CalendarIcon },
+  { to: `${APP_ROUTES.patientRoot}/nguoi-than`, label: 'Hồ sơ người thân', icon: UsersIcon },
+  { to: `${APP_ROUTES.patientRoot}/thong-tin-ca-nhan`, label: 'Thông tin cá nhân', icon: ProfileIcon },
 ];
 
 function DashboardIcon() {
@@ -130,7 +131,7 @@ export default function PatientLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/benh-nhan'}
+              end={item.to === APP_ROUTES.patientRoot}
               className={({ isActive }) => `patient-portal-nav-link ${isActive ? 'is-active' : ''}`}
             >
               <item.icon />

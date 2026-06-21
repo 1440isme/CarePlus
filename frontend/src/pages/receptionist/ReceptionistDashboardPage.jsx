@@ -135,9 +135,7 @@ export default function ReceptionistDashboardPage() {
             </thead>
             <tbody>
               {todayAppointments.map((appointment) => {
-                const patientName = appointment.patientProfile 
-                  ? appointment.patientProfile.name 
-                  : (appointment.user?.name || appointment.patientEmail || 'Bệnh nhân');
+                const patientName = appointment.patientName || 'Bệnh nhân';
                 
                 const doctorName = appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
                 const time = appointment.timeSlot?.startTime 
@@ -219,7 +217,7 @@ export default function ReceptionistDashboardPage() {
                   </div>
                   <div className="info-row">
                     <span className="info-label">Chuyên khoa</span>
-                    <span className="info-value">{selectedAppointment.doctor?.specialtyName || 'Đang cập nhật'}</span>
+                    <span className="info-value">{selectedAppointment.specialty?.name || 'Đang cập nhật'}</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Giá khám</span>
@@ -237,7 +235,7 @@ export default function ReceptionistDashboardPage() {
                   <div className="info-row">
                     <span className="info-label">Ngày khám</span>
                     <span className="info-value">
-                      {new Date(selectedAppointment.date).toLocaleDateString('vi-VN')}
+                      {selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A'}
                     </span>
                   </div>
                   <div className="info-row">
@@ -262,19 +260,19 @@ export default function ReceptionistDashboardPage() {
                   <div className="info-row">
                     <span className="info-label">Họ tên</span>
                     <span className="info-value">
-                      {selectedAppointment.patientProfile?.name || selectedAppointment.user?.name}
+                      {selectedAppointment.patientName}
                     </span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Số điện thoại</span>
                     <span className="info-value">
-                      {selectedAppointment.patientProfile?.phone || selectedAppointment.user?.phone || 'N/A'}
+                      {selectedAppointment.patientProfile?.phone || selectedAppointment.patient?.phone || 'N/A'}
                     </span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Email</span>
                     <span className="info-value">
-                      {selectedAppointment.patientProfile?.email || selectedAppointment.user?.email || 'N/A'}
+                      {selectedAppointment.patientProfile?.email || selectedAppointment.patient?.email || selectedAppointment.patientEmail || 'N/A'}
                     </span>
                   </div>
                   <div className="info-row">

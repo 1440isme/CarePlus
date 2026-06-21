@@ -1,15 +1,16 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
+import { APP_ROUTES } from '../../constants/routes.js';
 import './receptionist-layout.css';
 
 const navigationItems = [
-  { to: '/le-tan', label: 'Tổng quan', icon: DashboardIcon },
-  { to: '/le-tan/lich-hen', label: 'Quản lý lịch hẹn', icon: AppointmentIcon },
-  { to: '/le-tan/dat-lich', label: 'Đặt lịch khám', icon: BookingIcon },
-  { to: '/le-tan/lich-bac-si', label: 'Lịch bác sĩ', icon: DoctorScheduleIcon },
-  { to: '/le-tan/tin-nhan', label: 'Tin nhắn', icon: ChatIcon },
-  { to: '/le-tan/thong-tin-ca-nhan', label: 'Thông tin cá nhân', icon: ProfileIcon },
+  { to: APP_ROUTES.receptionistRoot, label: 'Tổng quan', icon: DashboardIcon },
+  { to: `${APP_ROUTES.receptionistRoot}/lich-hen`, label: 'Quản lý lịch hẹn', icon: AppointmentIcon },
+  { to: `${APP_ROUTES.receptionistRoot}/dat-lich`, label: 'Đặt lịch khám', icon: BookingIcon },
+  { to: `${APP_ROUTES.receptionistRoot}/lich-bac-si`, label: 'Lịch bác sĩ', icon: DoctorScheduleIcon },
+  { to: `${APP_ROUTES.receptionistRoot}/tin-nhan`, label: 'Tin nhắn', icon: ChatIcon },
+  { to: `${APP_ROUTES.receptionistRoot}/thong-tin-ca-nhan`, label: 'Thông tin cá nhân', icon: ProfileIcon },
 ];
 
 function DashboardIcon() {
@@ -118,7 +119,7 @@ export default function ReceptionistLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/le-tan'}
+              end={item.to === APP_ROUTES.receptionistRoot}
               className={({ isActive }) => `receptionist-portal-nav-link ${isActive ? 'is-active' : ''}`}
             >
               {({ isActive }) => (

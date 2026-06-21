@@ -1,3 +1,17 @@
+function formatDateOfBirth(dateOfBirth) {
+  if (!dateOfBirth) {
+    return null;
+  }
+  const parsedDate = new Date(dateOfBirth);
+  if (Number.isNaN(parsedDate.getTime())) {
+    return null;
+  }
+  const day = String(parsedDate.getUTCDate()).padStart(2, '0');
+  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+  const year = parsedDate.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+}
+
 function toAppointmentDto(appointment) {
   if (!appointment) {
     return null;
@@ -36,6 +50,7 @@ function toAppointmentDto(appointment) {
       name: appointment.patient.name,
       email: appointment.patient.email,
       phone: appointment.patient.phone,
+      dateOfBirth: formatDateOfBirth(appointment.patient.dateOfBirth),
     };
   }
 
@@ -46,6 +61,7 @@ function toAppointmentDto(appointment) {
       phone: appointment.patientProfile.phone,
       email: appointment.patientProfile.email,
       relationship: appointment.patientProfile.relationship,
+      dateOfBirth: formatDateOfBirth(appointment.patientProfile.dateOfBirth),
     };
   }
 
@@ -72,6 +88,11 @@ function toAppointmentDto(appointment) {
     || appointment.relativeName 
     || appointment.patient?.name 
     || 'Bệnh nhân';
+
+  // Generate friendly patient/relative date of birth
+  dto.patientDob = formatDateOfBirth(appointment.patientProfile?.dateOfBirth)
+    || formatDateOfBirth(appointment.patient?.dateOfBirth)
+    || null;
 
   return dto;
 }

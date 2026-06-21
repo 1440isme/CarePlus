@@ -11,7 +11,8 @@ export default function ReceptionistAppointmentManagementPage() {
   const [search, setSearch] = useState('');
   const [selectedSpecialtyId, setSelectedSpecialtyId] = useState('');
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
+  const todayStr = new Date().toLocaleDateString('sv').slice(0, 10);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
   const [selectedStatus, setSelectedStatus] = useState('');
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -94,7 +95,7 @@ export default function ReceptionistAppointmentManagementPage() {
     setSearch('');
     setSelectedSpecialtyId('');
     setSelectedDoctorId('');
-    setSelectedDate('');
+    setSelectedDate(todayStr);
     setSelectedStatus('');
     setPage(1);
   };
@@ -123,6 +124,14 @@ export default function ReceptionistAppointmentManagementPage() {
             style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
           />
 
+          {/* Date Picker */}
+          <input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => handleFilterChange('date', e.target.value)}
+            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
+          />
+
           {/* Specialty Dropdown */}
           <select
             value={selectedSpecialtyId}
@@ -146,14 +155,6 @@ export default function ReceptionistAppointmentManagementPage() {
               <option key={d.id} value={d.id}>{d.name}</option>
             ))}
           </select>
-
-          {/* Date Picker */}
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => handleFilterChange('date', e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
-          />
 
           {/* Status Dropdown */}
           <select
@@ -212,18 +213,18 @@ export default function ReceptionistAppointmentManagementPage() {
               </thead>
               <tbody>
                 {appointmentsList.map((appointment) => {
-                  const patientName = appointment.patientProfile 
-                    ? appointment.patientProfile.name 
-                    : (appointment.user?.name || appointment.patientEmail || 'Bệnh nhân');
+                  const patientName = appointment.patientName || 'Bệnh nhân';
                   
                   const doctorName = appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
-                  const specialtyName = appointment.doctor?.specialtyName || appointment.specialtyName || 'N/A';
+                  const specialtyName = appointment.specialty?.name || 'N/A';
                   const time = appointment.timeSlot?.startTime 
                     ? appointment.timeSlot.startTime.slice(0, 5) 
                     : '08:00';
                   
                   const statusCfg = getStatusConfig(appointment.status);
-                  const formattedDate = new Date(appointment.date).toLocaleDateString('vi-VN');
+                  const formattedDate = appointment.appointmentDate 
+                    ? appointment.appointmentDate.split('-').reverse().join('/')
+                    : 'N/A';
 
                   return (
                     <tr key={appointment.id}>
@@ -234,7 +235,14 @@ export default function ReceptionistAppointmentManagementPage() {
                       </td>
                       <td>{formattedDate}</td>
                       <td style={{ fontWeight: 600, color: 'var(--text-h)' }}>{time}</td>
-                      <td>{patientName}</td>
+                      <td>
+                        <div style={{ fontWeight: 500 }}>{patientName}</div>
+                        {appointment.patientDob && (
+                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>
+                            NS: {appointment.patientDob}
+                          </div>
+                        )}
+                      </td>
                       <td>{doctorName}</td>
                       <td>{specialtyName}</td>
                       <td>
@@ -340,7 +348,7 @@ export default function ReceptionistAppointmentManagementPage() {
                   </div>
                   <div className="info-row">
                     <span className="info-label">Chuyên khoa</span>
-                    <span className="info-value">{selectedAppointment.doctor?.specialtyName || selectedAppointment.specialtyName || 'Đang cập nhật'}</span>
+                    <span className="info-value">{selectedAppointment.specialty?.name || 'Đang cập nhật'}</span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Giá khám</span>
@@ -358,7 +366,7 @@ export default function ReceptionistAppointmentManagementPage() {
                   <div className="info-row">
                     <span className="info-label">Ngày khám</span>
                     <span className="info-value">
-                      {new Date(selectedAppointment.date).toLocaleDateString('vi-VN')}
+                      {selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A'}
                     </span>
                   </div>
                   <div className="info-row">
@@ -383,19 +391,19 @@ export default function ReceptionistAppointmentManagementPage() {
                   <div className="info-row">
                     <span className="info-label">Họ tên</span>
                     <span className="info-value">
-                      {selectedAppointment.patientProfile?.name || selectedAppointment.user?.name}
+                      {selectedAppointment.patientName}
                     </span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Số điện thoại</span>
                     <span className="info-value">
-                      {selectedAppointment.patientProfile?.phone || selectedAppointment.user?.phone || 'N/A'}
+                      {selectedAppointment.patientProfile?.phone || selectedAppointment.patient?.phone || 'N/A'}
                     </span>
                   </div>
                   <div className="info-row">
                     <span className="info-label">Email</span>
                     <span className="info-value">
-                      {selectedAppointment.patientProfile?.email || selectedAppointment.user?.email || 'N/A'}
+                      {selectedAppointment.patientProfile?.email || selectedAppointment.patient?.email || selectedAppointment.patientEmail || 'N/A'}
                     </span>
                   </div>
                   <div className="info-row">
