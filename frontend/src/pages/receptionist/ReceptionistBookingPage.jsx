@@ -35,8 +35,8 @@ export default function ReceptionistBookingPage() {
 
   // 3. Fetch Timeslots (Filtered by doctor & date)
   const timeSlotsQuery = useTimeSlots(
-    bookingData.doctor && bookingData.date 
-      ? { doctorId: bookingData.doctor.id, date: bookingData.date } 
+    bookingData.doctor && bookingData.date
+      ? { doctorId: bookingData.doctor.id, date: bookingData.date }
       : null
   );
 
@@ -149,14 +149,14 @@ export default function ReceptionistBookingPage() {
         };
 
         const response = await bookMutation.mutateAsync(payload);
-        
+
         // Save success data for step 5
         setSuccessBookingData({
           ...bookingData,
           code: response.data?.code || 'CP' + Math.floor(100000000 + Math.random() * 900000000),
           id: response.data?.id
         });
-        
+
         setStep(5);
       } catch (error) {
         alert(`Lỗi đặt lịch: ${error.response?.data?.error?.message || error.message}`);
@@ -224,14 +224,10 @@ export default function ReceptionistBookingPage() {
           <div className="step-circle">{step > 4 ? '✓' : '4'}</div>
           <div className="step-label">Xác nhận</div>
         </div>
-        <div className={`stepper-item ${step === 5 ? 'completed active' : ''}`}>
-          <div className="step-circle">5</div>
-          <div className="step-label">Hoàn tất</div>
-        </div>
         <div className="stepper-connector">
-          <div 
-            className="stepper-connector-progress" 
-            style={{ width: `${((step - 1) / 4) * 100}%` }}
+          <div
+            className="stepper-connector-progress"
+            style={{ width: `${((step - 1) / 3) * 100}%` }}
           />
         </div>
       </div>
@@ -242,7 +238,7 @@ export default function ReceptionistBookingPage() {
         {step === 1 && (
           <div className="fade-in">
             <h3 style={{ fontSize: '1.05rem', fontWeight: 700, marginBottom: '16px' }}>Chọn chuyên khoa</h3>
-            
+
             {specialtiesQuery.isLoading ? (
               <LoadingBlock label="Đang tải danh sách chuyên khoa..." />
             ) : specialtiesQuery.error ? (
@@ -288,8 +284,8 @@ export default function ReceptionistBookingPage() {
               <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0 }}>Xem lịch làm việc và chọn khung giờ</h3>
               <p className="helper-text" style={{ fontSize: '0.85rem', margin: 0 }}>
                 Chuyên khoa: <strong>{bookingData.specialty?.name}</strong>{' '}
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setStep(1)}
                   style={{ border: 'none', background: 'none', color: 'var(--cyan)', fontWeight: 600, cursor: 'pointer', textDecoration: 'underline', padding: 0 }}
                 >
@@ -332,8 +328,8 @@ export default function ReceptionistBookingPage() {
 
                   return (
                     <div key={doctor.id} className={`doctor-row-card ${isSelected ? 'selected' : ''}`}>
-                      <div 
-                        className="doctor-row-header" 
+                      <div
+                        className="doctor-row-header"
                         onClick={() => handleSelectDoctor(doctor)}
                         style={{ cursor: 'pointer' }}
                       >
@@ -368,7 +364,7 @@ export default function ReceptionistBookingPage() {
                               <p className="helper-text" style={{ fontSize: '0.82rem', marginBottom: '10px' }}>
                                 Khung giờ ngày {new Date(bookingData.date).toLocaleDateString('vi-VN')}:
                               </p>
-                              
+
                               {/* Morning Shift */}
                               {morningSlots.length > 0 && (
                                 <div style={{ marginBottom: '12px' }}>
@@ -446,7 +442,7 @@ export default function ReceptionistBookingPage() {
                 onChange={(e) => setPatientSearch(e.target.value)}
                 style={{ width: '100%', padding: '10px 14px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.95rem' }}
               />
-              
+
               {/* Autocomplete dropdown suggestion */}
               {patientSearch.trim().length >= 2 && (
                 <div className="patient-autocomplete-dropdown">
@@ -545,7 +541,7 @@ export default function ReceptionistBookingPage() {
                   <input
                     type="text"
                     disabled
-                    value={bookingData.forSelf 
+                    value={bookingData.forSelf
                       ? (bookingData.patientUser.dateOfBirth ? new Date(bookingData.patientUser.dateOfBirth).toLocaleDateString('vi-VN') : 'N/A')
                       : 'Hồ sơ người thân'}
                     style={{ backgroundColor: '#F9FAFB', cursor: 'not-allowed' }}
@@ -724,7 +720,7 @@ export default function ReceptionistBookingPage() {
           >
             Quay lại
           </button>
-          
+
           <button
             type="button"
             className="button-primary"

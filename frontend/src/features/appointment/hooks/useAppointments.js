@@ -4,7 +4,8 @@ import {
   getAppointmentById,
   updateAppointmentStatus,
   searchPatients,
-  bookAppointmentByReceptionist
+  bookAppointmentByReceptionist,
+  bookAppointment
 } from '../services/appointment.service.js';
 import { QUERY_KEYS } from '../../../shared/constants/query-keys.js';
 
@@ -50,6 +51,18 @@ export function useBookAppointmentByReceptionist() {
 
   return useMutation({
     mutationFn: bookAppointmentByReceptionist,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['timeslots'] });
+    },
+  });
+}
+
+export function useBookAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: bookAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['timeslots'] });

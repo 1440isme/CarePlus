@@ -3,6 +3,7 @@ import { GuestOnlyRoute } from './route-guards.jsx';
 import PublicLayout from '../shared/components/layout/PublicLayout';
 import PatientLayout from '../shared/components/layout/PatientLayout';
 import AdminLayout from '../shared/components/layout/AdminLayout.jsx';
+import ReceptionistLayout from '../shared/components/layout/ReceptionistLayout.jsx';
 import RequireRole from '../shared/components/layout/RequireRole.jsx';
 import HomePage from '../pages/public/HomePage';
 import PlaceholderPage from '../pages/public/PlaceholderPage';
@@ -94,7 +95,7 @@ function App() {
           path="/le-tan"
           element={(
             <RequireRole allowedRoles={['RECEPTIONIST']}>
-              <DashboardLayout />
+              <ReceptionistLayout />
             </RequireRole>
           )}
         >
@@ -134,7 +135,7 @@ function App() {
           <Route path="ve-chung-toi" element={<PlaceholderPage title="Về chúng tôi" />} />
           <Route path="lien-he" element={<PlaceholderPage title="Liên hệ" />} />
           <Route path="faq" element={<PlaceholderPage title="FAQ - Câu hỏi thường gặp" />} />
-          <Route path="dat-lich" element={<PlaceholderPage title="Đặt lịch khám trực tuyến" />} />
+          <Route path="dat-lich" element={<BookingWizardPage />} />
           
           {/* Auth Routes */}
           {/* Catch-all Route */}

@@ -24,3 +24,8 @@ export async function bookAppointmentByReceptionist(payload) {
   const response = await axiosInstance.post('/appointments/receptionist', payload);
   return response.data;
 }
+
+export async function bookAppointment(payload) {
+  const response = await axiosInstance.post('/appointments', payload);
+  return response.data;
+}
