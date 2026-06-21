@@ -16,14 +16,14 @@ export const APP_ROUTES = {
   resetPassword: '/dat-lai-mat-khau',
   verifyEmail: '/xac-minh-email',
   patientRoot: '/benh-nhan',
-  doctorRoot: '/bac-si-portal',
-  receptionistRoot: '/le-tan',
-  adminRoot: '/admin',
+  doctorRoot: '/portal/bac-si',
+  receptionistRoot: '/portal/le-tan',
+  adminRoot: '/portal/admin',
 };
 
 export const ROLE_HOME_ROUTES = {
-  PATIENT: '/benh-nhan',
-  DOCTOR: '/bac-si-portal',
-  RECEPTIONIST: '/le-tan',
-  ADMIN: '/admin',
+  PATIENT: APP_ROUTES.patientRoot,
+  DOCTOR: APP_ROUTES.doctorRoot,
+  RECEPTIONIST: APP_ROUTES.receptionistRoot,
+  ADMIN: APP_ROUTES.adminRoot,
 };

@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { APP_ROUTES } from '../../../shared/constants/routes.js';
 import { refreshToken } from '../services/auth.service.js';
 import { clearAuth, finishAuthHydration, setCredentials } from '../store/auth.slice.js';
 import {
@@ -25,7 +26,8 @@ function shouldAttemptBootstrapRefresh() {
 
   const currentPathname = window.location.pathname || '/';
 
-  return currentPathname.startsWith('/admin') || currentPathname.startsWith('/benh-nhan');
+  return currentPathname.startsWith(APP_ROUTES.patientRoot)
+    || currentPathname.startsWith('/portal/');
 }
 
 export function useAuthBootstrap() {

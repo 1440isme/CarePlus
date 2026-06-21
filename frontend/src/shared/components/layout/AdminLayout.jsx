@@ -1,20 +1,21 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
+import { APP_ROUTES } from '../../constants/routes.js';
 import './admin-layout.css';
 
 const navigationItems = [
-  { to: '/admin', label: 'Tổng quan', icon: DashboardIcon },
-  { to: '/admin/chuyen-khoa', label: 'Chuyên khoa', icon: SpecialtyIcon },
-  { to: '/admin/bac-si', label: 'Bác sĩ', icon: DoctorIcon },
-  { to: '/admin/lich-lam-viec', label: 'Lịch làm việc', icon: CalendarIcon },
-  { to: '/admin/lich-hen', label: 'Lịch hẹn', icon: AppointmentIcon },
-  { to: '/admin/duyet-yeu-cau', label: 'Duyệt yêu cầu', icon: ApprovalIcon },
-  { to: '/admin/nguoi-dung', label: 'Người dùng', icon: UsersIcon },
-  { to: '/admin/blog', label: 'Bài viết', icon: BlogIcon },
-  { to: '/admin/email-preview', label: 'Email Preview', icon: EmailIcon },
-  { to: '/admin/phong-kham', label: 'Thông tin phòng khám', icon: ClinicIcon },
-  { to: '/admin/cai-dat', label: 'Cài đặt hệ thống', icon: SettingsIcon },
+  { to: APP_ROUTES.adminRoot, label: 'Tổng quan', icon: DashboardIcon },
+  { to: `${APP_ROUTES.adminRoot}/chuyen-khoa`, label: 'Chuyên khoa', icon: SpecialtyIcon },
+  { to: `${APP_ROUTES.adminRoot}/bac-si`, label: 'Bác sĩ', icon: DoctorIcon },
+  { to: `${APP_ROUTES.adminRoot}/lich-lam-viec`, label: 'Lịch làm việc', icon: CalendarIcon },
+  { to: `${APP_ROUTES.adminRoot}/lich-hen`, label: 'Lịch hẹn', icon: AppointmentIcon },
+  { to: `${APP_ROUTES.adminRoot}/duyet-yeu-cau`, label: 'Duyệt yêu cầu', icon: ApprovalIcon },
+  { to: `${APP_ROUTES.adminRoot}/nguoi-dung`, label: 'Người dùng', icon: UsersIcon },
+  { to: `${APP_ROUTES.adminRoot}/blog`, label: 'Bài viết', icon: BlogIcon },
+  { to: `${APP_ROUTES.adminRoot}/email-preview`, label: 'Email Preview', icon: EmailIcon },
+  { to: `${APP_ROUTES.adminRoot}/phong-kham`, label: 'Thông tin phòng khám', icon: ClinicIcon },
+  { to: `${APP_ROUTES.adminRoot}/cai-dat`, label: 'Cài đặt hệ thống', icon: SettingsIcon },
 ];
 
 function DashboardIcon() {
@@ -135,7 +136,7 @@ export default function AdminLayout() {
   const authUser = useSelector((state) => state.auth.user);
   const logoutMutation = useLogout({
     onSuccess: () => {
-      navigate('/dang-nhap', { replace: true });
+      navigate(APP_ROUTES.login, { replace: true });
     },
   });
 
@@ -170,7 +171,7 @@ export default function AdminLayout() {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/admin'}
+              end={item.to === APP_ROUTES.adminRoot}
               className={({ isActive }) => `admin-portal-nav-link ${isActive ? 'is-active' : ''}`}
             >
               {({ isActive }) => (
