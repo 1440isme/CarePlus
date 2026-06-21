@@ -26,8 +26,12 @@ function shouldAttemptBootstrapRefresh() {
 
   const currentPathname = window.location.pathname || '/';
 
-  return currentPathname.startsWith(APP_ROUTES.patientRoot)
-    || currentPathname.startsWith('/portal/');
+  return (
+    currentPathname.startsWith(APP_ROUTES.adminRoot) ||
+    currentPathname.startsWith(APP_ROUTES.doctorRoot) ||
+    currentPathname.startsWith(APP_ROUTES.receptionistRoot) ||
+    currentPathname.startsWith(APP_ROUTES.patientRoot)
+  );
 }
 
 export function useAuthBootstrap() {

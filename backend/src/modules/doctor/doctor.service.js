@@ -50,6 +50,8 @@ class DoctorService {
         specialtyId: normalizedQuery.specialtyId,
         active: normalizedQuery.active,
         search: normalizedQuery.search,
+        sortBy: normalizedQuery.sortBy,
+        sortOrder: normalizedQuery.sortOrder,
       };
 
       const [doctors, total] = await Promise.all([
@@ -295,6 +297,8 @@ class DoctorService {
       specialtyId: query.specialtyId || undefined,
       active: query.active === undefined ? true : query.active,
       search: query.search || '',
+      sortBy: query.sortBy || undefined,
+      sortOrder: query.sortOrder || undefined,
     };
   }
 

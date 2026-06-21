@@ -4,6 +4,9 @@ const {
   createVerificationOtpTemplate,
   createPasswordResetTemplate,
   createPasswordResetSuccessTemplate,
+  createBookingSuccessTemplate,
+  createBookingCancellationTemplate,
+  createNoShowLockTemplate,
 } = require('./mail.templates');
 
 class MailServiceError extends Error {
@@ -86,6 +89,57 @@ class MailService {
 
   async sendPasswordResetSuccessEmail({ to, name }) {
     const template = createPasswordResetSuccessTemplate({ name });
+
+    return this.sendMail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+  }
+
+  async sendBookingSuccessEmail({ to, name, code, doctorName, specialtyName, date, time, fee }) {
+    const template = createBookingSuccessTemplate({
+      name,
+      code,
+      doctorName,
+      specialtyName,
+      date,
+      time,
+      fee,
+    });
+
+    return this.sendMail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+  }
+
+  async sendBookingCancellationEmail({ to, name, code, doctorName, date, time, reason }) {
+    const template = createBookingCancellationTemplate({
+      name,
+      code,
+      doctorName,
+      date,
+      time,
+      reason,
+    });
+
+    return this.sendMail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+  }
+
+  async sendNoShowLockEmail({ to, name, maxNoShow }) {
+    const template = createNoShowLockTemplate({
+      name,
+      maxNoShow,
+    });
 
     return this.sendMail({
       to,

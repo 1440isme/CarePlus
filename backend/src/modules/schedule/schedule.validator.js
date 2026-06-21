@@ -47,6 +47,7 @@ const createScheduleSchema = z.union([singleScheduleSchema, batchScheduleSchema]
 
 const listSchedulesQuerySchema = z.object({
   doctorId: z.string().trim().min(1).optional(),
+  specialtyId: z.string().trim().min(1).optional(),
   status: z.enum(Object.values(SCHEDULE_STATUSES)).optional(),
   date: z.string().date().optional(),
   startDate: z.string().date().optional(),

@@ -14,6 +14,7 @@ const clinicSettingsRoutes = require('./modules/clinic-settings/clinic-settings.
 const specialtyRoutes = require('./modules/specialty/specialty.routes');
 const blogRoutes = require('./modules/blog/blog.routes');
 const searchRoutes = require('./modules/search/search.routes');
+const appointmentRoutes = require('./modules/appointment/appointment.routes');
 
 // Load environment variables
 dotenv.config();
@@ -142,6 +143,7 @@ app.use('/api/v1/timeslots', timeslotRoutes);
 app.use('/api/v1/approval-requests', approvalRequestRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/patient-profiles', patientProfileRoutes);
+app.use('/api/v1/appointments', appointmentRoutes);
 app.use('/api/v1/clinic-settings', clinicSettingsRoutes);
 app.use('/api/v1/specialties', specialtyRoutes);
 app.use('/api/v1/upload', uploadRoutes);

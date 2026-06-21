@@ -9,4 +9,8 @@ export const QUERY_KEYS = {
   approvalRequests: (params) => ['approval-requests', params],
   users: (params) => ['users', params],
   me: ['me'],
+  appointments: (params) => ['appointments', params],
+  appointmentDetail: (id) => ['appointment-detail', id],
+  specialties: (params) => ['specialties', params],
+  patientsSearch: (params) => ['patients-search', params],
 };

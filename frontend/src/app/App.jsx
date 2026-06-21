@@ -4,8 +4,10 @@ import { APP_ROUTES } from '../shared/constants/routes.js';
 import PublicLayout from '../shared/components/layout/PublicLayout';
 import PatientLayout from '../shared/components/layout/PatientLayout';
 import AdminLayout from '../shared/components/layout/AdminLayout.jsx';
-import DashboardLayout from '../shared/components/layout/DashboardLayout.jsx';
+import ReceptionistLayout from '../shared/components/layout/ReceptionistLayout.jsx';
 import RequireRole from '../shared/components/layout/RequireRole.jsx';
+import DashboardLayout from '../shared/components/layout/DashboardLayout.jsx';
+
 import HomePage from '../pages/public/HomePage';
 import PlaceholderPage from '../pages/public/PlaceholderPage';
 import RegisterPage from '../pages/public/RegisterPage';
@@ -24,19 +26,24 @@ import ContactPage from '../pages/public/ContactPage.jsx';
 import FAQPage from '../pages/public/FAQPage.jsx';
 import BookingWizardPage from '../pages/public/BookingWizardPage.jsx';
 import NotFoundPage from '../pages/public/NotFoundPage.jsx';
+
 import PatientAppointments from '../pages/patient/PatientAppointments.jsx';
 import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
 import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
+
 import DoctorDashboardPage from '../pages/doctor/DoctorDashboardPage.jsx';
 import DoctorAppointmentListPage from '../pages/doctor/DoctorAppointmentListPage.jsx';
 import DoctorWorkSchedulePage from '../pages/doctor/DoctorWorkSchedulePage.jsx';
 import DoctorChatPage from '../pages/doctor/DoctorChatPage.jsx';
 import DoctorProfilePage from '../pages/doctor/DoctorProfilePage.jsx';
+
 import ReceptionistDashboardPage from '../pages/receptionist/ReceptionistDashboardPage.jsx';
 import ReceptionistAppointmentManagementPage from '../pages/receptionist/ReceptionistAppointmentManagementPage.jsx';
 import ReceptionistBookingPage from '../pages/receptionist/ReceptionistBookingPage.jsx';
 import ReceptionistDoctorSchedulePage from '../pages/receptionist/ReceptionistDoctorSchedulePage.jsx';
 import ReceptionistProfilePage from '../pages/receptionist/ReceptionistProfilePage.jsx';
+import ReceptionistChatPage from '../pages/receptionist/ReceptionistChatPage.jsx';
+
 import AdminApprovalRequestsPage from '../pages/admin/AdminApprovalRequestsPage.jsx';
 import AdminAppointmentManagementPage from '../pages/admin/AdminAppointmentManagementPage.jsx';
 import AdminDashboardPage from '../pages/admin/AdminDashboardPage.jsx';
@@ -47,6 +54,7 @@ import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
 import AdminClinicInfoPage from '../pages/admin/AdminClinicInfoPage.jsx';
 import AdminSystemSettingsPage from '../pages/admin/AdminSystemSettingsPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
+
 import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
 
 /**
@@ -92,7 +100,7 @@ function App() {
           path={APP_ROUTES.receptionistRoot}
           element={(
             <RequireRole allowedRoles={['RECEPTIONIST']}>
-              <DashboardLayout />
+              <ReceptionistLayout />
             </RequireRole>
           )}
         >
@@ -100,6 +108,7 @@ function App() {
           <Route path="lich-hen" element={<ReceptionistAppointmentManagementPage />} />
           <Route path="dat-lich" element={<ReceptionistBookingPage />} />
           <Route path="lich-bac-si" element={<ReceptionistDoctorSchedulePage />} />
+          <Route path="tin-nhan" element={<ReceptionistChatPage />} />
           <Route path="thong-tin-ca-nhan" element={<ReceptionistProfilePage />} />
         </Route>
 
@@ -126,17 +135,20 @@ function App() {
 
         <Route path={APP_ROUTES.home} element={<PublicLayout />}>
           <Route index element={<HomePage />} />
-          
-          <Route path={APP_ROUTES.specialties.slice(1)} element={<SpecialtyListPage />} />
-          <Route path={APP_ROUTES.specialtyDetail.slice(1)} element={<SpecialtyDetailPage />} />
-          <Route path={APP_ROUTES.doctors.slice(1)} element={<DoctorListPage />} />
-          <Route path={APP_ROUTES.doctorDetail.slice(1)} element={<DoctorDetailPage />} />
-          <Route path={APP_ROUTES.blogs.slice(1)} element={<BlogListPage />} />
-          <Route path={APP_ROUTES.blogDetail.slice(1)} element={<BlogDetailPage />} />
-          <Route path={APP_ROUTES.about.slice(1)} element={<AboutPage />} />
-          <Route path={APP_ROUTES.contact.slice(1)} element={<ContactPage />} />
-          <Route path={APP_ROUTES.faq.slice(1)} element={<FAQPage />} />
-          <Route path={APP_ROUTES.booking.slice(1)} element={<BookingWizardPage />} />
+
+          {/* Public Website Routes */}
+          <Route path="chuyen-khoa" element={<SpecialtyListPage />} />
+          <Route path="chuyen-khoa/:slug" element={<SpecialtyDetailPage />} />
+          <Route path="bac-si" element={<DoctorListPage />} />
+          <Route path="bac-si/:id" element={<DoctorDetailPage />} />
+          <Route path="cam-nang" element={<BlogListPage />} />
+          <Route path="cam-nang/:slug" element={<BlogDetailPage />} />
+          <Route path="ve-chung-toi" element={<AboutPage />} />
+          <Route path="lien-he" element={<ContactPage />} />
+          <Route path="faq" element={<FAQPage />} />
+          <Route path="dat-lich" element={<BookingWizardPage />} />
+
+          {/* Catch-all Route */}
           <Route path="*" element={<PlaceholderPage title="404 - Không tìm thấy trang" />} />
         </Route>
 

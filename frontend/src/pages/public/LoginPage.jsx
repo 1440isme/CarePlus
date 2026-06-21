@@ -2,6 +2,7 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import LoginForm from '../../features/auth/components/LoginForm.jsx';
 import { AUTH_ROLE_DEFAULT_ROUTES } from '../../features/auth/types/auth.types.js';
 import { getRememberMePreference } from '../../features/auth/store/auth.storage.js';
+import { APP_ROUTES } from '../../shared/constants/routes.js';
 import './register-page.css';
 
 const logoIcon = 'https://www.figma.com/api/mcp/asset/1f17b9ca-2d33-4300-891c-4d825ba188a2';
@@ -14,7 +15,7 @@ function isSafeInternalRedirect(pathname) {
 }
 
 function getDefaultRouteByRole(role) {
-  return AUTH_ROLE_DEFAULT_ROUTES[role] ?? '/benh-nhan';
+  return AUTH_ROLE_DEFAULT_ROUTES[role] ?? APP_ROUTES.patientRoot;
 }
 
 export default function LoginPage() {

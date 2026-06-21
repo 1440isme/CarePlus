@@ -1,6 +1,7 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { AUTH_ROLE_DEFAULT_ROUTES } from '../../../features/auth/types/auth.types.js';
+import { APP_ROUTES } from '../../constants/routes.js';
 
 function AuthBootstrapFallback() {
   return (
@@ -82,7 +83,7 @@ export default function RequireRole({ allowedRoles = [], children }) {
 
   if (!accessToken) {
     const redirectPath = `${location.pathname}${location.search}`;
-    return <Navigate to={`/dang-nhap?redirect=${encodeURIComponent(redirectPath)}`} replace />;
+    return <Navigate to={`${APP_ROUTES.login}?redirect=${encodeURIComponent(redirectPath)}`} replace />;
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {

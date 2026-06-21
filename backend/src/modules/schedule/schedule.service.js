@@ -83,6 +83,7 @@ class ScheduleService {
       const [schedules, total] = await Promise.all([
         this.scheduleRepository.findSchedulesByRange({
           doctorId,
+          specialtyId: query.specialtyId,
           status: normalizedQuery.status,
           startDate: normalizedQuery.startDate,
           endDate: normalizedQuery.endDate,
@@ -91,6 +92,7 @@ class ScheduleService {
         }),
         this.scheduleRepository.countSchedulesByRange({
           doctorId,
+          specialtyId: query.specialtyId,
           status: normalizedQuery.status,
           startDate: normalizedQuery.startDate,
           endDate: normalizedQuery.endDate,

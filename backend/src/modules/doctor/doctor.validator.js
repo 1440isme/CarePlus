@@ -56,6 +56,8 @@ const listDoctorsQuerySchema = z.object({
   specialtyId: z.string().trim().min(1).optional(),
   active: z.preprocess(normalizeBoolean, z.boolean().optional()),
   search: z.string().trim().max(100).optional(),
+  sortBy: z.string().trim().max(50).optional(),
+  sortOrder: z.string().trim().max(10).optional(),
 }).strict();
 
 const updateMyDoctorProfileSchema = z.object({

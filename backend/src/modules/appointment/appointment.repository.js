@@ -47,6 +47,161 @@ class AppointmentRepository extends BaseRepository {
         || 'Bệnh nhân',
     }));
   }
+
+  async findActiveAppointmentOnDate(patientId, patientProfileId, date) {
+    return this.prisma.appointment.findFirst({
+      where: {
+        patientId,
+        patientProfileId: patientProfileId || null,
+        appointmentDate: date,
+        status: {
+          in: ['CONFIRMED', 'CHECKED_IN'],
+        },
+      },
+    });
+  }
+
+  async findActiveAppointmentWithDoctor(patientId, patientProfileId, doctorId) {
+    return this.prisma.appointment.findFirst({
+      where: {
+        patientId,
+        patientProfileId: patientProfileId || null,
+        doctorId,
+        status: {
+          in: ['CONFIRMED', 'CHECKED_IN'],
+        },
+      },
+    });
+  }
+
+  async findAppointmentByIdWithRelations(id) {
+    return this.prisma.appointment.findUnique({
+      where: { id },
+      include: {
+        patient: true,
+        patientProfile: true,
+        doctor: true,
+        specialty: true,
+        timeSlot: true,
+      },
+    });
+  }
+
+  async createAppointmentWithTransaction(data) {
+    return this.prisma.$transaction(async (tx) => {
+      // 1. Lock and check TimeSlot
+      const timeSlot = await tx.timeSlot.findUnique({
+        where: { id: data.timeSlotId },
+      });
+
+      if (!timeSlot) {
+        const error = new Error('TimeSlot not found');
+        error.code = 'SLOT_NOT_FOUND';
+        throw error;
+      }
+
+      if (timeSlot.status !== 'AVAILABLE') {
+        const error = new Error('TimeSlot is not available');
+        error.code = 'SLOT_NOT_AVAILABLE';
+        throw error;
+      }
+
+      // 2. Update TimeSlot to BOOKED
+      await tx.timeSlot.update({
+        where: { id: data.timeSlotId },
+        data: { status: 'BOOKED' },
+      });
+
+      // 3. Create Appointment
+      const appointment = await tx.appointment.create({
+        data: {
+          code: data.code,
+          patientId: data.patientId,
+          patientProfileId: data.patientProfileId || null,
+          doctorId: data.doctorId,
+          specialtyId: data.specialtyId,
+          scheduleId: data.scheduleId,
+          timeSlotId: data.timeSlotId,
+          appointmentDate: data.appointmentDate,
+          startTime: data.startTime,
+          endTime: data.endTime,
+          status: data.status || 'CONFIRMED',
+          bookingChannel: data.bookingChannel,
+          bookingSource: data.bookingSource,
+          createdBy: data.createdBy,
+          forSelf: data.forSelf,
+          relativeName: data.relativeName || null,
+          consultationFee: data.consultationFee,
+          patientEmail: data.patientEmail,
+          reason: data.reason || null,
+          note: data.note || null,
+        },
+        include: {
+          patient: true,
+          patientProfile: true,
+          doctor: true,
+          specialty: true,
+          timeSlot: true,
+        },
+      });
+
+      return appointment;
+    });
+  }
+
+  async updateStatusWithTransaction(appointment, newStatus, payload) {
+    return this.prisma.$transaction(async (tx) => {
+      // Update appointment status
+      const updatedAppointment = await tx.appointment.update({
+        where: { id: appointment.id },
+        data: {
+          status: newStatus,
+          reason: payload.reason !== undefined ? payload.reason : appointment.reason,
+          note: payload.note !== undefined ? payload.note : appointment.note,
+        },
+        include: {
+          patient: true,
+          patientProfile: true,
+          doctor: true,
+          specialty: true,
+          timeSlot: true,
+        },
+      });
+
+      // Release TimeSlot if cancelled or no-show
+      if (newStatus === 'CANCELLED' || newStatus === 'NO_SHOW') {
+        await tx.timeSlot.update({
+          where: { id: appointment.timeSlotId },
+          data: { status: 'AVAILABLE' },
+        });
+      }
+
+      // Handle No-Show count and potential User locking
+      let userLocked = false;
+      if (newStatus === 'NO_SHOW') {
+        const user = await tx.user.findUnique({
+          where: { id: appointment.patientId },
+        });
+
+        if (user) {
+          const newNoShowCount = user.noShowCount + 1;
+          const maxNoShow = payload.maxNoShow || 3;
+          const status = newNoShowCount >= maxNoShow ? 'LOCKED' : user.status;
+          userLocked = newNoShowCount >= maxNoShow;
+
+          await tx.user.update({
+            where: { id: appointment.patientId },
+            data: {
+              noShowCount: newNoShowCount,
+              status,
+            },
+          });
+        }
+      }
+
+      return { appointment: updatedAppointment, userLocked };
+    });
+  }
 }
 
 module.exports = new AppointmentRepository();
