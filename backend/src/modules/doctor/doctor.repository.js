@@ -60,17 +60,28 @@ class DoctorRepository extends BaseRepository {
       specialtyId,
       active,
       search,
+      sortBy,
+      sortOrder,
     } = filters;
+
+    const orderBy = [];
+    if (sortBy && ['rating', 'experience', 'createdAt'].includes(sortBy)) {
+      orderBy.push({
+        [sortBy]: sortOrder === 'asc' ? 'asc' : 'desc'
+      });
+    }
+
+    orderBy.push(
+      { active: 'desc' },
+      { rating: 'desc' },
+      { experience: 'desc' },
+      { createdAt: 'desc' }
+    );
 
     return this.prisma.doctor.findMany({
       where: this._buildWhereClause({ specialtyId, active, search }),
       include: DOCTOR_INCLUDE,
-      orderBy: [
-        { active: 'desc' },
-        { rating: 'desc' },
-        { experience: 'desc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy,
       skip: (page - 1) * limit,
       take: limit,
     });

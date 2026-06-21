@@ -25,7 +25,10 @@ function shouldAttemptBootstrapRefresh() {
 
   const currentPathname = window.location.pathname || '/';
 
-  return currentPathname.startsWith('/admin') || currentPathname.startsWith('/benh-nhan');
+  return currentPathname.startsWith('/admin')
+    || currentPathname.startsWith('/benh-nhan')
+    || currentPathname.startsWith('/le-tan')
+    || currentPathname.startsWith('/bac-si-portal');
 }
 
 export function useAuthBootstrap() {

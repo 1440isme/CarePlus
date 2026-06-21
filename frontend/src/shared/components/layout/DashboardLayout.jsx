@@ -35,6 +35,7 @@ function getPortalLinksByRole(role) {
       { to: `${APP_ROUTES.receptionistRoot}/lich-hen`, label: 'Quản lý lịch hẹn' },
       { to: `${APP_ROUTES.receptionistRoot}/dat-lich`, label: 'Đặt lịch khám' },
       { to: `${APP_ROUTES.receptionistRoot}/lich-bac-si`, label: 'Lịch bác sĩ' },
+      { to: `${APP_ROUTES.receptionistRoot}/tin-nhan`, label: 'Tin nhắn' },
       { to: `${APP_ROUTES.receptionistRoot}/thong-tin-ca-nhan`, label: 'Thông tin cá nhân' },
     ];
   }

@@ -28,6 +28,20 @@ import AdminSpecialtiesPage from '../pages/admin/AdminSpecialtiesPage.jsx';
 import AdminUsersPage from '../pages/admin/AdminUsersPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
 import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
+import DashboardLayout from '../shared/components/layout/DashboardLayout.jsx';
+
+import ReceptionistDashboardPage from '../pages/receptionist/ReceptionistDashboardPage.jsx';
+import ReceptionistAppointmentManagementPage from '../pages/receptionist/ReceptionistAppointmentManagementPage.jsx';
+import ReceptionistBookingPage from '../pages/receptionist/ReceptionistBookingPage.jsx';
+import ReceptionistDoctorSchedulePage from '../pages/receptionist/ReceptionistDoctorSchedulePage.jsx';
+import ReceptionistProfilePage from '../pages/receptionist/ReceptionistProfilePage.jsx';
+import ReceptionistChatPage from '../pages/receptionist/ReceptionistChatPage.jsx';
+
+import DoctorDashboardPage from '../pages/doctor/DoctorDashboardPage.jsx';
+import DoctorAppointmentListPage from '../pages/doctor/DoctorAppointmentListPage.jsx';
+import DoctorWorkSchedulePage from '../pages/doctor/DoctorWorkSchedulePage.jsx';
+import DoctorChatPage from '../pages/doctor/DoctorChatPage.jsx';
+import DoctorProfilePage from '../pages/doctor/DoctorProfilePage.jsx';
 
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
@@ -72,6 +86,37 @@ function App() {
           <Route path="email-preview" element={<PlaceholderPage title="Email Preview" />} />
           <Route path="phong-kham" element={<PlaceholderPage title="Thông tin phòng khám" />} />
           <Route path="cai-dat" element={<PlaceholderPage title="Cài đặt hệ thống" />} />
+        </Route>
+
+        <Route
+          path="/le-tan"
+          element={(
+            <RequireRole allowedRoles={['RECEPTIONIST']}>
+              <DashboardLayout />
+            </RequireRole>
+          )}
+        >
+          <Route index element={<ReceptionistDashboardPage />} />
+          <Route path="lich-hen" element={<ReceptionistAppointmentManagementPage />} />
+          <Route path="dat-lich" element={<ReceptionistBookingPage />} />
+          <Route path="lich-bac-si" element={<ReceptionistDoctorSchedulePage />} />
+          <Route path="tin-nhan" element={<ReceptionistChatPage />} />
+          <Route path="thong-tin-ca-nhan" element={<ReceptionistProfilePage />} />
+        </Route>
+
+        <Route
+          path="/bac-si-portal"
+          element={(
+            <RequireRole allowedRoles={['DOCTOR']}>
+              <DashboardLayout />
+            </RequireRole>
+          )}
+        >
+          <Route index element={<DoctorDashboardPage />} />
+          <Route path="lich-hen" element={<DoctorAppointmentListPage />} />
+          <Route path="lich-lam-viec" element={<DoctorWorkSchedulePage />} />
+          <Route path="tin-nhan" element={<DoctorChatPage />} />
+          <Route path="thong-tin-ca-nhan" element={<DoctorProfilePage />} />
         </Route>
 
         <Route path="/" element={<PublicLayout />}>

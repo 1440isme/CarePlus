@@ -62,8 +62,65 @@ function createPasswordResetSuccessTemplate({ name }) {
   };
 }
 
+function createBookingSuccessTemplate({ name, code, doctorName, specialtyName, date, time, fee }) {
+  const formattedFee = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(fee);
+  return {
+    subject: `Xác nhận đặt lịch khám thành công — Mã số ${code}`,
+    ...createEmailLayout({
+      title: 'Đăng Ký Khám Bệnh Thành Công',
+      greeting: `Xin chào ${name || 'bạn'},`,
+      bodyLines: [
+        `CarePlus xác nhận bạn đã đặt lịch khám thành công với thông tin chi tiết như sau:`,
+        `<strong>Mã lịch hẹn:</strong> ${code}`,
+        `<strong>Bác sĩ:</strong> ${doctorName}`,
+        `<strong>Chuyên khoa:</strong> ${specialtyName}`,
+        `<strong>Thời gian:</strong> ${time} ngày ${date}`,
+        `<strong>Phí khám tham khảo:</strong> ${formattedFee}`,
+        `Vui lòng đến trước giờ hẹn 10-15 phút để làm thủ tục check-in tại quầy lễ tân.`
+      ],
+      footer: 'Cảm ơn bạn đã tin tưởng dịch vụ của CarePlus Clinic.',
+    }),
+  };
+}
+
+function createBookingCancellationTemplate({ name, code, doctorName, date, time, reason }) {
+  return {
+    subject: `Thông báo hủy lịch hẹn — Mã số ${code}`,
+    ...createEmailLayout({
+      title: 'Thông Báo Hủy Lịch Hẹn',
+      greeting: `Xin chào ${name || 'bạn'},`,
+      bodyLines: [
+        `Lịch hẹn mã số <strong>${code}</strong> của bạn đã bị hủy thành công.`,
+        `<strong>Bác sĩ:</strong> ${doctorName}`,
+        `<strong>Thời gian khám dự kiến ban đầu:</strong> ${time} ngày ${date}`,
+        reason ? `<strong>Lý do hủy:</strong> ${reason}` : 'Lịch hẹn được hủy theo yêu cầu.',
+        `Nếu bạn muốn đăng ký lại, vui lòng thực hiện đặt lịch khám mới trên trang web của chúng tôi.`
+      ],
+      footer: 'Chúng tôi rất tiếc vì sự bất tiện này.',
+    }),
+  };
+}
+
+function createNoShowLockTemplate({ name, maxNoShow }) {
+  return {
+    subject: 'Cảnh báo: Tài khoản CarePlus đã bị khóa',
+    ...createEmailLayout({
+      title: 'Tài Khoản Đã Bị Khóa',
+      greeting: `Xin chào ${name || 'bạn'},`,
+      bodyLines: [
+        `Tài khoản CarePlus của bạn đã bị tạm khóa chức năng đặt lịch online do bạn đã vắng mặt (No-show) ${maxNoShow} lần mà không thực hiện hủy lịch hẹn trước.`,
+        `Để mở khóa tài khoản, vui lòng liên hệ trực tiếp với quầy Lễ tân của phòng khám CarePlus hoặc gọi hotline hỗ trợ.`
+      ],
+      footer: 'Trân trọng, Ban quản lý CarePlus Clinic.',
+    }),
+  };
+}
+
 module.exports = {
   createVerificationOtpTemplate,
   createPasswordResetTemplate,
   createPasswordResetSuccessTemplate,
+  createBookingSuccessTemplate,
+  createBookingCancellationTemplate,
+  createNoShowLockTemplate,
 };
