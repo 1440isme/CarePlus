@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useDoctorList } from '../../features/doctor/index.js';
 import { useAdminSpecialties } from '../../features/admin/specialties/hooks/useAdminSpecialties.js';
+import { APP_ROUTES } from '../../shared/constants/routes.js';
 import './admin-doctor-schedule.css';
 
 const PAGE_SIZE = 10;
@@ -92,7 +93,7 @@ export default function AdminDoctorManagementPage() {
           <h1 className="admin-figma-title">Quản lý bác sĩ</h1>
         </div>
 
-        <Link className="admin-figma-primary-button" to="/admin/nguoi-dung">
+        <Link className="admin-figma-primary-button" to={`${APP_ROUTES.adminRoot}/nguoi-dung`}>
           <PlusIcon />
           <span>Thêm bác sĩ</span>
         </Link>

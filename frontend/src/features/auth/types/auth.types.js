@@ -1,3 +1,5 @@
+import { APP_ROUTES } from '../../../shared/constants/routes.js';
+
 export const AUTH_API_PATHS = {
   register: '/auth/register',
   login: '/auth/login',
@@ -12,10 +14,10 @@ export const AUTH_API_PATHS = {
 export const AUTH_USER_ROLES = ['PATIENT', 'DOCTOR', 'RECEPTIONIST', 'ADMIN'];
 export const AUTH_USER_STATUSES = ['ACTIVE', 'LOCKED'];
 export const AUTH_ROLE_DEFAULT_ROUTES = {
-  PATIENT: '/benh-nhan',
-  DOCTOR: '/bac-si-portal',
-  RECEPTIONIST: '/le-tan',
-  ADMIN: '/admin',
+  PATIENT: APP_ROUTES.patientRoot,
+  DOCTOR: APP_ROUTES.doctorRoot,
+  RECEPTIONIST: APP_ROUTES.receptionistRoot,
+  ADMIN: APP_ROUTES.adminRoot,
 };
 
 /**
