@@ -16,7 +16,7 @@ function sendValidationError(res, details, code = CLINIC_SETTINGS_ERROR_CODES.VA
 }
 
 function isValidVietnamPhone(phone) {
-  return /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone);
+  return /^(?:(?:0|\+84)(?:3|5|7|8|9)\d{8}|1900\d{4}|028\d{7})$/.test(phone);
 }
 
 function isValidTimeValue(value) {
@@ -93,6 +93,17 @@ const updateSystemSettingSchema = z.object({
     .min(
       SYSTEM_SETTING_LIMITS.MIN_MAX_NO_SHOW_BEFORE_LOCK,
       `maxNoShowBeforeLock must be greater than or equal to ${SYSTEM_SETTING_LIMITS.MIN_MAX_NO_SHOW_BEFORE_LOCK}`,
+    )
+    .optional(),
+  maxActiveAppointmentsPerUser: z.number()
+    .int('maxActiveAppointmentsPerUser must be an integer')
+    .min(
+      SYSTEM_SETTING_LIMITS.MIN_MAX_ACTIVE_APPOINTMENTS_PER_USER,
+      `maxActiveAppointmentsPerUser must be greater than or equal to ${SYSTEM_SETTING_LIMITS.MIN_MAX_ACTIVE_APPOINTMENTS_PER_USER}`,
+    )
+    .max(
+      SYSTEM_SETTING_LIMITS.MAX_MAX_ACTIVE_APPOINTMENTS_PER_USER,
+      `maxActiveAppointmentsPerUser must be less than or equal to ${SYSTEM_SETTING_LIMITS.MAX_MAX_ACTIVE_APPOINTMENTS_PER_USER}`,
     )
     .optional(),
   morningShiftStart: z.string()

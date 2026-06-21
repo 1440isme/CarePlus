@@ -10,3 +10,6 @@ export const specialtyFormSchema = z.object({
     .max(5000, 'Mô tả tối đa 5000 ký tự'),
   active: z.boolean(),
 });
+
+export const createSpecialtySchema = specialtyFormSchema;
+export const updateSpecialtySchema = specialtyFormSchema;

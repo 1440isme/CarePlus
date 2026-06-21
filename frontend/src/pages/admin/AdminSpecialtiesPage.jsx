@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   AdminSpecialtiesTable,
   AdminSpecialtyConfirmDialog,
@@ -23,6 +23,14 @@ function SearchIcon() {
     <svg viewBox="0 0 20 20" aria-hidden="true">
       <circle cx="8.75" cy="8.75" r="4.75" />
       <path d="m12.5 12.5 3.5 3.5" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="m5 5 10 10M15 5 5 15" />
     </svg>
   );
 }
@@ -56,7 +64,6 @@ export default function AdminSpecialtiesPage() {
   const [searchInput, setSearchInput] = useState('');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [feedback, setFeedback] = useState(null);
-  const [selectedSpecialty, setSelectedSpecialty] = useState(null);
   const [modalState, setModalState] = useState({
     open: false,
     mode: 'create',
@@ -80,6 +87,18 @@ export default function AdminSpecialtiesPage() {
     return () => window.clearTimeout(timeoutId);
   }, [searchInput]);
 
+  useEffect(() => {
+    if (!feedback) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFeedback(null);
+    }, 5000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [feedback]);
+
   const specialtiesQuery = useAdminSpecialties({
     page: currentPage,
     limit: PAGE_LIMIT,
@@ -96,7 +115,11 @@ export default function AdminSpecialtiesPage() {
     },
   });
 
-  const specialties = specialtiesQuery.data?.data ?? [];
+  const specialties = useMemo(
+    () => (Array.isArray(specialtiesQuery.data?.data) ? specialtiesQuery.data.data : []),
+    [specialtiesQuery.data?.data],
+  );
+
   const meta = specialtiesQuery.data?.meta ?? {
     page: currentPage,
     limit: PAGE_LIMIT,
@@ -112,6 +135,24 @@ export default function AdminSpecialtiesPage() {
     });
   };
 
+  const handleOpenCreateModal = () => {
+    setFeedback(null);
+    setModalState({
+      open: true,
+      mode: 'create',
+      specialty: null,
+    });
+  };
+
+  const handleOpenEditModal = (specialty) => {
+    setFeedback(null);
+    setModalState({
+      open: true,
+      mode: 'edit',
+      specialty,
+    });
+  };
+
   return (
     <section className="admin-specialties-page">
       <div className="admin-specialties-page-header">
@@ -120,14 +161,7 @@ export default function AdminSpecialtiesPage() {
         <button
           className="admin-specialties-create-button"
           type="button"
-          onClick={() => {
-            setFeedback(null);
-            setModalState({
-              open: true,
-              mode: 'create',
-              specialty: null,
-            });
-          }}
+          onClick={handleOpenCreateModal}
         >
           <PlusIcon />
           <span>Thêm chuyên khoa</span>
@@ -149,9 +183,17 @@ export default function AdminSpecialtiesPage() {
         </div>
 
         {feedback ? (
-          <p className={`admin-specialties-feedback ${feedback.type === 'success' ? 'is-success' : 'is-error'}`}>
-            {feedback.message}
-          </p>
+          <div className={`admin-specialties-feedback ${feedback.type === 'success' ? 'is-success' : 'is-error'}`}>
+            <p className="admin-specialties-feedback-text">{feedback.message}</p>
+            <button
+              type="button"
+              className="admin-specialties-feedback-close"
+              aria-label="Ẩn thông báo"
+              onClick={() => setFeedback(null)}
+            >
+              <CloseIcon />
+            </button>
+          </div>
         ) : null}
 
         <AdminSpecialtiesTable
@@ -162,23 +204,10 @@ export default function AdminSpecialtiesPage() {
           isError={specialtiesQuery.isError}
           errorMessage={getListErrorMessage(specialtiesQuery.error)}
           onRetry={() => specialtiesQuery.refetch()}
-          onCreate={() => {
-            setFeedback(null);
-            setModalState({
-              open: true,
-              mode: 'create',
-              specialty: null,
-            });
-          }}
-          onEdit={(specialty) => {
-            setSelectedSpecialty(specialty);
-            setModalState({
-              open: true,
-              mode: 'edit',
-              specialty,
-            });
-          }}
+          onCreate={handleOpenCreateModal}
+          onEdit={handleOpenEditModal}
           onDelete={(specialty) => {
+            setFeedback(null);
             setConfirmState({
               open: true,
               specialty,
@@ -196,7 +225,7 @@ export default function AdminSpecialtiesPage() {
       <SpecialtyFormModal
         open={modalState.open}
         mode={modalState.mode}
-        initialData={modalState.specialty ?? selectedSpecialty}
+        initialData={modalState.specialty}
         onClose={handleCloseModal}
         onSuccess={(response) => {
           setFeedback({

@@ -87,6 +87,10 @@ export default function SpecialtyFormModal({
   const mutationError = activeMutation.error
     ? getMutationErrorMessage(activeMutation.error)
     : null;
+  const isSubmitEnabled = !isViewMode && (
+    !isEditMode || form.formState.isDirty
+  );
+  const isSubmitDisabled = activeMutation.isPending || !isSubmitEnabled;
 
   const viewSummaryItems = useMemo(() => ([
     { label: 'Đường dẫn / Slug', value: initialData?.slug || 'Tự tạo từ tên chuyên khoa' },
@@ -214,7 +218,7 @@ export default function SpecialtyFormModal({
               <button
                 className="admin-specialty-form-button is-primary"
                 type="submit"
-                disabled={activeMutation.isPending}
+                disabled={isSubmitDisabled}
               >
                 {activeMutation.isPending
                   ? 'Đang xử lý'

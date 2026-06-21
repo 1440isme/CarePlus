@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSelector } from 'react-redux';
-import { PersonalInfoForm, useMe } from '../../features/user/index.js';
+import {
+  ChangePasswordModal,
+  PersonalInfoForm,
+  SecurityCard,
+  useMe,
+} from '../../features/user/index.js';
 import './patient-portal.css';
 
 function getInitials(name) {
@@ -154,6 +159,7 @@ export default function PatientPersonalInfoPage() {
   const meQuery = useMe({ enabled: Boolean(accessToken) });
   const user = meQuery.data?.data ?? null;
   const [isEditing, setIsEditing] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const [draftProfile, setDraftProfile] = useState(null);
 
   useEffect(() => {
@@ -255,6 +261,12 @@ export default function PatientPersonalInfoPage() {
           }}
         />
       )}
+
+      <SecurityCard onChangePassword={() => setIsPasswordModalOpen(true)} />
+      <ChangePasswordModal
+        open={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+      />
     </section>
   );
 }

@@ -4,8 +4,10 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ADMIN_USER_ROLE_LABELS,
   ADMIN_USER_STATUS_LABELS,
+  ADMIN_USER_VERIFIED_LABELS,
 } from '../types/admin-user.types.js';
 import { adminUserEditSchema } from '../schemas/admin-user.schema.js';
+import { useAdminUserDetail } from '../hooks/useAdminUserDetail.js';
 import { useUpdateAdminUser } from '../hooks/useUpdateAdminUser.js';
 import './admin-users.css';
 
@@ -107,6 +109,17 @@ function formatGender(value) {
   return '--';
 }
 
+function getDetailErrorMessage(error) {
+  switch (error?.code) {
+    case 'USER_NOT_FOUND':
+      return 'Không tìm thấy người dùng.';
+    case 'FORBIDDEN':
+      return 'Bạn không có quyền xem chi tiết người dùng.';
+    default:
+      return error?.message ?? 'Không thể tải chi tiết người dùng.';
+  }
+}
+
 function createEditDefaultValues(user) {
   return {
     name: user?.name ?? '',
@@ -138,14 +151,19 @@ function DetailEditField({ label, error, children }) {
 
 export default function AdminUserDetailDrawer({
   open,
-  user,
+  userId,
   onClose,
   onRequestLockToggle,
+  onRequestResetNoShow,
   isStatusUpdating,
   statusUpdatingUserId,
+  isResettingNoShow,
+  resetNoShowUserId,
 }) {
   const [note, setNote] = useState('');
   const [isEditing, setIsEditing] = useState(false);
+  const detailQuery = useAdminUserDetail(userId, { enabled: open && Boolean(userId) });
+  const user = detailQuery.data?.data ?? null;
   const updateAdminUserMutation = useUpdateAdminUser({
     onSuccess: (response) => {
       setNote(response?.data?.message ?? 'Cập nhật thông tin người dùng thành công.');
@@ -184,11 +202,49 @@ export default function AdminUserDetailDrawer({
     return JSON.stringify(formValues) !== JSON.stringify(defaultValues);
   }, [defaultValues, formValues, isDirty]);
 
-  if (!open || !user) {
+  if (!open) {
     return null;
   }
 
+  if (detailQuery.isLoading || !user) {
+    return (
+      <div className="admin-user-drawer-backdrop" role="presentation" onClick={onClose}>
+        <aside
+          className="admin-user-drawer"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="admin-user-drawer-title"
+          onClick={(event) => event.stopPropagation()}
+        >
+          <div className="admin-user-detail-topbar">
+            <h3 className="admin-user-drawer-title" id="admin-user-drawer-title">Chi tiết tài khoản</h3>
+
+            <button className="admin-user-drawer-close" type="button" onClick={onClose} aria-label="Đóng">
+              <CloseIcon />
+            </button>
+          </div>
+
+          <section className="admin-user-detail-section">
+            {detailQuery.isError ? (
+              <div className="admin-user-detail-state">
+                <p className="admin-user-detail-note is-error">{getDetailErrorMessage(detailQuery.error)}</p>
+                <button className="admin-user-detail-secondary-button" type="button" onClick={() => detailQuery.refetch()}>
+                  Thử lại
+                </button>
+              </div>
+            ) : (
+              <div className="admin-user-detail-state">
+                <p className="admin-user-detail-note">Đang tải chi tiết người dùng...</p>
+              </div>
+            )}
+          </section>
+        </aside>
+      </div>
+    );
+  }
+
   const isUserBeingUpdated = isStatusUpdating && statusUpdatingUserId === user.id;
+  const isUserNoShowBeingReset = isResettingNoShow && resetNoShowUserId === user.id;
   const isLockAction = user.status === 'ACTIVE';
   const editErrorMessage = updateAdminUserMutation.error?.message ?? 'Không thể cập nhật thông tin người dùng.';
   const isSaveDisabled = updateAdminUserMutation.isPending || !hasMeaningfulChanges;
@@ -316,35 +372,15 @@ export default function AdminUserDetailDrawer({
               <div className="admin-user-detail-list">
                 <DetailRow label="Vai trò" value={ADMIN_USER_ROLE_LABELS[user.role] ?? user.role} />
                 <DetailRow label="Trạng thái" value={ADMIN_USER_STATUS_LABELS[user.status] ?? user.status} />
+                <DetailRow label="Email xác minh" value={ADMIN_USER_VERIFIED_LABELS[String(Boolean(user.emailVerified))]} />
+                <DetailRow label="Số lần vắng mặt" value={String(user.noShowCount ?? 0)} />
                 <DetailRow label="Ngày tạo" value={formatCreatedDate(user.createdAt)} />
-                <DetailRow label="Đăng nhập gần nhất" value="--" />
               </div>
             </section>
 
             <section className="admin-user-detail-section">
-              <p className="admin-user-detail-section-title">C. MẬT KHẨU</p>
-              <p className="admin-user-detail-password">••••••••••</p>
-              <div className="admin-user-detail-password-actions">
-                <button
-                  className="admin-user-detail-secondary-button"
-                  type="button"
-                  onClick={() => setNote('API đổi mật khẩu cho Admin chưa có trong backend hiện tại.')}
-                >
-                  Đổi mật khẩu
-                </button>
-                <button
-                  className="admin-user-detail-warning-button"
-                  type="button"
-                  onClick={() => setNote('API đặt lại mật khẩu cho Admin chưa có trong backend hiện tại.')}
-                >
-                  Đặt lại mật khẩu
-                </button>
-              </div>
-            </section>
-
-            <section className="admin-user-detail-section">
-              <p className="admin-user-detail-section-title">D. THAO TÁC TÀI KHOẢN</p>
-              <div className="admin-user-detail-danger-actions">
+              <p className="admin-user-detail-section-title">C. THAO TÁC TÀI KHOẢN</p>
+              <div className="admin-user-detail-account-actions">
                 <button
                   className="admin-user-detail-danger-button"
                   type="button"
@@ -356,18 +392,19 @@ export default function AdminUserDetailDrawer({
                     {isUserBeingUpdated
                       ? 'Đang cập nhật'
                       : isLockAction
-                        ? 'Khóa TK'
-                        : 'Mở khóa TK'}
+                        ? 'Khóa tài khoản'
+                        : 'Mở khóa tài khoản'}
                   </span>
                 </button>
 
                 <button
-                  className="admin-user-detail-danger-button"
+                  className="admin-user-detail-warning-button"
                   type="button"
-                  onClick={() => setNote('API xóa tài khoản chưa được backend hỗ trợ ở module user.')}
+                  onClick={() => onRequestResetNoShow(user)}
+                  disabled={isUserNoShowBeingReset || Number(user.noShowCount ?? 0) === 0}
                 >
                   <TrashIcon />
-                  <span>Xóa tài khoản</span>
+                  <span>{isUserNoShowBeingReset ? 'Đang reset' : 'Reset số lần vắng mặt'}</span>
                 </button>
               </div>
             </section>

@@ -21,6 +21,7 @@ const systemSettingSelect = {
   slotDurationMinutes: true,
   cancelBeforeHours: true,
   maxNoShowBeforeLock: true,
+  maxActiveAppointmentsPerUser: true,
   morningShiftStart: true,
   morningShiftEnd: true,
   afternoonShiftStart: true,

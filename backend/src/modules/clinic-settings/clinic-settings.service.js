@@ -6,6 +6,7 @@ const {
 } = require('./clinic-settings.dto');
 const {
   CLINIC_SETTINGS_ERROR_CODES,
+  CLINIC_SETTINGS_DEFAULTS,
 } = require('./clinic-settings.types');
 
 class ClinicSettingsServiceError extends Error {
@@ -29,16 +30,7 @@ class ClinicSettingsService {
   async getPublicClinicInfo() {
     try {
       const clinicInfo = await this.clinicSettingsRepository.getClinicInfo();
-
-      if (!clinicInfo) {
-        throw new ClinicSettingsServiceError({
-          code: CLINIC_SETTINGS_ERROR_CODES.CLINIC_INFO_NOT_FOUND,
-          message: 'Không tìm thấy thông tin phòng khám',
-          statusCode: 404,
-        });
-      }
-
-      return toClinicInfoDto(clinicInfo);
+      return toClinicInfoDto(clinicInfo ?? this._buildEmptyClinicInfo());
     } catch (error) {
       if (error instanceof ClinicSettingsServiceError) {
         throw error;
@@ -83,11 +75,7 @@ class ClinicSettingsService {
       const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
 
       if (!systemSetting) {
-        throw new ClinicSettingsServiceError({
-          code: CLINIC_SETTINGS_ERROR_CODES.SYSTEM_SETTING_NOT_FOUND,
-          message: 'Không tìm thấy cấu hình hệ thống',
-          statusCode: 404,
-        });
+        return toSystemSettingDto(this._buildEmptySystemSetting());
       }
 
       return toSystemSettingDto(systemSetting);
@@ -158,6 +146,17 @@ class ClinicSettingsService {
     return data;
   }
 
+  _buildEmptyClinicInfo() {
+    return {
+      name: '',
+      address: '',
+      hotline: '',
+      email: '',
+      workingHours: '',
+      description: '',
+    };
+  }
+
   _buildSystemSettingUpdateData(dto) {
     const data = {};
 
@@ -177,6 +176,10 @@ class ClinicSettingsService {
       data.maxNoShowBeforeLock = dto.maxNoShowBeforeLock;
     }
 
+    if (Number.isInteger(dto.maxActiveAppointmentsPerUser)) {
+      data.maxActiveAppointmentsPerUser = dto.maxActiveAppointmentsPerUser;
+    }
+
     if (typeof dto.morningShiftStart === 'string') {
       data.morningShiftStart = dto.morningShiftStart;
     }
@@ -194,6 +197,34 @@ class ClinicSettingsService {
     }
 
     return data;
+  }
+
+  _buildDefaultSystemSetting() {
+    return {
+      maxBookingDaysAhead: CLINIC_SETTINGS_DEFAULTS.MAX_BOOKING_DAYS_AHEAD,
+      slotDurationMinutes: CLINIC_SETTINGS_DEFAULTS.SLOT_DURATION_MINUTES,
+      cancelBeforeHours: CLINIC_SETTINGS_DEFAULTS.CANCEL_BEFORE_HOURS,
+      maxNoShowBeforeLock: CLINIC_SETTINGS_DEFAULTS.MAX_NO_SHOW_BEFORE_LOCK,
+      maxActiveAppointmentsPerUser: CLINIC_SETTINGS_DEFAULTS.MAX_ACTIVE_APPOINTMENTS_PER_USER,
+      morningShiftStart: CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_START,
+      morningShiftEnd: CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_END,
+      afternoonShiftStart: CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_START,
+      afternoonShiftEnd: CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_END,
+    };
+  }
+
+  _buildEmptySystemSetting() {
+    return {
+      maxBookingDaysAhead: undefined,
+      slotDurationMinutes: undefined,
+      cancelBeforeHours: undefined,
+      maxNoShowBeforeLock: undefined,
+      maxActiveAppointmentsPerUser: undefined,
+      morningShiftStart: '',
+      morningShiftEnd: '',
+      afternoonShiftStart: '',
+      afternoonShiftEnd: '',
+    };
   }
 }
 

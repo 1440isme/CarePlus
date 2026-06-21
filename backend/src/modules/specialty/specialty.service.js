@@ -143,7 +143,7 @@ class SpecialtyService {
       const existingSpecialty = await this.specialtyRepository.findSpecialtyByName(normalizedName);
       const existingSlugSpecialty = await this.specialtyRepository.findSpecialtyBySlug(normalizedSlug);
 
-      if (existingSpecialty?.active) {
+      if (existingSpecialty) {
         throw new SpecialtyServiceError({
           code: SPECIALTY_ERROR_CODES.SPECIALTY_ALREADY_EXISTS,
           message: 'Chuyên khoa đã tồn tại',
@@ -151,7 +151,7 @@ class SpecialtyService {
         });
       }
 
-      if (existingSlugSpecialty?.active) {
+      if (existingSlugSpecialty) {
         throw new SpecialtyServiceError({
           code: SPECIALTY_ERROR_CODES.SPECIALTY_SLUG_ALREADY_EXISTS,
           message: 'Slug chuyên khoa đã tồn tại',
@@ -202,7 +202,7 @@ class SpecialtyService {
       if (typeof dto.name === 'string') {
         const duplicateSpecialty = await this.specialtyRepository.findSpecialtyByNameExceptId(dto.name.trim(), id);
 
-        if (duplicateSpecialty?.active) {
+        if (duplicateSpecialty) {
           throw new SpecialtyServiceError({
             code: SPECIALTY_ERROR_CODES.SPECIALTY_ALREADY_EXISTS,
             message: 'Chuyên khoa đã tồn tại',
@@ -214,7 +214,7 @@ class SpecialtyService {
       if (typeof dto.slug === 'string') {
         const duplicateSlugSpecialty = await this.specialtyRepository.findSpecialtyBySlugExceptId(dto.slug.trim(), id);
 
-        if (duplicateSlugSpecialty?.active) {
+        if (duplicateSlugSpecialty) {
           throw new SpecialtyServiceError({
             code: SPECIALTY_ERROR_CODES.SPECIALTY_SLUG_ALREADY_EXISTS,
             message: 'Slug chuyên khoa đã tồn tại',

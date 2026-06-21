@@ -49,6 +49,33 @@ function isValidDateOfBirth(value) {
   return false;
 }
 
+function isValidDateOnly(value) {
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return false;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+
+  if (!match) {
+    return false;
+  }
+
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  return parsedDate.getUTCFullYear() === year
+    && parsedDate.getUTCMonth() === month - 1
+    && parsedDate.getUTCDate() === day;
+}
+
 const updateMeSchema = z.object({
   name: z.string()
     .trim()
@@ -78,6 +105,21 @@ const updateMeSchema = z.object({
   (data) => Object.keys(data).length > 0,
   {
     message: 'At least one allowed field is required',
+  },
+);
+
+const changeMyPasswordSchema = z.object({
+  currentPassword: z.string()
+    .min(1, 'currentPassword is required'),
+  newPassword: z.string()
+    .min(6, 'newPassword must be at least 6 characters'),
+  confirmPassword: z.string()
+    .min(1, 'confirmPassword is required'),
+}).strict().refine(
+  (data) => data.newPassword === data.confirmPassword,
+  {
+    message: 'confirmPassword must match newPassword',
+    path: ['confirmPassword'],
   },
 );
 
@@ -111,6 +153,8 @@ function validateListUsers(req, res, next) {
   const limit = req.query.limit;
   const role = typeof req.query.role === 'string' ? req.query.role.trim() : '';
   const status = typeof req.query.status === 'string' ? req.query.status.trim() : '';
+  const createdFrom = typeof req.query.createdFrom === 'string' ? req.query.createdFrom.trim() : '';
+  const createdTo = typeof req.query.createdTo === 'string' ? req.query.createdTo.trim() : '';
 
   if (page !== undefined) {
     const parsedPage = Number.parseInt(page, 10);
@@ -146,6 +190,27 @@ function validateListUsers(req, res, next) {
     });
   }
 
+  if (createdFrom && !isValidDateOnly(createdFrom)) {
+    details.push({
+      field: 'createdFrom',
+      message: 'createdFrom must be a valid date in YYYY-MM-DD format',
+    });
+  }
+
+  if (createdTo && !isValidDateOnly(createdTo)) {
+    details.push({
+      field: 'createdTo',
+      message: 'createdTo must be a valid date in YYYY-MM-DD format',
+    });
+  }
+
+  if (createdFrom && createdTo && isValidDateOnly(createdFrom) && isValidDateOnly(createdTo) && createdFrom > createdTo) {
+    details.push({
+      field: 'createdTo',
+      message: 'createdTo must be greater than or equal to createdFrom',
+    });
+  }
+
   if (details.length > 0) {
     return sendValidationError(res, details, USER_ERROR_CODES.VALIDATION_ERROR, 'Dữ liệu không hợp lệ');
   }
@@ -172,6 +237,23 @@ function validateUpdateMe(req, res, next) {
 
 function validateAdminUpdateUser(req, res, next) {
   const parsedResult = updateMeSchema.safeParse(req.body || {});
+
+  if (!parsedResult.success) {
+    const details = parsedResult.error.issues.map((issue) => ({
+      field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+      message: issue.message,
+    }));
+
+    return sendValidationError(res, details, USER_ERROR_CODES.VALIDATION_ERROR, 'Dữ liệu không hợp lệ');
+  }
+
+  req.body = parsedResult.data;
+
+  return next();
+}
+
+function validateChangeMyPassword(req, res, next) {
+  const parsedResult = changeMyPasswordSchema.safeParse(req.body || {});
 
   if (!parsedResult.success) {
     const details = parsedResult.error.issues.map((issue) => ({
@@ -274,6 +356,7 @@ function validateResetNoShowCount(req, res, next) {
 module.exports = {
   validateListUsers,
   validateUpdateMe,
+  validateChangeMyPassword,
   validateAdminUpdateUser,
   validateCreateStaffUser,
   validateGetUserDetail,
