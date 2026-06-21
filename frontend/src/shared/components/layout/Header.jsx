@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth.js';
+import { APP_ROUTES } from '../../constants/routes.js';
 import './layout.css';
 
 export default function Header() {
@@ -18,12 +19,12 @@ export default function Header() {
   };
 
   const portalPath = role === 'DOCTOR'
-    ? '/bac-si-portal'
+    ? APP_ROUTES.doctorRoot
     : role === 'RECEPTIONIST'
-      ? '/le-tan'
+      ? APP_ROUTES.receptionistRoot
       : role === 'ADMIN'
-        ? '/admin'
-        : '/benh-nhan';
+        ? APP_ROUTES.adminRoot
+        : APP_ROUTES.patientRoot;
 
   return (
     <header className="site-header">
