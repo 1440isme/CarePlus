@@ -9,6 +9,7 @@ export const ADMIN_USER_API_PATHS = {
 export const ADMIN_USER_QUERY_KEYS = {
   all: ['admin-users'],
   list: (params = {}) => ['admin-users', params],
+  detail: (userId) => ['admin-user-detail', userId],
 };
 
 export const ADMIN_USER_ROLE_OPTIONS = [

@@ -11,6 +11,9 @@ export function useResetUserNoShowCount(options = {}) {
     ...mutationOptions,
     onSuccess: async (response, variables, context) => {
       await queryClient.invalidateQueries({ queryKey: ADMIN_USER_QUERY_KEYS.all });
+      if (variables?.userId) {
+        await queryClient.invalidateQueries({ queryKey: ADMIN_USER_QUERY_KEYS.detail(variables.userId) });
+      }
       onSuccess?.(response, variables, context);
     },
   });

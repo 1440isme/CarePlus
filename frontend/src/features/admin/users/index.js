@@ -4,6 +4,7 @@ export { default as AdminUserConfirmDialog } from './components/AdminUserConfirm
 export { default as AdminUserDetailDrawer } from './components/AdminUserDetailDrawer.jsx';
 export { default as AdminUserFormModal } from './components/AdminUserFormModal.jsx';
 export { useAdminUsers } from './hooks/useAdminUsers.js';
+export { useAdminUserDetail } from './hooks/useAdminUserDetail.js';
 export { useCreateAdminStaffUser } from './hooks/useCreateAdminStaffUser.js';
 export { useUpdateAdminUser } from './hooks/useUpdateAdminUser.js';
 export { useUpdateUserStatus } from './hooks/useUpdateUserStatus.js';

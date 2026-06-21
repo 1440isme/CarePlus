@@ -14,11 +14,20 @@ import {
 import '../../features/admin/users/components/admin-users.css';
 
 const PAGE_LIMIT = 10;
+const FEEDBACK_AUTO_HIDE_MS = 5000;
 
 function PlusIcon() {
   return (
     <svg viewBox="0 0 20 20" aria-hidden="true">
       <path d="M10 4.25v11.5M4.25 10h11.5" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="m5 5 10 10M15 5 5 15" />
     </svg>
   );
 }
@@ -58,11 +67,23 @@ function normalizeSearch(value) {
   return trimmedValue || undefined;
 }
 
+function isFilterDirty({ searchValue, selectedRole, selectedStatus, createdFrom, createdTo }) {
+  return Boolean(
+    searchValue.trim()
+    || selectedRole !== 'ALL'
+    || selectedStatus !== 'ALL'
+    || createdFrom
+    || createdTo
+  );
+}
+
 export default function AdminUsersPage() {
   const [searchValue, setSearchValue] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedRole, setSelectedRole] = useState('ALL');
   const [selectedStatus, setSelectedStatus] = useState('ALL');
+  const [createdFrom, setCreatedFrom] = useState('');
+  const [createdTo, setCreatedTo] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [feedback, setFeedback] = useState(null);
   const [selectedUser, setSelectedUser] = useState(null);
@@ -87,13 +108,29 @@ export default function AdminUsersPage() {
     };
   }, [searchValue]);
 
+  useEffect(() => {
+    if (!feedback) {
+      return undefined;
+    }
+
+    const timer = window.setTimeout(() => {
+      setFeedback(null);
+    }, FEEDBACK_AUTO_HIDE_MS);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [feedback]);
+
   const queryParams = useMemo(() => ({
     page: currentPage,
     limit: PAGE_LIMIT,
     search: normalizeSearch(debouncedSearch),
     role: selectedRole === 'ALL' ? undefined : selectedRole,
     status: selectedStatus === 'ALL' ? undefined : selectedStatus,
-  }), [currentPage, debouncedSearch, selectedRole, selectedStatus]);
+    createdFrom: createdFrom || undefined,
+    createdTo: createdTo || undefined,
+  }), [currentPage, debouncedSearch, selectedRole, selectedStatus, createdFrom, createdTo]);
 
   const usersQuery = useAdminUsers(queryParams);
   const updateStatusMutation = useUpdateUserStatus({
@@ -167,8 +204,8 @@ export default function AdminUsersPage() {
   }, [dialogState.type]);
 
   const dialogErrorMessage = dialogState.type === 'reset'
-    ? getMutationErrorMessage(resetNoShowMutation.error)
-    : getMutationErrorMessage(updateStatusMutation.error);
+    ? (resetNoShowMutation.error ? getMutationErrorMessage(resetNoShowMutation.error) : '')
+    : (updateStatusMutation.error ? getMutationErrorMessage(updateStatusMutation.error) : '');
 
   const handleRoleChange = (value) => {
     setSelectedRole(value);
@@ -179,6 +216,49 @@ export default function AdminUsersPage() {
     setSelectedStatus(value);
     setCurrentPage(1);
   };
+
+  const handleCreatedFromChange = (value) => {
+    setCreatedFrom(value);
+    setCreatedTo((previousValue) => {
+      if (previousValue && value && previousValue < value) {
+        return value;
+      }
+
+      return previousValue;
+    });
+    setCurrentPage(1);
+  };
+
+  const handleCreatedToChange = (value) => {
+    setCreatedTo(value);
+    setCreatedFrom((previousValue) => {
+      if (previousValue && value && previousValue > value) {
+        return value;
+      }
+
+      return previousValue;
+    });
+    setCurrentPage(1);
+  };
+
+  const handleResetFilters = () => {
+    setSearchValue('');
+    setDebouncedSearch('');
+    setSelectedRole('ALL');
+    setSelectedStatus('ALL');
+    setCreatedFrom('');
+    setCreatedTo('');
+    setCurrentPage(1);
+    setFeedback(null);
+  };
+
+  const canResetFilters = isFilterDirty({
+    searchValue,
+    selectedRole,
+    selectedStatus,
+    createdFrom,
+    createdTo,
+  });
 
   const handleCloseDialog = () => {
     if (!updateStatusMutation.isPending && !resetNoShowMutation.isPending) {
@@ -247,14 +327,32 @@ export default function AdminUsersPage() {
           onRoleChange={handleRoleChange}
           statusValue={selectedStatus}
           onStatusChange={handleStatusChange}
+          createdFromValue={createdFrom}
+          onCreatedFromChange={handleCreatedFromChange}
+          createdToValue={createdTo}
+          onCreatedToChange={handleCreatedToChange}
+          onResetFilters={handleResetFilters}
+          canResetFilters={canResetFilters}
           roleOptions={ADMIN_USER_ROLE_OPTIONS}
           statusOptions={ADMIN_USER_STATUS_OPTIONS}
         />
 
         {feedback ? (
-          <p className={`admin-users-feedback ${feedback.type === 'success' ? 'is-success' : 'is-error'}`}>
-            {feedback.message}
-          </p>
+          <div
+            className={`admin-users-feedback ${feedback.type === 'success' ? 'is-success' : 'is-error'}`}
+            role="status"
+            aria-live="polite"
+          >
+            <span>{feedback.message}</span>
+            <button
+              className="admin-users-feedback-close"
+              type="button"
+              onClick={() => setFeedback(null)}
+              aria-label="Ẩn thông báo"
+            >
+              <CloseIcon />
+            </button>
+          </div>
         ) : null}
 
         <AdminUsersTable
@@ -280,16 +378,28 @@ export default function AdminUsersPage() {
 
       <AdminUserDetailDrawer
         open={Boolean(selectedUser)}
-        user={selectedUser}
+        userId={selectedUser?.id ?? null}
         onClose={() => setSelectedUser(null)}
         onRequestLockToggle={(user) => {
+          updateStatusMutation.reset();
+          resetNoShowMutation.reset();
           setDialogState({
             type: user.status === 'ACTIVE' ? 'lock' : 'unlock',
             user,
           });
         }}
+        onRequestResetNoShow={(user) => {
+          updateStatusMutation.reset();
+          resetNoShowMutation.reset();
+          setDialogState({
+            type: 'reset',
+            user,
+          });
+        }}
         isStatusUpdating={updateStatusMutation.isPending}
         statusUpdatingUserId={updateStatusMutation.variables?.userId ?? null}
+        isResettingNoShow={resetNoShowMutation.isPending}
+        resetNoShowUserId={resetNoShowMutation.variables?.userId ?? null}
       />
 
       <AdminUserFormModal

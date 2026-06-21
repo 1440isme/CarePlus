@@ -3,6 +3,7 @@ const UserController = require('./user.controller');
 const {
   validateListUsers,
   validateUpdateMe,
+  validateChangeMyPassword,
   validateAdminUpdateUser,
   validateCreateStaffUser,
   validateGetUserDetail,
@@ -18,6 +19,12 @@ const router = express.Router();
 
 router.get(USER_ROUTE_PATHS.ME, authenticate, UserController.getMe);
 router.patch(USER_ROUTE_PATHS.ME, authenticate, validateUpdateMe, UserController.updateMe);
+router.patch(
+  USER_ROUTE_PATHS.ME_PASSWORD,
+  authenticate,
+  validateChangeMyPassword,
+  UserController.changeMyPassword,
+);
 
 router.get(
   USER_ROUTE_PATHS.ROOT,

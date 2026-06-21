@@ -42,6 +42,34 @@ function normalizeDateOfBirth(value) {
   return undefined;
 }
 
+function normalizeCreatedDateRange(value, boundary) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return undefined;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+
+  if (!match) {
+    return undefined;
+  }
+
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+
+  if (boundary === 'end') {
+    return new Date(Date.UTC(year, month - 1, day, 23, 59, 59, 999));
+  }
+
+  return new Date(Date.UTC(year, month - 1, day, 0, 0, 0, 0));
+}
+
 /**
  * User module service.
  * Handles self profile access and admin user management flows for Dev 1.
@@ -87,6 +115,57 @@ class UserService {
       throw new UserServiceError({
         code: USER_ERROR_CODES.UPDATE_ME_FAILED,
         message: 'Không thể cập nhật thông tin cá nhân',
+        statusCode: 500,
+      });
+    }
+  }
+
+  async changeMyPassword(currentUser, dto) {
+    try {
+      const user = await this.userRepository.findUserByIdWithPasswordHash(currentUser.userId);
+
+      if (!user) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.USER_NOT_FOUND,
+          message: 'Không tìm thấy người dùng',
+          statusCode: 404,
+        });
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(dto.currentPassword, user.passwordHash);
+
+      if (!isCurrentPasswordValid) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.CURRENT_PASSWORD_INCORRECT,
+          message: 'Mật khẩu hiện tại không chính xác',
+          statusCode: 400,
+        });
+      }
+
+      const isNewPasswordSameAsOld = await bcrypt.compare(dto.newPassword, user.passwordHash);
+
+      if (isNewPasswordSameAsOld) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.NEW_PASSWORD_SAME_AS_OLD,
+          message: 'Mật khẩu mới không được trùng mật khẩu hiện tại',
+          statusCode: 400,
+        });
+      }
+
+      const newPasswordHash = await bcrypt.hash(dto.newPassword, 10);
+      await this.userRepository.updateUserPasswordHash(currentUser.userId, newPasswordHash);
+
+      return {
+        message: 'Đổi mật khẩu thành công',
+      };
+    } catch (error) {
+      if (error instanceof UserServiceError) {
+        throw error;
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.CHANGE_PASSWORD_FAILED,
+        message: 'Không thể đổi mật khẩu',
         statusCode: 500,
       });
     }
@@ -176,6 +255,8 @@ class UserService {
         search: normalizedQuery.search,
         role: normalizedQuery.role,
         status: normalizedQuery.status,
+        createdFrom: normalizedQuery.createdFrom,
+        createdTo: normalizedQuery.createdTo,
       };
 
       const [users, total] = await Promise.all([
@@ -372,6 +453,8 @@ class UserService {
       search: typeof query.search === 'string' ? query.search.trim() : '',
       role: typeof query.role === 'string' ? query.role.trim().toUpperCase() : '',
       status: typeof query.status === 'string' ? query.status.trim().toUpperCase() : '',
+      createdFrom: normalizeCreatedDateRange(query.createdFrom, 'start'),
+      createdTo: normalizeCreatedDateRange(query.createdTo, 'end'),
     };
   }
 }

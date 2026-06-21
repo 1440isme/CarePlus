@@ -19,6 +19,14 @@ function buildListUsersParams(params = {}) {
     requestParams.status = params.status;
   }
 
+  if (params.createdFrom) {
+    requestParams.createdFrom = params.createdFrom;
+  }
+
+  if (params.createdTo) {
+    requestParams.createdTo = params.createdTo;
+  }
+
   return requestParams;
 }
 
@@ -27,6 +35,11 @@ export async function getAdminUsers(params) {
     params: buildListUsersParams(params),
   });
 
+  return response.data;
+}
+
+export async function getAdminUserDetail(userId) {
+  const response = await axiosInstance.get(ADMIN_USER_API_PATHS.detail(userId));
   return response.data;
 }
 

@@ -25,6 +25,18 @@ class UserController {
     }
   }
 
+  async changeMyPassword(req, res, next) {
+    try {
+      const data = await UserService.changeMyPassword(req.user, req.body);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async listUsers(req, res, next) {
     try {
       const result = await UserService.listUsers(req.query);

@@ -185,6 +185,11 @@
   box-sizing: border-box;
 }
 
+.patient-portal-header-spacer {
+  min-width: 1px;
+  min-height: 1px;
+}
+
 .patient-portal-heading {
   margin: 0;
   color: #9aa4b2;
@@ -211,9 +216,21 @@
 .patient-portal-icon-button {
   width: 20px;
   height: 20px;
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.patient-portal-notification-dot {
+  position: absolute;
+  top: -2px;
+  right: -1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px #ffffff;
 }
 
 .patient-portal-logout-link {
@@ -1224,6 +1241,190 @@
   min-width: 110px;
 }
 
+.patient-security-card {
+  margin-top: 20px;
+  overflow: hidden;
+}
+
+.patient-security-card-header {
+  padding: 24px 28px 10px;
+}
+
+.patient-security-card-eyebrow {
+  margin: 0 0 6px;
+  color: #9ca3af;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.patient-security-card-title {
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  line-height: 28px;
+  font-weight: 700;
+}
+
+.patient-security-card-body {
+  padding: 0 28px 24px;
+}
+
+.patient-security-card-row {
+  display: grid;
+  grid-template-columns: 52px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid #e8edf2;
+  border-radius: 12px;
+  padding: 18px 20px;
+  background: #fbfdff;
+}
+
+.patient-security-card-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(82, 191, 233, 0.14);
+  color: #169dc6;
+}
+
+.patient-security-card-icon svg,
+.patient-security-card-button svg,
+.patient-password-modal-close svg,
+.patient-profile-input-icon-leading svg,
+.patient-profile-password-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.patient-security-card-copy {
+  min-width: 0;
+}
+
+.patient-security-card-mask {
+  margin: 0 0 6px;
+  color: #111827;
+  font-size: 22px;
+  line-height: 24px;
+  letter-spacing: 0.12em;
+  font-weight: 700;
+}
+
+.patient-security-card-helper {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.patient-security-card-button {
+  flex-shrink: 0;
+}
+
+.patient-password-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(17, 24, 39, 0.42);
+}
+
+.patient-password-modal {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 16px;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+}
+
+.patient-password-modal-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px 24px 10px;
+}
+
+.patient-password-modal-title {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 24px;
+  line-height: 30px;
+  font-weight: 700;
+}
+
+.patient-password-modal-description {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.patient-password-modal-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+}
+
+.patient-password-modal-form {
+  padding: 8px 24px 24px;
+}
+
+.patient-profile-input-icon-leading {
+  position: absolute;
+  top: 50%;
+  left: 14px;
+  transform: translateY(-50%);
+  color: #9ca3af;
+  pointer-events: none;
+}
+
+.patient-profile-password-input {
+  padding-left: 42px;
+  padding-right: 48px;
+}
+
+.patient-profile-password-toggle {
+  position: absolute;
+  top: 50%;
+  right: 12px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #9ca3af;
+  cursor: pointer;
+}
+
+.patient-password-modal-actions {
+  margin-top: 24px;
+}
+
 @media (max-width: 1024px) {
   .patient-portal-layout {
     grid-template-columns: 1fr;
@@ -1303,6 +1504,16 @@
   .patient-profile-view-row strong {
     text-align: left;
   }
+
+  .patient-security-card-row {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+  }
+
+  .patient-security-card-button {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 @media (max-width: 560px) {
@@ -1310,13 +1521,21 @@
   .patient-profile-view-list,
   .patient-profile-identity-card,
   .patient-profile-state-panel,
-  .patient-profile-loading-card {
+  .patient-profile-loading-card,
+  .patient-security-card-header,
+  .patient-security-card-body,
+  .patient-password-modal-header,
+  .patient-password-modal-form {
     padding-left: 16px;
     padding-right: 16px;
   }
 
   .patient-profile-form-actions {
     grid-template-columns: 1fr;
+  }
+
+  .patient-password-modal-backdrop {
+    padding: 12px;
   }
 
   .patient-relatives-modal-backdrop {
