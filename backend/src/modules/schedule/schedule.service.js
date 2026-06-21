@@ -6,9 +6,6 @@ const {
   SCHEDULE_PAGINATION,
   SCHEDULE_STATUSES,
   SCHEDULE_VIEWS,
-  SHIFT_TIME_WINDOWS,
-  SLOT_DURATION_MINUTES,
-  WORKING_SHIFTS,
 } = require('./schedule.types');
 const { USER_ROLES } = require('../../shared/constants/roles');
 
@@ -54,17 +51,6 @@ function getViewRange(view, value) {
   }
 
   return { startDate: baseDate, endDate: baseDate };
-}
-
-function timeToMinutes(value) {
-  const [hours, minutes] = value.split(':').map((item) => Number.parseInt(item, 10));
-  return (hours * 60) + minutes;
-}
-
-function minutesToTime(value) {
-  const hours = String(Math.floor(value / 60)).padStart(2, '0');
-  const minutes = String(value % 60).padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 class ScheduleService {
@@ -152,21 +138,6 @@ class ScheduleService {
     }
   }
 
-  generateTimeSlots(shifts = [WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON], customTimeWindow) {
-    const selectedShifts = Array.from(new Set(shifts));
-    const slots = [];
-
-    if (customTimeWindow?.start && customTimeWindow?.end) {
-      return this._generateSlotsForWindow(customTimeWindow);
-    }
-
-    for (const shift of selectedShifts) {
-      slots.push(...this._generateSlotsForWindow(SHIFT_TIME_WINDOWS[shift]));
-    }
-
-    return slots;
-  }
-
   async _createSingleSchedule(payload) {
     const doctor = await this._getDoctorOrThrow(payload.doctorId);
     const workingDate = parseDateOnly(payload.workingDate);
@@ -181,13 +152,11 @@ class ScheduleService {
       });
     }
 
-    const slots = this.generateTimeSlots(payload.shifts, this._buildCustomTimeWindow(payload));
     const createdSchedule = await this.scheduleRepository.prisma.$transaction((dbClient) => (
-      this.scheduleRepository.createScheduleWithSlots({
+      this.scheduleRepository.createSchedule({
         doctorId: doctor.id,
         workingDate,
         status: SCHEDULE_STATUSES.WORKING,
-        slots,
       }, dbClient)
     ));
 
@@ -245,15 +214,13 @@ class ScheduleService {
       });
     }
 
-    const slots = this.generateTimeSlots(payload.shifts, this._buildCustomTimeWindow(payload));
     const createdSchedules = await this.scheduleRepository.prisma.$transaction(async (dbClient) => {
       const records = [];
       for (const workingDate of targetDates) {
-        const createdSchedule = await this.scheduleRepository.createScheduleWithSlots({
+        const createdSchedule = await this.scheduleRepository.createSchedule({
           doctorId: doctor.id,
           workingDate,
           status: SCHEDULE_STATUSES.WORKING,
-          slots,
         }, dbClient);
         records.push(createdSchedule);
       }
@@ -340,61 +307,6 @@ class ScheduleService {
     }
 
     return dates;
-  }
-
-  _buildCustomTimeWindow(payload) {
-    if (!payload.startTime && !payload.endTime) {
-      return undefined;
-    }
-
-    if (!payload.startTime || !payload.endTime) {
-      throw new ScheduleServiceError({
-        code: SCHEDULE_ERROR_CODES.INVALID_SHIFTS,
-        message: 'Vui lòng nhập đầy đủ giờ bắt đầu và giờ kết thúc',
-        statusCode: 400,
-      });
-    }
-
-    const startMinutes = timeToMinutes(payload.startTime);
-    const endMinutes = timeToMinutes(payload.endTime);
-
-    if (startMinutes >= endMinutes) {
-      throw new ScheduleServiceError({
-        code: SCHEDULE_ERROR_CODES.INVALID_SHIFTS,
-        message: 'Giờ bắt đầu phải nhỏ hơn giờ kết thúc',
-        statusCode: 400,
-      });
-    }
-
-    if ((endMinutes - startMinutes) < SLOT_DURATION_MINUTES) {
-      throw new ScheduleServiceError({
-        code: SCHEDULE_ERROR_CODES.INVALID_SHIFTS,
-        message: 'Khoảng thời gian làm việc phải tối thiểu 30 phút',
-        statusCode: 400,
-      });
-    }
-
-    return {
-      start: payload.startTime,
-      end: payload.endTime,
-    };
-  }
-
-  _generateSlotsForWindow(window) {
-    const slots = [];
-    let cursor = timeToMinutes(window.start);
-    const endMinutes = timeToMinutes(window.end);
-
-    while ((cursor + SLOT_DURATION_MINUTES) <= endMinutes) {
-      slots.push({
-        startTime: minutesToTime(cursor),
-        endTime: minutesToTime(cursor + SLOT_DURATION_MINUTES),
-        status: 'AVAILABLE',
-      });
-      cursor += SLOT_DURATION_MINUTES;
-    }
-
-    return slots;
   }
 
   _wrapUnexpectedError(error, code, message) {

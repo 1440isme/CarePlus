@@ -48,16 +48,14 @@ function CalendarIcon() {
   );
 }
 
-function ClockIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 17.25a7.25 7.25 0 1 0 0-14.5 7.25 7.25 0 0 0 0 14.5ZM10 6.5v4l2.75 1.75" />
-    </svg>
-  );
-}
-
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function getDateAfterDays(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 function getMetaValue(meta, key, fallback) {
@@ -74,11 +72,8 @@ export default function AdminScheduleManagementPage() {
     specialtyId: '',
     doctorId: '',
     fromDate: getTodayDate(),
-    toDate: getTodayDate(),
+    toDate: getDateAfterDays(7),
     weekdays: [1, 2, 3, 4, 5, 6],
-    startTime: '08:00',
-    endTime: '11:30',
-    note: '',
   });
 
   const scheduleParams = useMemo(() => ({
@@ -167,17 +162,13 @@ export default function AdminScheduleManagementPage() {
     fromDate: createPayload.fromDate,
     toDate: createPayload.toDate,
     weekdays: createPayload.weekdays,
-    startTime: createPayload.startTime,
-    endTime: createPayload.endTime,
   });
 
   const isCreateScheduleDisabled = createSchedulesMutation.isPending
     || !createPayload.doctorId
     || !createPayload.fromDate
     || !createPayload.toDate
-    || createPayload.weekdays.length === 0
-    || !createPayload.startTime
-    || !createPayload.endTime;
+    || createPayload.weekdays.length === 0;
 
   const openCreateModal = () => {
     createSchedulesMutation.reset();
@@ -185,11 +176,8 @@ export default function AdminScheduleManagementPage() {
       specialtyId: '',
       doctorId: '',
       fromDate: getTodayDate(),
-      toDate: getTodayDate(),
+      toDate: getDateAfterDays(7),
       weekdays: [1, 2, 3, 4, 5, 6],
-      startTime: '08:00',
-      endTime: '11:30',
-      note: '',
     });
     setIsCreateModalOpen(true);
   };
@@ -469,46 +457,6 @@ export default function AdminScheduleManagementPage() {
                 ))}
               </div>
             </fieldset>
-
-            <div className="admin-figma-form-row">
-              <label className="admin-figma-form-field">
-                <span>Giờ bắt đầu <strong>*</strong></span>
-                <span className="admin-figma-input-icon-wrap">
-                  <input
-                    type="time"
-                    name="startTime"
-                    value={createPayload.startTime}
-                    onChange={handleCreateFieldChange}
-                    required
-                  />
-                  <ClockIcon />
-                </span>
-              </label>
-
-              <label className="admin-figma-form-field">
-                <span>Giờ kết thúc <strong>*</strong></span>
-                <span className="admin-figma-input-icon-wrap">
-                  <input
-                    type="time"
-                    name="endTime"
-                    value={createPayload.endTime}
-                    onChange={handleCreateFieldChange}
-                    required
-                  />
-                  <ClockIcon />
-                </span>
-              </label>
-            </div>
-
-            <label className="admin-figma-form-field">
-              <span>Ghi chú</span>
-              <textarea
-                name="note"
-                value={createPayload.note}
-                onChange={handleCreateFieldChange}
-                rows={2}
-              />
-            </label>
 
             <div className="admin-assignment-sr-only" aria-hidden="true">
               <label>
