@@ -1,3 +1,4 @@
+const bcrypt = require('bcrypt');
 const AppointmentRepository = require('./appointment.repository');
 const UserRepository = require('../user/user.repository');
 const PatientProfileRepository = require('../patient-profile/patient-profile.repository');
@@ -203,16 +204,45 @@ class AppointmentService {
 
   async createReceptionistAppointment(currentUser, bookingData) {
     try {
-      const patientId = bookingData.patientId;
+      let patientId = bookingData.patientId;
+      let user;
 
-      // 1. Get and check patient user status
-      const user = await this.userRepository.findUserById(patientId);
+      // 1. Get and check patient user status (or register new patient on-the-fly)
+      if (!patientId && (bookingData.email || bookingData.phone)) {
+        if (bookingData.email) {
+          user = await this.userRepository.findUserByEmail(bookingData.email.trim());
+        }
+        if (!user && bookingData.phone) {
+          user = await this.prisma.user.findFirst({
+            where: { phone: bookingData.phone.trim(), role: 'PATIENT' }
+          });
+        }
+        if (user) {
+          patientId = user.id;
+        }
+      } else if (patientId) {
+        user = await this.userRepository.findUserById(patientId);
+      }
+
       if (!user) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.PATIENT_NOT_FOUND,
-          message: 'Không tìm thấy thông tin bệnh nhân',
-          statusCode: 404,
+        // Create a new Patient User on-the-fly!
+        const defaultPasswordHash = await bcrypt.hash('CarePlus123!', 10);
+        const email = bookingData.email ? bookingData.email.trim() : `${bookingData.phone.trim()}@temp.careplus.vn`;
+        user = await this.prisma.user.create({
+          data: {
+            name: bookingData.name.trim(),
+            email: email,
+            phone: bookingData.phone.trim(),
+            gender: bookingData.gender || 'MALE',
+            dateOfBirth: bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : null,
+            address: bookingData.address ? bookingData.address.trim() : null,
+            role: 'PATIENT',
+            status: 'ACTIVE',
+            emailVerified: true, // Registered at counter by staff
+            passwordHash: defaultPasswordHash,
+          }
         });
+        patientId = user.id;
       }
 
       if (user.status === 'LOCKED') {
@@ -763,6 +793,18 @@ class AppointmentService {
           { name: { contains: search } },
           { email: { contains: search } },
           { phone: { contains: search } },
+          {
+            patientProfiles: {
+              some: {
+                OR: [
+                  { fullName: { contains: search } },
+                  { phone: { contains: search } },
+                  { email: { contains: search } }
+                ],
+                isActive: true
+              }
+            }
+          }
         ];
       }
 

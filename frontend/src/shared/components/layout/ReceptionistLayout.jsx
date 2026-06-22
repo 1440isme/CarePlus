@@ -84,6 +84,9 @@ export default function ReceptionistLayout() {
     onSuccess: () => {
       navigate('/dang-nhap', { replace: true });
     },
+    onError: (error) => {
+      alert(`Đăng xuất thất bại: ${error.message || 'Đã có lỗi xảy ra'}`);
+    }
   });
 
   const handleLogout = () => {

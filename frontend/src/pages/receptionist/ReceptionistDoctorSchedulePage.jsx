@@ -140,57 +140,50 @@ export default function ReceptionistDoctorSchedulePage() {
   const renderShiftCell = (dayInfo, shiftType) => {
     const daySchedules = getDaySchedules(dayInfo.dateStr);
     
-    // Filter down to schedules that have the specified shiftType
+    // Filter down to schedules that match the specified shiftType
     const activeSchedulesForShift = daySchedules.filter((s) => {
-      let shiftsArray = [];
-      if (Array.isArray(s.shifts)) {
-        shiftsArray = s.shifts;
-      } else if (typeof s.shifts === 'string') {
-        try {
-          shiftsArray = JSON.parse(s.shifts);
-        } catch (e) {
-          shiftsArray = [];
-        }
+      const shift = s.workingShift || s.shift;
+      if (shiftType === 'MORNING') {
+        return shift === 'MORNING' || shift === 'ALL_DAY';
       }
-      return shiftsArray.includes(shiftType);
+      if (shiftType === 'AFTERNOON') {
+        return shift === 'AFTERNOON' || shift === 'ALL_DAY';
+      }
+      return false;
     });
 
     if (activeSchedulesForShift.length === 0) {
       return (
-        <div className="grid-cell" key={dayInfo.dateStr} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className={`grid-cell ${dayInfo.isToday ? 'today-column-cell' : ''}`} key={dayInfo.dateStr} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <div className="grid-empty-shift">Nghỉ</div>
         </div>
       );
     }
 
-    const timeText = shiftType === 'MORNING' ? '08:00 - 11:30' : '13:30 - 17:00';
-
     return (
-      <div className="grid-cell" key={dayInfo.dateStr} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', minHeight: '100px', overflowY: 'auto' }}>
+      <div className={`grid-cell ${dayInfo.isToday ? 'today-column-cell' : ''}`} key={dayInfo.dateStr} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', minHeight: '100px', overflowY: 'auto' }}>
         {activeSchedulesForShift.map((s) => {
           const doctorName = s.doctor?.name || 'Bác sĩ';
-          const status = s.status;
+          const specialtyName = s.doctor?.specialtyName || 'Chuyên khoa';
+          const bookedCount = typeof s.bookedSlots === 'number'
+            ? s.bookedSlots
+            : (Array.isArray(s.timeSlots)
+              ? s.timeSlots.filter((slot) => slot.status === 'BOOKED').length
+              : 0);
 
+          const status = s.status;
           let cardClass = 'grid-shift-card';
-          let statusText = '';
 
           if (status === 'WORKING') {
             cardClass += ' shift-working';
-            statusText = 'Làm việc';
           } else if (status === 'PENDING') {
             cardClass += ' shift-pending-leave';
-            statusText = 'Chờ duyệt';
           } else if (status === 'APPROVED_OFF') {
             cardClass += ' shift-approved-leave';
-            statusText = 'Nghỉ phép';
           } else if (status === 'CANCELLED') {
             cardClass += ' shift-cancelled';
-            statusText = 'Đã hủy';
           } else if (status === 'REJECTED') {
             cardClass += ' shift-rejected-leave';
-            statusText = 'Từ chối nghỉ';
-          } else {
-            statusText = 'Nghỉ';
           }
 
           return (
@@ -211,9 +204,11 @@ export default function ReceptionistDoctorSchedulePage() {
               <div style={{ fontWeight: 700, color: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {doctorName}
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.7rem', opacity: 0.9 }}>
-                <span>{timeText}</span>
-                <span style={{ fontWeight: 600 }}>{statusText}</span>
+              <div style={{ fontSize: '0.72rem', opacity: 0.85 }}>
+                {specialtyName}
+              </div>
+              <div style={{ fontSize: '0.72rem', fontWeight: 600, marginTop: '2px' }}>
+                Đã đặt: {bookedCount} slot
               </div>
             </div>
           );
