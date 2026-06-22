@@ -12,7 +12,7 @@ const defaultValues = {
   reason: '',
 };
 
-export default function LeaveRequestForm({ onSubmit, isSubmitting, submitError }) {
+export default function LeaveRequestForm({ onSubmit, onCancel, isSubmitting, submitError }) {
   const {
     control,
     register,
@@ -29,15 +29,15 @@ export default function LeaveRequestForm({ onSubmit, isSubmitting, submitError }
   });
 
   return (
-    <form className="surface-card form-grid" onSubmit={handleSubmit(onSubmit)}>
-      <div className="form-grid two-columns">
-        <div className="form-field">
+    <form className="doctor-leave-form" onSubmit={handleSubmit(onSubmit)}>
+      <div className="doctor-profile-grid two-columns">
+        <div className="doctor-profile-field">
           <label htmlFor="date">Ngày nghỉ</label>
           <input id="date" type="date" {...register('date')} />
           {errors.date ? <span className="field-error">{errors.date.message}</span> : null}
         </div>
 
-        <div className="form-field">
+        <div className="doctor-profile-field">
           <label htmlFor="exceptionType">Loại nghỉ</label>
           <select id="exceptionType" {...register('exceptionType')}>
             <option value="ALL_DAY">Cả ngày</option>
@@ -48,7 +48,7 @@ export default function LeaveRequestForm({ onSubmit, isSubmitting, submitError }
       </div>
 
       {exceptionType === 'SHIFT' ? (
-        <div className="form-field">
+        <div className="doctor-profile-field">
           <label htmlFor="shift">Ca làm việc</label>
           <select id="shift" {...register('shift')}>
             <option value="">Chọn ca</option>
@@ -60,14 +60,14 @@ export default function LeaveRequestForm({ onSubmit, isSubmitting, submitError }
       ) : null}
 
       {exceptionType === 'TIME_RANGE' ? (
-        <div className="form-grid two-columns">
-          <div className="form-field">
+        <div className="doctor-profile-grid two-columns">
+          <div className="doctor-profile-field">
             <label htmlFor="startTime">Giờ bắt đầu</label>
             <input id="startTime" type="time" {...register('startTime')} />
             {errors.startTime ? <span className="field-error">{errors.startTime.message}</span> : null}
           </div>
 
-          <div className="form-field">
+          <div className="doctor-profile-field">
             <label htmlFor="endTime">Giờ kết thúc</label>
             <input id="endTime" type="time" {...register('endTime')} />
             {errors.endTime ? <span className="field-error">{errors.endTime.message}</span> : null}
@@ -75,7 +75,7 @@ export default function LeaveRequestForm({ onSubmit, isSubmitting, submitError }
         </div>
       ) : null}
 
-      <div className="form-field">
+      <div className="doctor-profile-field">
         <label htmlFor="reason">Lý do nghỉ</label>
         <textarea id="reason" {...register('reason')} />
         {errors.reason ? <span className="field-error">{errors.reason.message}</span> : null}
@@ -83,7 +83,10 @@ export default function LeaveRequestForm({ onSubmit, isSubmitting, submitError }
 
       {submitError ? <div className="field-error">{submitError}</div> : null}
 
-      <div>
+      <div className="doctor-leave-actions">
+        <button type="button" className="button-secondary" onClick={onCancel} disabled={isSubmitting}>
+          Hủy bỏ
+        </button>
         <button type="submit" className="button-primary" disabled={isSubmitting}>
           {isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu nghỉ'}
         </button>

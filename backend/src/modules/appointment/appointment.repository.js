@@ -87,6 +87,83 @@ class AppointmentRepository extends BaseRepository {
     });
   }
 
+  async findTimeSlotByIdWithSchedule(timeSlotId) {
+    return this.prisma.timeSlot.findUnique({
+      where: { id: timeSlotId },
+      include: {
+        schedule: {
+          include: {
+            doctor: true,
+          },
+        },
+      },
+    });
+  }
+
+  async findWorkingScheduleForSlotSelection(filters) {
+    const { doctorId, workingDate, workingShift, allDayShift } = filters;
+
+    return this.prisma.schedule.findFirst({
+      where: {
+        doctorId,
+        workingDate,
+        status: 'WORKING',
+        OR: [
+          { workingShift },
+          { workingShift: allDayShift },
+        ],
+      },
+      include: {
+        doctor: true,
+      },
+      orderBy: [
+        { workingShift: 'asc' },
+        { createdAt: 'asc' },
+      ],
+    });
+  }
+
+  async findTimeSlotByDoctorDateAndTime(filters) {
+    const { doctorId, workingDate, startTime, endTime } = filters;
+
+    return this.prisma.timeSlot.findFirst({
+      where: {
+        schedule: {
+          doctorId,
+          workingDate,
+        },
+        startTime,
+        endTime,
+      },
+      include: {
+        schedule: {
+          include: {
+            doctor: true,
+          },
+        },
+      },
+    });
+  }
+
+  async createAvailableTimeSlot(data) {
+    return this.prisma.timeSlot.create({
+      data: {
+        scheduleId: data.scheduleId,
+        workingShift: data.workingShift,
+        startTime: data.startTime,
+        endTime: data.endTime,
+        status: 'AVAILABLE',
+      },
+      include: {
+        schedule: {
+          include: {
+            doctor: true,
+          },
+        },
+      },
+    });
+  }
+
   async createAppointmentWithTransaction(data) {
     return this.prisma.$transaction(async (tx) => {
       // 1. Lock and check TimeSlot

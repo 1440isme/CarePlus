@@ -5,6 +5,7 @@ const {
   SCHEDULE_STATUSES,
   SCHEDULE_VIEWS,
   VALID_WEEKDAYS,
+  WORKING_SHIFTS,
 } = require('./schedule.types');
 
 function sendValidationError(res, details) {
@@ -26,6 +27,26 @@ function buildIssueDetails(error) {
 }
 
 const scheduleViewValues = Object.values(SCHEDULE_VIEWS);
+const workingShiftValues = Object.values(WORKING_SHIFTS);
+
+function normalizeShiftAlias(data) {
+  const workingShift = data.workingShift || data.shift || WORKING_SHIFTS.ALL_DAY;
+  const { shift, ...rest } = data;
+  return {
+    ...rest,
+    workingShift,
+  };
+}
+
+function validateShiftAlias(value, ctx) {
+  if (value.shift && value.workingShift && value.shift !== value.workingShift) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['workingShift'],
+      message: 'workingShift must match shift when both are provided',
+    });
+  }
+}
 
 const idParamSchema = z.object({
   doctorId: z.string().trim().min(1, 'doctorId is required'),
@@ -34,14 +55,18 @@ const idParamSchema = z.object({
 const singleScheduleSchema = z.object({
   doctorId: z.string().trim().min(1),
   workingDate: z.string().date(),
-}).strict();
+  workingShift: z.enum(workingShiftValues).optional(),
+  shift: z.enum(workingShiftValues).optional(),
+}).strict().superRefine(validateShiftAlias).transform(normalizeShiftAlias);
 
 const batchScheduleSchema = z.object({
   doctorId: z.string().trim().min(1),
   fromDate: z.string().date(),
   toDate: z.string().date(),
   weekdays: z.array(z.number().int().min(0).max(6)).min(1),
-}).strict();
+  workingShift: z.enum(workingShiftValues).optional(),
+  shift: z.enum(workingShiftValues).optional(),
+}).strict().superRefine(validateShiftAlias).transform(normalizeShiftAlias);
 
 const createScheduleSchema = z.union([singleScheduleSchema, batchScheduleSchema]);
 
@@ -49,13 +74,15 @@ const listSchedulesQuerySchema = z.object({
   doctorId: z.string().trim().min(1).optional(),
   specialtyId: z.string().trim().min(1).optional(),
   status: z.enum(Object.values(SCHEDULE_STATUSES)).optional(),
+  workingShift: z.enum(workingShiftValues).optional(),
+  shift: z.enum(workingShiftValues).optional(),
   date: z.string().date().optional(),
   startDate: z.string().date().optional(),
   endDate: z.string().date().optional(),
   view: z.enum(scheduleViewValues).optional(),
   page: z.coerce.number().int().min(1).default(SCHEDULE_PAGINATION.DEFAULT_PAGE),
   limit: z.coerce.number().int().min(1).max(SCHEDULE_PAGINATION.MAX_LIMIT).default(SCHEDULE_PAGINATION.DEFAULT_LIMIT),
-}).strict();
+}).strict().superRefine(validateShiftAlias).transform(normalizeShiftAlias);
 
 function validateCreateSchedule(req, res, next) {
   const parsed = createScheduleSchema.safeParse(req.body || {});

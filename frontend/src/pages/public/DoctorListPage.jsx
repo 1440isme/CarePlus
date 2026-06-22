@@ -1,8 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useDoctorList } from '../../features/doctor/index.js';
-import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
-import { buildVirtualSlots, flattenSlotGroups } from '../../features/timeslot/utils/virtual-slots.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { buildVirtualSlots, flattenSlotGroups } from '../../features/timeslot/virtual-slot.service.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './public-pages.css';

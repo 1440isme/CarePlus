@@ -23,24 +23,67 @@ class ScheduleRepository extends BaseRepository {
   }
 
   async findByDoctorAndDate(doctorId, workingDate, dbClient = this.prisma) {
+    return dbClient.schedule.findFirst({
+      where: {
+        doctorId,
+        workingDate,
+      },
+      include: SCHEDULE_INCLUDE,
+      orderBy: [
+        { workingShift: 'asc' },
+        { createdAt: 'asc' },
+      ],
+    });
+  }
+
+  async findByDoctorDateAndShift(doctorId, workingDate, workingShift, dbClient = this.prisma) {
     return dbClient.schedule.findUnique({
       where: {
-        doctorId_workingDate: {
+        doctorId_workingDate_workingShift: {
           doctorId,
           workingDate,
+          workingShift,
         },
       },
       include: SCHEDULE_INCLUDE,
     });
   }
 
+  async findSchedulesByDoctorAndDate(doctorId, workingDate, dbClient = this.prisma) {
+    return dbClient.schedule.findMany({
+      where: {
+        doctorId,
+        workingDate,
+      },
+      include: SCHEDULE_INCLUDE,
+      orderBy: [
+        { workingShift: 'asc' },
+        { createdAt: 'asc' },
+      ],
+    });
+  }
+
   async createSchedule(payload, dbClient = this.prisma) {
-    const { doctorId, workingDate, status } = payload;
+    const {
+      doctorId,
+      workingDate,
+      workingShift,
+      morningShiftStart,
+      morningShiftEnd,
+      afternoonShiftStart,
+      afternoonShiftEnd,
+      status,
+    } = payload;
 
     return dbClient.schedule.create({
       data: {
         doctorId,
         workingDate,
+        workingShift,
+        morningShiftStart,
+        morningShiftEnd,
+        afternoonShiftStart,
+        afternoonShiftEnd,
         status,
       },
       include: SCHEDULE_INCLUDE,
@@ -52,6 +95,7 @@ class ScheduleRepository extends BaseRepository {
       doctorId,
       specialtyId,
       status,
+      workingShift,
       startDate,
       endDate,
       skip = 0,
@@ -59,10 +103,11 @@ class ScheduleRepository extends BaseRepository {
     } = filters;
 
     return this.prisma.schedule.findMany({
-      where: this._buildWhereClause({ doctorId, specialtyId, status, startDate, endDate }),
+      where: this._buildWhereClause({ doctorId, specialtyId, status, workingShift, startDate, endDate }),
       include: SCHEDULE_INCLUDE,
       orderBy: [
         { workingDate: 'asc' },
+        { workingShift: 'asc' },
         { createdAt: 'asc' },
       ],
       skip,
@@ -71,9 +116,9 @@ class ScheduleRepository extends BaseRepository {
   }
 
   async countSchedulesByRange(filters) {
-    const { doctorId, specialtyId, status, startDate, endDate } = filters;
+    const { doctorId, specialtyId, status, workingShift, startDate, endDate } = filters;
     return this.prisma.schedule.count({
-      where: this._buildWhereClause({ doctorId, specialtyId, status, startDate, endDate }),
+      where: this._buildWhereClause({ doctorId, specialtyId, status, workingShift, startDate, endDate }),
     });
   }
 
@@ -86,15 +131,12 @@ class ScheduleRepository extends BaseRepository {
   }
 
   async updateScheduleStatusByDoctorAndDate(doctorId, workingDate, status, dbClient = this.prisma) {
-    return dbClient.schedule.update({
+    return dbClient.schedule.updateMany({
       where: {
-        doctorId_workingDate: {
-          doctorId,
-          workingDate,
-        },
+        doctorId,
+        workingDate,
       },
       data: { status },
-      include: SCHEDULE_INCLUDE,
     });
   }
 
@@ -113,6 +155,10 @@ class ScheduleRepository extends BaseRepository {
 
     if (filters.status) {
       where.status = filters.status;
+    }
+
+    if (filters.workingShift) {
+      where.workingShift = filters.workingShift;
     }
 
     if (filters.startDate || filters.endDate) {

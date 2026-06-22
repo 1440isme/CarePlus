@@ -600,6 +600,10 @@
   margin-top: 12px;
 }
 
+.admin-shift-tabs-three {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
 .admin-shift-tabs button {
   height: 54px;
   border: 1px solid #e5e7eb;
@@ -704,7 +708,8 @@
   }
 
   .admin-figma-form-row,
-  .admin-shift-tabs {
+  .admin-shift-tabs,
+  .admin-shift-tabs-three {
     grid-template-columns: 1fr;
   }
 }

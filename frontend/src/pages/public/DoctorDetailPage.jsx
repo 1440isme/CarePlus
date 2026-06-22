@@ -2,8 +2,12 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
-import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
-import { buildVirtualSlots, mergePersistedSlots } from '../../features/timeslot/utils/virtual-slots.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import {
+  buildVirtualSlots,
+  filterSlotGroupsBySchedules,
+  mergePersistedSlots,
+} from '../../features/timeslot/virtual-slot.service.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './public-pages.css';
@@ -53,12 +57,13 @@ export default function DoctorDetailPage() {
   const slotData = slotResponse?.data;
   const dateOptions = useMemo(() => buildDateOptions(bookingRulesResponse?.data?.maxBookingDaysAhead || 7), [bookingRulesResponse?.data?.maxBookingDaysAhead]);
   const slotGroups = useMemo(() => {
-    if (!slotData?.scheduleId || slotData.scheduleStatus !== 'WORKING') {
+    const schedules = slotData?.schedules || [];
+    if (schedules.length === 0) {
       return { morning: [], afternoon: [] };
     }
 
     return mergePersistedSlots(
-      buildVirtualSlots(bookingRulesResponse?.data),
+      filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), schedules),
       slotData.slots || [],
     );
   }, [slotData, bookingRulesResponse?.data]);
