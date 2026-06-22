@@ -23,12 +23,22 @@ function minutesToTime(value) {
 }
 
 function normalizeSettings(systemSettings = {}) {
+  const workingShifts = systemSettings.workingShifts || {};
+
   return {
     slotDurationMinutes: systemSettings.slotDurationMinutes || DEFAULT_SYSTEM_SETTINGS.slotDurationMinutes,
-    morningShiftStart: systemSettings.morningShiftStart || DEFAULT_SYSTEM_SETTINGS.morningShiftStart,
-    morningShiftEnd: systemSettings.morningShiftEnd || DEFAULT_SYSTEM_SETTINGS.morningShiftEnd,
-    afternoonShiftStart: systemSettings.afternoonShiftStart || DEFAULT_SYSTEM_SETTINGS.afternoonShiftStart,
-    afternoonShiftEnd: systemSettings.afternoonShiftEnd || DEFAULT_SYSTEM_SETTINGS.afternoonShiftEnd,
+    morningShiftStart: workingShifts.morning?.start
+      || systemSettings.morningShiftStart
+      || DEFAULT_SYSTEM_SETTINGS.morningShiftStart,
+    morningShiftEnd: workingShifts.morning?.end
+      || systemSettings.morningShiftEnd
+      || DEFAULT_SYSTEM_SETTINGS.morningShiftEnd,
+    afternoonShiftStart: workingShifts.afternoon?.start
+      || systemSettings.afternoonShiftStart
+      || DEFAULT_SYSTEM_SETTINGS.afternoonShiftStart,
+    afternoonShiftEnd: workingShifts.afternoon?.end
+      || systemSettings.afternoonShiftEnd
+      || DEFAULT_SYSTEM_SETTINGS.afternoonShiftEnd,
   };
 }
 

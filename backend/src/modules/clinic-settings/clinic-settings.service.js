@@ -3,6 +3,7 @@ const {
   toClinicInfoDto,
   toAdminClinicInfoDto,
   toSystemSettingDto,
+  toBookingRulesDto,
 } = require('./clinic-settings.dto');
 const {
   CLINIC_SETTINGS_ERROR_CODES,
@@ -93,17 +94,21 @@ class ClinicSettingsService {
   }
 
   async getPublicSystemSetting() {
+    return this.getBookingRules();
+  }
+
+  async getBookingRules() {
     try {
       const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
-      return toSystemSettingDto(systemSetting ?? this._buildDefaultSystemSetting());
+      return toBookingRulesDto(systemSetting ?? this._buildDefaultSystemSetting());
     } catch (error) {
       if (error instanceof ClinicSettingsServiceError) {
         throw error;
       }
 
       throw new ClinicSettingsServiceError({
-        code: CLINIC_SETTINGS_ERROR_CODES.GET_SYSTEM_SETTING_FAILED,
-        message: 'Không thể lấy cấu hình hệ thống',
+        code: CLINIC_SETTINGS_ERROR_CODES.GET_BOOKING_RULES_FAILED,
+        message: 'Không thể lấy rule đặt lịch',
         statusCode: 500,
       });
     }

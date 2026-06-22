@@ -418,7 +418,7 @@ export default function HomePage() {
             <div className="process-step">
               <div className="process-number">2</div>
               <h3>Nhập thông tin người khám</h3>
-              <p>Điền thông tin cá nhân của bạn hoặc hồ sơ người thân (tối đa 4 người), kèm theo lý do khám chi tiết.</p>
+              <p>Điền thông tin cá nhân của bạn hoặc chọn hồ sơ người thân đã lưu, kèm theo lý do khám chi tiết.</p>
             </div>
 
             <div className="process-step">

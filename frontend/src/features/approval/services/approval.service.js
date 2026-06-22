@@ -15,7 +15,7 @@ export async function approveRequest(requestId) {
   return response.data;
 }
 
-export async function rejectRequest(requestId) {
-  const response = await axiosInstance.patch(`/approval-requests/${requestId}/reject`);
+export async function rejectRequest({ requestId, rejectionReason }) {
+  const response = await axiosInstance.patch(`/approval-requests/${requestId}/reject`, { rejectionReason });
   return response.data;
 }

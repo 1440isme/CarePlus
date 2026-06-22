@@ -49,6 +49,18 @@ class ClinicSettingsController {
     }
   }
 
+  async getBookingRules(req, res, next) {
+    try {
+      const data = await ClinicSettingsService.getBookingRules();
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async updateSystemSetting(req, res, next) {
     try {
       const data = await ClinicSettingsService.updateSystemSetting(req.user, req.body);
