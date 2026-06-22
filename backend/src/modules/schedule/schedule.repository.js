@@ -140,6 +140,19 @@ class ScheduleRepository extends BaseRepository {
     });
   }
 
+  async updateScheduleStatusByDoctorDateAndShifts(doctorId, workingDate, workingShifts, status, dbClient = this.prisma) {
+    return dbClient.schedule.updateMany({
+      where: {
+        doctorId,
+        workingDate,
+        workingShift: {
+          in: workingShifts,
+        },
+      },
+      data: { status },
+    });
+  }
+
   _buildWhereClause(filters) {
     const where = {};
 

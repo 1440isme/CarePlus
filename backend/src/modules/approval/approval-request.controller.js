@@ -26,9 +26,21 @@ class ApprovalRequestController {
     }
   }
 
+  async getRequestDetail(req, res, next) {
+    try {
+      const data = await ApprovalRequestService.getRequestDetail(req.user, req.params.id);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async approveRequest(req, res, next) {
     try {
-      const data = await ApprovalRequestService.approveRequest(req.params.id);
+      const data = await ApprovalRequestService.approveRequest(req.user, req.params.id);
       return res.status(200).json({
         success: true,
         data,
@@ -40,7 +52,7 @@ class ApprovalRequestController {
 
   async rejectRequest(req, res, next) {
     try {
-      const data = await ApprovalRequestService.rejectRequest(req.params.id);
+      const data = await ApprovalRequestService.rejectRequest(req.user, req.params.id, req.body);
       return res.status(200).json({
         success: true,
         data,
