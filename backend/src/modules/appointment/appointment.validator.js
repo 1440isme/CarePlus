@@ -123,8 +123,28 @@ function validateCreateReceptionistAppointment(req, res, next) {
 }
 
 function validateListAppointments(req, res, next) {
-  const { page, limit, status, date, doctorId, patientId, specialtyId } = req.query;
+  const { page, limit, status, date, doctorId, patientId, specialtyId, startDate, endDate } = req.query;
   const details = [];
+
+  if (startDate !== undefined) {
+    const startDateTrim = startDate.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDateTrim) || Number.isNaN(Date.parse(startDateTrim))) {
+      details.push({
+        field: 'startDate',
+        message: 'startDate must be a valid date string in YYYY-MM-DD format',
+      });
+    }
+  }
+
+  if (endDate !== undefined) {
+    const endDateTrim = endDate.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(endDateTrim) || Number.isNaN(Date.parse(endDateTrim))) {
+      details.push({
+        field: 'endDate',
+        message: 'endDate must be a valid date string in YYYY-MM-DD format',
+      });
+    }
+  }
 
   if (specialtyId !== undefined && (typeof specialtyId !== 'string' || !specialtyId.trim())) {
     details.push({

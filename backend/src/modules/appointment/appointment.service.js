@@ -504,6 +504,14 @@ class AppointmentService {
 
       if (query.date) {
         where.appointmentDate = new Date(`${query.date.trim()}T00:00:00.000Z`);
+      } else if (query.startDate || query.endDate) {
+        where.appointmentDate = {};
+        if (query.startDate) {
+          where.appointmentDate.gte = new Date(`${query.startDate.trim()}T00:00:00.000Z`);
+        }
+        if (query.endDate) {
+          where.appointmentDate.lte = new Date(`${query.endDate.trim()}T00:00:00.000Z`);
+        }
       }
 
       if (query.specialtyId) {

@@ -13,6 +13,9 @@ export default function ReceptionistAppointmentManagementPage() {
   const [selectedDoctorId, setSelectedDoctorId] = useState('');
   const todayStr = new Date().toLocaleDateString('sv').slice(0, 10);
   const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [dateMode, setDateMode] = useState('today'); // 'today', 'tomorrow', 'week', 'range', 'custom'
   const [selectedStatus, setSelectedStatus] = useState('');
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -36,6 +39,8 @@ export default function ReceptionistAppointmentManagementPage() {
     ...(selectedSpecialtyId ? { specialtyId: selectedSpecialtyId } : {}),
     ...(selectedDoctorId ? { doctorId: selectedDoctorId } : {}),
     ...(selectedDate ? { date: selectedDate } : {}),
+    ...(startDate ? { startDate } : {}),
+    ...(endDate ? { endDate } : {}),
     ...(selectedStatus ? { status: selectedStatus } : {}),
   };
 
@@ -84,10 +89,48 @@ export default function ReceptionistAppointmentManagementPage() {
       setSelectedDoctorId(value);
     } else if (filterType === 'date') {
       setSelectedDate(value);
+      setDateMode('custom');
+      setStartDate('');
+      setEndDate('');
     } else if (filterType === 'status') {
       setSelectedStatus(value);
     } else if (filterType === 'search') {
       setSearch(value);
+    }
+  };
+
+  const handleDateModeChange = (mode) => {
+    setPage(1);
+    setDateMode(mode);
+    if (mode === 'today') {
+      setSelectedDate(todayStr);
+      setStartDate('');
+      setEndDate('');
+    } else if (mode === 'tomorrow') {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      const tomorrowStr = tomorrow.toLocaleDateString('sv').slice(0, 10);
+      setSelectedDate(tomorrowStr);
+      setStartDate('');
+      setEndDate('');
+    } else if (mode === 'week') {
+      const d = new Date();
+      const day = d.getDay();
+      const diffToMonday = d.getDate() - day + (day === 0 ? -6 : 1);
+      const monday = new Date(d.setDate(diffToMonday));
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const mondayStr = monday.toLocaleDateString('sv').slice(0, 10);
+      const sundayStr = sunday.toLocaleDateString('sv').slice(0, 10);
+
+      setSelectedDate('');
+      setStartDate(mondayStr);
+      setEndDate(sundayStr);
+    } else if (mode === 'range') {
+      setSelectedDate('');
+      // Set to today's date initially
+      setStartDate(todayStr);
+      setEndDate(todayStr);
     }
   };
 
@@ -96,6 +139,9 @@ export default function ReceptionistAppointmentManagementPage() {
     setSelectedSpecialtyId('');
     setSelectedDoctorId('');
     setSelectedDate(todayStr);
+    setStartDate('');
+    setEndDate('');
+    setDateMode('today');
     setSelectedStatus('');
     setPage(1);
   };
@@ -113,72 +159,183 @@ export default function ReceptionistAppointmentManagementPage() {
       </div>
 
       {/* Filter Toolbar */}
-      <section className="surface-card toolbar-filters" style={{ padding: '18px 20px', borderRadius: '16px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(170px, 1fr))', gap: '12px' }}>
-          {/* Search input */}
+      <section className="surface-card toolbar-filters" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+        {/* Row 1: Search input (Full Width) */}
+        <div style={{ display: 'flex', width: '100%' }}>
           <input
             type="text"
-            placeholder="Tìm bệnh nhân (Tên, SĐT, Email)..."
+            placeholder="Tìm bệnh nhân (Tên, SĐT, Email hoặc Mã lịch)..."
             value={search}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
+            style={{ width: '100%', padding: '10px 16px', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.95rem' }}
           />
+        </div>
 
-          {/* Date Picker */}
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => handleFilterChange('date', e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
-          />
+        {/* Row 2: Date select mode & drop-downs */}
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* Left: Date options */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            <div style={{ display: 'inline-flex', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--bg-offset)' }}>
+              <button
+                type="button"
+                className={`quick-date-btn ${dateMode === 'today' ? 'active' : ''}`}
+                onClick={() => handleDateModeChange('today')}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: dateMode === 'today' ? 'var(--cyan)' : 'transparent',
+                  color: dateMode === 'today' ? '#ffffff' : 'var(--text-h)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Hôm nay
+              </button>
+              <button
+                type="button"
+                className={`quick-date-btn ${dateMode === 'tomorrow' ? 'active' : ''}`}
+                onClick={() => handleDateModeChange('tomorrow')}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderLeft: '1px solid var(--border)',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: dateMode === 'tomorrow' ? 'var(--cyan)' : 'transparent',
+                  color: dateMode === 'tomorrow' ? '#ffffff' : 'var(--text-h)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Ngày mai
+              </button>
+              <button
+                type="button"
+                className={`quick-date-btn ${dateMode === 'week' ? 'active' : ''}`}
+                onClick={() => handleDateModeChange('week')}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderLeft: '1px solid var(--border)',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: dateMode === 'week' ? 'var(--cyan)' : 'transparent',
+                  color: dateMode === 'week' ? '#ffffff' : 'var(--text-h)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Tuần này
+              </button>
+              <button
+                type="button"
+                className={`quick-date-btn ${dateMode === 'range' ? 'active' : ''}`}
+                onClick={() => handleDateModeChange('range')}
+                style={{
+                  padding: '8px 16px',
+                  border: 'none',
+                  borderLeft: '1px solid var(--border)',
+                  fontSize: '0.88rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  backgroundColor: dateMode === 'range' ? 'var(--cyan)' : 'transparent',
+                  color: dateMode === 'range' ? '#ffffff' : 'var(--text-h)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Khoảng thời gian
+              </button>
+            </div>
 
-          {/* Specialty Dropdown */}
-          <select
-            value={selectedSpecialtyId}
-            onChange={(e) => handleFilterChange('specialty', e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
-          >
-            <option value="">-- Tất cả chuyên khoa --</option>
-            {specialtiesList.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </select>
+            {/* Inputs based on selection */}
+            {dateMode !== 'range' ? (
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => handleFilterChange('date', e.target.value)}
+                style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
+              />
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <input
+                  type="date"
+                  placeholder="Từ ngày"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setSelectedDate('');
+                    setPage(1);
+                  }}
+                  style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
+                />
+                <span style={{ fontSize: '0.88rem', color: '#666' }}>đến</span>
+                <input
+                  type="date"
+                  placeholder="Đến ngày"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setSelectedDate('');
+                    setPage(1);
+                  }}
+                  style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
+                />
+              </div>
+            )}
+          </div>
 
-          {/* Doctor Dropdown */}
-          <select
-            value={selectedDoctorId}
-            onChange={(e) => handleFilterChange('doctor', e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
-          >
-            <option value="">-- Tất cả bác sĩ --</option>
-            {doctorsList.map((d) => (
-              <option key={d.id} value={d.id}>{d.name}</option>
-            ))}
-          </select>
+          {/* Right: Dropdowns Group */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+            {/* Specialty Dropdown */}
+            <select
+              value={selectedSpecialtyId}
+              onChange={(e) => handleFilterChange('specialty', e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem', minWidth: '150px' }}
+            >
+              <option value="">-- Chuyên khoa --</option>
+              {specialtiesList.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
 
-          {/* Status Dropdown */}
-          <select
-            value={selectedStatus}
-            onChange={(e) => handleFilterChange('status', e.target.value)}
-            style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem' }}
-          >
-            <option value="">-- Tất cả trạng thái --</option>
-            <option value="CONFIRMED">Đã xác nhận (Chờ khám)</option>
-            <option value="CHECKED_IN">Đã check-in</option>
-            <option value="COMPLETED">Đã hoàn thành</option>
-            <option value="NO_SHOW">Vắng mặt (Không đến)</option>
-            <option value="CANCELLED">Đã hủy</option>
-          </select>
+            {/* Doctor Dropdown */}
+            <select
+              value={selectedDoctorId}
+              onChange={(e) => handleFilterChange('doctor', e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem', minWidth: '150px' }}
+            >
+              <option value="">-- Bác sĩ --</option>
+              {doctorsList.map((d) => (
+                <option key={d.id} value={d.id}>{d.name}</option>
+              ))}
+            </select>
 
-          {/* Clear Filters Button */}
-          <button
-            type="button"
-            className="button-secondary"
-            onClick={handleClearFilters}
-            style={{ minHeight: 'auto', height: '38px', padding: '0 12px', fontSize: '0.9rem' }}
-          >
-            Xóa bộ lọc
-          </button>
+            {/* Status Dropdown */}
+            <select
+              value={selectedStatus}
+              onChange={(e) => handleFilterChange('status', e.target.value)}
+              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem', minWidth: '140px' }}
+            >
+              <option value="">-- Trạng thái --</option>
+              <option value="CONFIRMED">Đã xác nhận</option>
+              <option value="CHECKED_IN">Đã check-in</option>
+              <option value="COMPLETED">Đã hoàn thành</option>
+              <option value="NO_SHOW">Vắng mặt</option>
+              <option value="CANCELLED">Đã hủy</option>
+            </select>
+
+            {/* Clear Filters Button */}
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={handleClearFilters}
+              style={{ minHeight: 'auto', height: '36px', padding: '0 12px', fontSize: '0.88rem', borderRadius: '8px' }}
+            >
+              Xóa bộ lọc
+            </button>
+          </div>
         </div>
       </section>
 
