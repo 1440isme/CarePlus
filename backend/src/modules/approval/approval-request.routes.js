@@ -4,6 +4,7 @@ const {
   validateCreateScheduleException,
   validateListApprovalRequests,
   validateApprovalRequestId,
+  validateRejectRequest,
 } = require('./approval-request.validator');
 const { APPROVAL_REQUEST_ROUTE_PATHS } = require('./approval-request.types');
 const { authenticate } = require('../../middleware/auth.middleware');
@@ -28,6 +29,14 @@ router.get(
   ApprovalRequestController.listRequests,
 );
 
+router.get(
+  APPROVAL_REQUEST_ROUTE_PATHS.DETAIL,
+  authenticate,
+  authorize(USER_ROLES.ADMIN, USER_ROLES.DOCTOR),
+  validateApprovalRequestId,
+  ApprovalRequestController.getRequestDetail,
+);
+
 router.patch(
   APPROVAL_REQUEST_ROUTE_PATHS.APPROVE,
   authenticate,
@@ -41,6 +50,7 @@ router.patch(
   authenticate,
   authorize(USER_ROLES.ADMIN),
   validateApprovalRequestId,
+  validateRejectRequest,
   ApprovalRequestController.rejectRequest,
 );
 

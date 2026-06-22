@@ -1,5 +1,42 @@
 const BaseRepository = require('../../shared/repositories/base.repository');
 
+const APPROVAL_REQUEST_SELECT = {
+  id: true,
+  type: true,
+  doctorId: true,
+  doctorName: true,
+  date: true,
+  exceptionType: true,
+  shift: true,
+  startTime: true,
+  endTime: true,
+  reason: true,
+  appointmentCode: true,
+  status: true,
+  reviewedBy: true,
+  reviewedAt: true,
+  rejectionReason: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
+const LEGACY_APPROVAL_REQUEST_SELECT = {
+  id: true,
+  type: true,
+  doctorId: true,
+  doctorName: true,
+  date: true,
+  exceptionType: true,
+  shift: true,
+  startTime: true,
+  endTime: true,
+  reason: true,
+  appointmentCode: true,
+  status: true,
+  createdAt: true,
+  updatedAt: true,
+};
+
 class ApprovalRequestRepository extends BaseRepository {
   constructor() {
     super('ApprovalRequest');
@@ -8,12 +45,42 @@ class ApprovalRequestRepository extends BaseRepository {
   async createScheduleExceptionRequest(data, dbClient = this.prisma) {
     return dbClient.approvalRequest.create({
       data,
+      select: LEGACY_APPROVAL_REQUEST_SELECT,
     });
   }
 
   async findRequestById(requestId, dbClient = this.prisma) {
-    return dbClient.approvalRequest.findUnique({
-      where: { id: requestId },
+    try {
+      return await dbClient.approvalRequest.findUnique({
+        where: { id: requestId },
+        select: APPROVAL_REQUEST_SELECT,
+      });
+    } catch (error) {
+      if (!this._isMissingReviewColumnError(error)) {
+        throw error;
+      }
+
+      return dbClient.approvalRequest.findUnique({
+        where: { id: requestId },
+        select: LEGACY_APPROVAL_REQUEST_SELECT,
+      });
+    }
+  }
+
+  async findActiveScheduleExceptionRequestsByDoctorAndDate(doctorId, date, dbClient = this.prisma) {
+    return dbClient.approvalRequest.findMany({
+      where: {
+        doctorId,
+        date,
+        type: 'SCHEDULE_EXCEPTION',
+        status: {
+          in: ['PENDING', 'APPROVED'],
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      select: LEGACY_APPROVAL_REQUEST_SELECT,
     });
   }
 
@@ -27,14 +94,31 @@ class ApprovalRequestRepository extends BaseRepository {
       take = 10,
     } = filters;
 
-    return this.prisma.approvalRequest.findMany({
-      where: this._buildWhereClause({ type, status, doctorId, date }),
-      orderBy: {
-        createdAt: 'desc',
-      },
-      skip,
-      take,
-    });
+    try {
+      return await this.prisma.approvalRequest.findMany({
+        where: this._buildWhereClause({ type, status, doctorId, date }),
+        select: APPROVAL_REQUEST_SELECT,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      });
+    } catch (error) {
+      if (!this._isMissingReviewColumnError(error)) {
+        throw error;
+      }
+
+      return this.prisma.approvalRequest.findMany({
+        where: this._buildWhereClause({ type, status, doctorId, date }),
+        select: LEGACY_APPROVAL_REQUEST_SELECT,
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take,
+      });
+    }
   }
 
   async countRequests(filters) {
@@ -44,11 +128,29 @@ class ApprovalRequestRepository extends BaseRepository {
     });
   }
 
-  async updateRequestStatus(requestId, status, dbClient = this.prisma) {
-    return dbClient.approvalRequest.update({
-      where: { id: requestId },
-      data: { status },
-    });
+  async updateRequestStatus(requestId, status, payload = {}, dbClient = this.prisma) {
+    try {
+      return await dbClient.approvalRequest.update({
+        where: { id: requestId },
+        data: {
+          status,
+          reviewedBy: payload.reviewedBy,
+          reviewedAt: payload.reviewedAt,
+          rejectionReason: payload.rejectionReason,
+        },
+        select: APPROVAL_REQUEST_SELECT,
+      });
+    } catch (error) {
+      if (!this._isMissingReviewColumnError(error)) {
+        throw error;
+      }
+
+      return dbClient.approvalRequest.update({
+        where: { id: requestId },
+        data: { status },
+        select: LEGACY_APPROVAL_REQUEST_SELECT,
+      });
+    }
   }
 
   async findPendingRequestByDoctorAndDate(doctorId, date, dbClient = this.prisma) {
@@ -62,6 +164,7 @@ class ApprovalRequestRepository extends BaseRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      select: LEGACY_APPROVAL_REQUEST_SELECT,
     });
   }
 
@@ -78,6 +181,7 @@ class ApprovalRequestRepository extends BaseRepository {
       orderBy: {
         createdAt: 'desc',
       },
+      select: LEGACY_APPROVAL_REQUEST_SELECT,
     });
   }
 
@@ -101,6 +205,14 @@ class ApprovalRequestRepository extends BaseRepository {
     }
 
     return where;
+  }
+
+  _isMissingReviewColumnError(error) {
+    const message = String(error?.message || '');
+    return error?.code === 'P2022'
+      || message.includes('reviewedBy')
+      || message.includes('reviewedAt')
+      || message.includes('rejectionReason');
   }
 }
 

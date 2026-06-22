@@ -1,6 +1,7 @@
 const APPROVAL_REQUEST_ROUTE_PATHS = {
   ROOT: '/',
   SCHEDULE_EXCEPTION: '/schedule-exception',
+  DETAIL: '/:id',
   APPROVE: '/:id/approve',
   REJECT: '/:id/reject',
 };

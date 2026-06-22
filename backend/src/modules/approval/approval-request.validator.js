@@ -34,10 +34,8 @@ const exceptionShiftValues = [
 const scheduleExceptionSchema = z.object({
   type: z.literal(APPROVAL_REQUEST_TYPES.SCHEDULE_EXCEPTION),
   date: z.string().date(),
-  exceptionType: z.enum(Object.values(EXCEPTION_TYPES)),
+  exceptionType: z.enum([EXCEPTION_TYPES.ALL_DAY, EXCEPTION_TYPES.SHIFT]),
   shift: z.enum(exceptionShiftValues).optional(),
-  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'startTime must be in HH:MM format').optional(),
-  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'endTime must be in HH:MM format').optional(),
   reason: z.string().trim().min(5).max(1000),
 }).strict().superRefine((value, ctx) => {
   if (value.exceptionType === EXCEPTION_TYPES.SHIFT && !value.shift) {
@@ -48,32 +46,18 @@ const scheduleExceptionSchema = z.object({
     });
   }
 
-  if (value.exceptionType === EXCEPTION_TYPES.TIME_RANGE) {
-    if (!value.startTime) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['startTime'],
-        message: 'startTime is required when exceptionType is TIME_RANGE',
-      });
-    }
-
-    if (!value.endTime) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['endTime'],
-        message: 'endTime is required when exceptionType is TIME_RANGE',
-      });
-    }
-
-    if (value.startTime && value.endTime && value.startTime >= value.endTime) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['endTime'],
-        message: 'endTime must be greater than startTime',
-      });
-    }
+  if (value.exceptionType === EXCEPTION_TYPES.ALL_DAY && value.shift) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['shift'],
+      message: 'shift must be empty when exceptionType is ALL_DAY',
+    });
   }
 });
+
+const rejectRequestSchema = z.object({
+  rejectionReason: z.string().trim().max(1000).optional(),
+}).strict();
 
 const listRequestsQuerySchema = z.object({
   type: z.enum(Object.values(APPROVAL_REQUEST_TYPES)).optional(),
@@ -121,8 +105,20 @@ function validateApprovalRequestId(req, res, next) {
   return next();
 }
 
+function validateRejectRequest(req, res, next) {
+  const parsed = rejectRequestSchema.safeParse(req.body || {});
+
+  if (!parsed.success) {
+    return sendValidationError(res, buildIssueDetails(parsed.error));
+  }
+
+  req.body = parsed.data;
+  return next();
+}
+
 module.exports = {
   validateCreateScheduleException,
   validateListApprovalRequests,
   validateApprovalRequestId,
+  validateRejectRequest,
 };

@@ -330,6 +330,9 @@ model ApprovalRequest {
   reason          String              @db.Text
   appointmentCode String?
   status          ApprovalStatus      @default(PENDING)
+  reviewedBy      String?
+  reviewedAt      DateTime?
+  rejectionReason String?             @db.Text
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 

@@ -16,6 +16,9 @@ function toApprovalRequestDto(request) {
     reason: request.reason,
     appointmentCode: request.appointmentCode,
     status: request.status,
+    reviewedBy: request.reviewedBy,
+    reviewedAt: request.reviewedAt,
+    rejectionReason: request.rejectionReason,
     createdAt: request.createdAt,
     updatedAt: request.updatedAt,
   };
