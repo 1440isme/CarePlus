@@ -2,6 +2,12 @@ import { useState, useMemo } from 'react';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import {
+  buildVirtualSlots,
+  filterSlotGroupsBySchedules,
+  mergePersistedSlots,
+} from '../../features/timeslot/virtual-slot.service.js';
 import { useSearchPatients, useBookAppointmentByReceptionist } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
@@ -39,6 +45,7 @@ export default function ReceptionistBookingPage() {
       ? { doctorId: bookingData.doctor.id, date: bookingData.date }
       : null
   );
+  const { data: systemSettingsResponse } = usePublicSystemSettings();
 
   // 4. Fetch Patient Search Results (Autocomplete)
   const searchPatientsQuery = useSearchPatients(
@@ -142,6 +149,11 @@ export default function ReceptionistBookingPage() {
         const payload = {
           patientId: bookingData.patientUser.id,
           timeSlotId: bookingData.timeSlot.id,
+          doctorId: bookingData.doctor?.id,
+          date: bookingData.date,
+          workingShift: bookingData.timeSlot.workingShift,
+          startTime: bookingData.timeSlot.startTime,
+          endTime: bookingData.timeSlot.endTime,
           forSelf: bookingData.forSelf,
           ...(bookingData.forSelf ? {} : { patientProfileId: bookingData.patientProfileId }),
           reason: bookingData.reason.trim(),
@@ -187,10 +199,25 @@ export default function ReceptionistBookingPage() {
   const specialtiesList = specialtiesQuery.data?.data || [];
   const doctorsList = doctorsQuery.data?.data || [];
 
-  // Active timeslots list
-  const slotsList = timeSlotsQuery.data?.data || [];
-  const morningSlots = slotsList.filter(s => s.startTime < '12:00');
-  const afternoonSlots = slotsList.filter(s => s.startTime >= '12:00');
+  // Active timeslots list. Virtual slots come from system settings and are saved only when booked.
+  const slotData = timeSlotsQuery.data?.data || null;
+  const slotGroups = useMemo(() => {
+    const schedules = slotData?.schedules || [];
+    if (schedules.length === 0) {
+      return { morning: [], afternoon: [] };
+    }
+
+    return mergePersistedSlots(
+      filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), schedules),
+      slotData.slots || [],
+    );
+  }, [slotData, systemSettingsResponse?.data]);
+  const slotsList = useMemo(() => [
+    ...(slotGroups.morning || []),
+    ...(slotGroups.afternoon || []),
+  ], [slotGroups]);
+  const morningSlots = slotGroups.morning || [];
+  const afternoonSlots = slotGroups.afternoon || [];
 
   // Selected relative profile details
   const selectedProfile = useMemo(() => {

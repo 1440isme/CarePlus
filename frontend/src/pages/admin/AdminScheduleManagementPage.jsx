@@ -14,6 +14,18 @@ const STATUS_LABELS = {
   REJECTED: 'Từ chối',
 };
 
+const WORKING_SHIFT_LABELS = {
+  MORNING: 'Ca sáng',
+  AFTERNOON: 'Ca chiều',
+  ALL_DAY: 'Cả ngày',
+};
+
+const WORKING_SHIFT_OPTIONS = [
+  { label: 'Ca sáng', value: 'MORNING' },
+  { label: 'Ca chiều', value: 'AFTERNOON' },
+  { label: 'Cả ngày', value: 'ALL_DAY' },
+];
+
 const WEEKDAY_OPTIONS = [
   { label: 'T2', value: 1 },
   { label: 'T3', value: 2 },
@@ -74,6 +86,7 @@ export default function AdminScheduleManagementPage() {
     fromDate: getTodayDate(),
     toDate: getDateAfterDays(7),
     weekdays: [1, 2, 3, 4, 5, 6],
+    workingShift: 'ALL_DAY',
   });
 
   const scheduleParams = useMemo(() => ({
@@ -162,12 +175,14 @@ export default function AdminScheduleManagementPage() {
     fromDate: createPayload.fromDate,
     toDate: createPayload.toDate,
     weekdays: createPayload.weekdays,
+    workingShift: createPayload.workingShift,
   });
 
   const isCreateScheduleDisabled = createSchedulesMutation.isPending
     || !createPayload.doctorId
     || !createPayload.fromDate
     || !createPayload.toDate
+    || !createPayload.workingShift
     || createPayload.weekdays.length === 0;
 
   const openCreateModal = () => {
@@ -178,6 +193,7 @@ export default function AdminScheduleManagementPage() {
       fromDate: getTodayDate(),
       toDate: getDateAfterDays(7),
       weekdays: [1, 2, 3, 4, 5, 6],
+      workingShift: 'ALL_DAY',
     });
     setIsCreateModalOpen(true);
   };
@@ -304,6 +320,7 @@ export default function AdminScheduleManagementPage() {
                     <th>Ngày</th>
                     <th>Bác sĩ</th>
                     <th>Chuyên khoa</th>
+                    <th>Ca</th>
                     <th>Trạng thái</th>
                     <th>Tổng slot</th>
                     <th>Còn trống</th>
@@ -319,6 +336,7 @@ export default function AdminScheduleManagementPage() {
                       </td>
                       <td>{schedule.doctor?.name || 'Chưa có bác sĩ'}</td>
                       <td>{schedule.doctor?.specialtyName || 'Chưa phân khoa'}</td>
+                      <td>{WORKING_SHIFT_LABELS[schedule.workingShift || schedule.shift] || schedule.workingShift || 'Cả ngày'}</td>
                       <td>
                         <span className={`admin-figma-badge status-${String(schedule.status).toLowerCase()}`}>
                           {STATUS_LABELS[schedule.status] || schedule.status}
@@ -453,6 +471,25 @@ export default function AdminScheduleManagementPage() {
                     onClick={() => handleWeekdayToggle(weekday.value)}
                   >
                     {weekday.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+
+            <fieldset className="admin-assignment-fieldset">
+              <legend>Ca làm việc <strong>*</strong></legend>
+              <div className="admin-shift-tabs admin-shift-tabs-three">
+                {WORKING_SHIFT_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    className={createPayload.workingShift === option.value ? 'is-active' : ''}
+                    onClick={() => setCreatePayload((currentPayload) => ({
+                      ...currentPayload,
+                      workingShift: option.value,
+                    }))}
+                  >
+                    {option.label}
                   </button>
                 ))}
               </div>

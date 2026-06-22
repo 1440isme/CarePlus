@@ -6,6 +6,7 @@ const { mailService } = require('../../infrastructure/mail/mail.service');
 const prisma = require('../../infrastructure/database/prisma.client');
 const { toAppointmentDto, toAppointmentListDto } = require('./appointment.dto');
 const { APPOINTMENT_ERROR_CODES, APPOINTMENT_PAGINATION } = require('./appointment.types');
+const { WORKING_SHIFTS } = require('../schedule/schedule.types');
 
 class AppointmentServiceError extends Error {
   constructor({ code, message, statusCode, details = [] }) {
@@ -64,41 +65,8 @@ class AppointmentService {
         });
       }
 
-      // 2. Fetch TimeSlot and include Schedule + Doctor
-      const timeSlot = await this.prisma.timeSlot.findUnique({
-        where: { id: bookingData.timeSlotId },
-        include: {
-          schedule: {
-            include: {
-              doctor: true,
-            },
-          },
-        },
-      });
-
-      if (!timeSlot) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SLOT_NOT_FOUND,
-          message: 'Không tìm thấy khung giờ khám',
-          statusCode: 404,
-        });
-      }
-
-      if (timeSlot.status !== 'AVAILABLE') {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
-          message: 'Khung giờ khám này đã được đặt hoặc bị khóa',
-          statusCode: 400,
-        });
-      }
-
-      if (timeSlot.schedule.status !== 'WORKING') {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
-          message: 'Lịch làm việc của bác sĩ trong ngày này không khả dụng',
-          statusCode: 400,
-        });
-      }
+      // 2. Resolve persisted slot or create one lazily from a frontend virtual slot.
+      const timeSlot = await this._resolveBookableTimeSlot(bookingData);
 
       // 3. Verify Patient Relative Profile if forSelf === false
       let relativeName = null;
@@ -263,41 +231,8 @@ class AppointmentService {
         });
       }
 
-      // 2. Fetch TimeSlot and include Schedule + Doctor
-      const timeSlot = await this.prisma.timeSlot.findUnique({
-        where: { id: bookingData.timeSlotId },
-        include: {
-          schedule: {
-            include: {
-              doctor: true,
-            },
-          },
-        },
-      });
-
-      if (!timeSlot) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SLOT_NOT_FOUND,
-          message: 'Không tìm thấy khung giờ khám',
-          statusCode: 404,
-        });
-      }
-
-      if (timeSlot.status !== 'AVAILABLE') {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
-          message: 'Khung giờ khám này đã được đặt hoặc bị khóa',
-          statusCode: 400,
-        });
-      }
-
-      if (timeSlot.schedule.status !== 'WORKING') {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
-          message: 'Lịch làm việc của bác sĩ trong ngày này không khả dụng',
-          statusCode: 400,
-        });
-      }
+      // 2. Resolve persisted slot or create one lazily from a frontend virtual slot.
+      const timeSlot = await this._resolveBookableTimeSlot(bookingData);
 
       // 3. Verify Patient Relative Profile if forSelf === false
       let relativeName = null;
@@ -876,6 +811,80 @@ class AppointmentService {
         'Không thể tra cứu thông tin bệnh nhân'
       );
     }
+  }
+
+  async _resolveBookableTimeSlot(bookingData) {
+    let timeSlot = await this._findTimeSlotById(bookingData.timeSlotId);
+
+    if (!timeSlot) {
+      timeSlot = await this._createTimeSlotFromVirtualSelection(bookingData);
+    }
+
+    if (!timeSlot) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.SLOT_NOT_FOUND,
+        message: 'Không tìm thấy khung giờ khám',
+        statusCode: 404,
+      });
+    }
+
+    if (timeSlot.status !== 'AVAILABLE') {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
+        message: 'Khung giờ khám này đã được đặt hoặc bị khóa',
+        statusCode: 400,
+      });
+    }
+
+    if (timeSlot.schedule.status !== 'WORKING') {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
+        message: 'Lịch làm việc của bác sĩ trong ngày này không khả dụng',
+        statusCode: 400,
+      });
+    }
+
+    return timeSlot;
+  }
+
+  async _findTimeSlotById(timeSlotId) {
+    return this.appointmentRepository.findTimeSlotByIdWithSchedule(timeSlotId);
+  }
+
+  async _createTimeSlotFromVirtualSelection(bookingData) {
+    if (!bookingData.doctorId || !bookingData.date || !bookingData.startTime || !bookingData.endTime || !bookingData.workingShift) {
+      return null;
+    }
+
+    const workingDate = new Date(`${bookingData.date}T00:00:00.000Z`);
+    const schedule = await this.appointmentRepository.findWorkingScheduleForSlotSelection({
+      doctorId: bookingData.doctorId,
+      workingDate,
+      workingShift: bookingData.workingShift,
+      allDayShift: WORKING_SHIFTS.ALL_DAY,
+    });
+
+    if (!schedule) {
+      return null;
+    }
+
+    const existingSlot = await this.appointmentRepository.findTimeSlotByDoctorDateAndTime({
+      doctorId: bookingData.doctorId,
+      workingDate,
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+    });
+
+    if (existingSlot) {
+      return existingSlot;
+    }
+
+    return this.appointmentRepository.createAvailableTimeSlot({
+      scheduleId: schedule.id,
+      workingShift: bookingData.workingShift,
+      startTime: bookingData.startTime,
+      endTime: bookingData.endTime,
+    });
   }
 
   _wrapUnexpectedError(error, code, message) {
