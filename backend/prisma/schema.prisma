@@ -86,6 +86,7 @@ enum ExceptionType {
 enum WorkingShift {
   MORNING
   AFTERNOON
+  ALL_DAY
 }
 
 enum ApprovalStatus {
@@ -194,33 +195,41 @@ model Specialty {
 }
 
 model Schedule {
-  id          String         @id @default(uuid())
-  doctorId    String
-  workingDate DateTime       @db.Date
-  status      ScheduleStatus @default(WORKING)
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id                  String         @id @default(uuid())
+  doctorId            String
+  workingDate         DateTime       @db.Date
+  workingShift        WorkingShift   @default(ALL_DAY)
+  morningShiftStart   String?
+  morningShiftEnd     String?
+  afternoonShiftStart String?
+  afternoonShiftEnd   String?
+  status              ScheduleStatus @default(WORKING)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
 
   doctor       Doctor        @relation(fields: [doctorId], references: [id], onDelete: Restrict)
   timeSlots    TimeSlot[]
   appointments Appointment[]
 
-  @@unique([doctorId, workingDate])
+  @@unique([doctorId, workingDate, workingShift])
   @@index([doctorId, workingDate])
+  @@index([workingShift])
   @@index([status])
 }
 
 model TimeSlot {
-  id         String         @id @default(uuid())
-  scheduleId String
-  startTime  String // e.g. "08:00"
-  endTime    String // e.g. "08:30"
-  status     TimeSlotStatus @default(AVAILABLE)
+  id           String         @id @default(uuid())
+  scheduleId   String
+  workingShift WorkingShift   @default(MORNING)
+  startTime    String // e.g. "08:00"
+  endTime      String // e.g. "08:30"
+  status       TimeSlotStatus @default(AVAILABLE)
 
   schedule    Schedule     @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
   appointment Appointment? @relation("TimeSlotAppointment")
 
   @@index([scheduleId])
+  @@index([workingShift])
   @@index([status])
 }
 

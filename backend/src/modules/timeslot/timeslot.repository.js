@@ -37,6 +37,7 @@ class TimeSlotRepository extends BaseRepository {
     return dbClient.timeSlot.createMany({
       data: slots.map((slot) => ({
         scheduleId,
+        workingShift: slot.workingShift,
         startTime: slot.startTime,
         endTime: slot.endTime,
         status: slot.status,

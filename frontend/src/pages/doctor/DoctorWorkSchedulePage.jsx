@@ -3,10 +3,23 @@ import { useDoctorProfile } from '../../features/doctor/index.js';
 import { useDoctorSchedules } from '../../features/schedule/hooks/useSchedules.js';
 import { useApprovalRequests, useCreateLeaveRequest } from '../../features/approval/hooks/useApprovalRequests.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import {
+  buildVirtualSlots,
+  filterSlotGroupsBySchedules,
+  mergePersistedSlots,
+} from '../../features/timeslot/virtual-slot.service.js';
 import LeaveRequestForm from '../../features/approval/components/LeaveRequestForm.jsx';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './doctor.css';
+
+function formatIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 
 function formatDateRange(startDate, endDate) {
   const start = new Date(startDate);
@@ -43,29 +56,18 @@ function formatShiftLabel(request) {
   return request.exceptionType || '--';
 }
 
-function splitSlotsByShift(slots) {
-  return (slots || []).reduce((accumulator, slot) => {
-    const hour = Number.parseInt(String(slot.startTime).slice(0, 2), 10);
-    if (hour < 12) {
-      accumulator.morning.push(slot);
-    } else {
-      accumulator.afternoon.push(slot);
-    }
-    return accumulator;
-  }, { morning: [], afternoon: [] });
-}
-
 export default function DoctorWorkSchedulePage() {
+  const todayIso = formatIsoDate(new Date());
   const [baseDate, setBaseDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date().toLocaleDateString('sv-SE'));
+  const [selectedDate, setSelectedDate] = useState(todayIso);
   const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false);
 
   const profileQuery = useDoctorProfile();
   const doctor = profileQuery.data?.data;
 
   const weekDates = useMemo(() => buildWeek(baseDate), [baseDate]);
-  const startDate = weekDates[0].toLocaleDateString('sv-SE');
-  const endDate = weekDates[6].toLocaleDateString('sv-SE');
+  const startDate = formatIsoDate(weekDates[0]);
+  const endDate = formatIsoDate(weekDates[6]);
 
   const schedulesQuery = useDoctorSchedules(doctor?.id, {
     startDate,
@@ -77,6 +79,7 @@ export default function DoctorWorkSchedulePage() {
     doctorId: doctor?.id,
     date: selectedDate,
   });
+  const { data: systemSettingsResponse } = usePublicSystemSettings();
 
   const requestsQuery = useApprovalRequests({
     type: 'SCHEDULE_EXCEPTION',
@@ -86,9 +89,10 @@ export default function DoctorWorkSchedulePage() {
 
   const leaveMutation = useCreateLeaveRequest();
 
-  const schedules = schedulesQuery.data?.data || [];
-  const selectedSchedule = schedules.find((item) => item.workingDate === selectedDate);
-  const requests = requestsQuery.data?.data || [];
+  const schedules = Array.isArray(schedulesQuery.data?.data) ? schedulesQuery.data.data : [];
+  const selectedSchedules = schedules.filter((item) => item.workingDate === selectedDate);
+  const selectedSchedule = selectedSchedules[0];
+  const requests = Array.isArray(requestsQuery.data?.data) ? requestsQuery.data.data : [];
   const weekSummary = useMemo(() => {
     return schedules.reduce((summary, item) => {
       summary.totalSchedules += 1;
@@ -106,7 +110,22 @@ export default function DoctorWorkSchedulePage() {
     });
   }, [schedules]);
 
-  const slotsByShift = splitSlotsByShift(slotsQuery.data?.data || []);
+  const slotData = slotsQuery.data?.data || null;
+  const slotsByShift = useMemo(() => {
+    const daySchedules = slotData?.schedules || selectedSchedules;
+    if (daySchedules.length === 0) {
+      return { morning: [], afternoon: [] };
+    }
+
+    return mergePersistedSlots(
+      filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), daySchedules),
+      slotData?.slots || [],
+    );
+  }, [selectedSchedules, slotData, systemSettingsResponse?.data]);
+  const selectedDateLabel =
+    typeof selectedDate === 'string' && selectedDate.includes('-')
+      ? selectedDate.split('-').reverse().join('/')
+      : selectedDate;
 
   const handleSubmitLeave = async (values) => {
     await leaveMutation.mutateAsync(values);
@@ -163,7 +182,7 @@ export default function DoctorWorkSchedulePage() {
               onClick={() => {
                 const now = new Date();
                 setBaseDate(now);
-                setSelectedDate(now.toLocaleDateString('sv-SE'));
+                setSelectedDate(formatIsoDate(now));
               }}
             >
               Tuần này
@@ -202,9 +221,9 @@ export default function DoctorWorkSchedulePage() {
           <div className="doctor-calendar-body">
             <div className="doctor-calendar-week">
               {weekDates.map((date) => {
-                const isoDate = date.toLocaleDateString('sv-SE');
+                const isoDate = formatIsoDate(date);
                 const schedule = schedules.find((item) => item.workingDate === isoDate);
-                const isToday = isoDate === new Date().toLocaleDateString('sv-SE');
+                const isToday = isoDate === todayIso;
                 const isSelected = isoDate === selectedDate;
 
                 return (
@@ -246,7 +265,7 @@ export default function DoctorWorkSchedulePage() {
         <div className="surface-card doctor-day-slots-card">
           <div className="doctor-section-title">
             <div>
-              <h3>Chi tiết ngày {selectedDate.split('-').reverse().join('/')}</h3>
+              <h3>Chi tiết ngày {selectedDateLabel}</h3>
               <p>{selectedSchedule ? `Trạng thái lịch: ${selectedSchedule.status}` : 'Chưa có lịch trong ngày được chọn.'}</p>
             </div>
             {selectedSchedule ? (

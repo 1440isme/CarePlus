@@ -48,6 +48,7 @@ function buildShiftSlots({ shift, start, end, duration }) {
     slots.push({
       id: `${shift}-${startTime}-${endTime}`,
       shift,
+      workingShift: shift === 'morning' ? 'MORNING' : 'AFTERNOON',
       startTime,
       endTime,
       status: 'AVAILABLE',
@@ -75,6 +76,24 @@ export function buildVirtualSlots(systemSettings = {}) {
       end: settings.afternoonShiftEnd,
       duration,
     }),
+  };
+}
+
+export function filterSlotGroupsBySchedules(slotGroups, schedules = []) {
+  const workingSchedules = schedules.filter((schedule) => schedule.status === 'WORKING');
+  const hasWorkingSchedule = workingSchedules.length > 0;
+
+  if (!hasWorkingSchedule) {
+    return { morning: [], afternoon: [] };
+  }
+
+  const hasAllDay = workingSchedules.some((schedule) => schedule.workingShift === 'ALL_DAY' || schedule.shift === 'ALL_DAY');
+  const hasMorning = hasAllDay || workingSchedules.some((schedule) => schedule.workingShift === 'MORNING' || schedule.shift === 'MORNING');
+  const hasAfternoon = hasAllDay || workingSchedules.some((schedule) => schedule.workingShift === 'AFTERNOON' || schedule.shift === 'AFTERNOON');
+
+  return {
+    morning: hasMorning ? (slotGroups.morning || []) : [],
+    afternoon: hasAfternoon ? (slotGroups.afternoon || []) : [],
   };
 }
 

@@ -4,6 +4,12 @@ import { useAuth } from '../../shared/hooks/useAuth.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
+import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import {
+  buildVirtualSlots,
+  filterSlotGroupsBySchedules,
+  mergePersistedSlots,
+} from '../../features/timeslot/virtual-slot.service.js';
 import { usePatientProfiles } from '../../features/patient-profile/hooks/usePatientProfiles.js';
 import { useMe } from '../../features/user/hooks/useMe.js';
 import { useBookAppointment } from '../../features/appointment/hooks/useAppointments.js';
@@ -49,6 +55,7 @@ export default function BookingWizardPage() {
       ? { doctorId: bookingData.doctor.id, date: bookingData.date } 
       : null
   );
+  const { data: systemSettingsResponse } = usePublicSystemSettings();
 
   // 4. Fetch Current User Details (for "Bản thân")
   const { data: meResponse } = useMe({ enabled: isAuthenticated });
@@ -132,15 +139,25 @@ export default function BookingWizardPage() {
     );
   }, [doctorsQuery.data, doctorSearch]);
 
-  // Active timeslots list
-  const slotsList = timeSlotsQuery.data?.data || timeSlotsQuery.data?.slots || [];
-  const morningSlots = useMemo(() => {
-    return slotsList.filter((s) => s.startTime < '12:00');
-  }, [slotsList]);
-  
-  const afternoonSlots = useMemo(() => {
-    return slotsList.filter((s) => s.startTime >= '12:00');
-  }, [slotsList]);
+  // Active timeslots list. Virtual slots are generated from system settings and materialized by backend on booking.
+  const slotData = timeSlotsQuery.data?.data || null;
+  const slotGroups = useMemo(() => {
+    const schedules = slotData?.schedules || [];
+    if (schedules.length === 0) {
+      return { morning: [], afternoon: [] };
+    }
+
+    return mergePersistedSlots(
+      filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), schedules),
+      slotData.slots || [],
+    );
+  }, [slotData, systemSettingsResponse?.data]);
+  const slotsList = useMemo(() => [
+    ...(slotGroups.morning || []),
+    ...(slotGroups.afternoon || []),
+  ], [slotGroups]);
+  const morningSlots = slotGroups.morning || [];
+  const afternoonSlots = slotGroups.afternoon || [];
 
   // Selected patient details (either self or selected relative)
   const selectedPatientDetails = useMemo(() => {
@@ -259,6 +276,11 @@ export default function BookingWizardPage() {
     try {
       const payload = {
         timeSlotId: bookingData.timeSlot.id,
+        doctorId: bookingData.doctor?.id,
+        date: bookingData.date,
+        workingShift: bookingData.timeSlot.workingShift,
+        startTime: bookingData.timeSlot.startTime,
+        endTime: bookingData.timeSlot.endTime,
         forSelf: bookingData.forSelf,
         reason: bookingData.reason.trim(),
         ...(bookingData.forSelf ? {} : { patientProfileId: bookingData.patientProfileId })

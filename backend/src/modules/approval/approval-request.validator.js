@@ -26,11 +26,16 @@ function buildIssueDetails(error) {
   }));
 }
 
+const exceptionShiftValues = [
+  WORKING_SHIFTS.MORNING,
+  WORKING_SHIFTS.AFTERNOON,
+];
+
 const scheduleExceptionSchema = z.object({
   type: z.literal(APPROVAL_REQUEST_TYPES.SCHEDULE_EXCEPTION),
   date: z.string().date(),
   exceptionType: z.enum(Object.values(EXCEPTION_TYPES)),
-  shift: z.enum(Object.values(WORKING_SHIFTS)).optional(),
+  shift: z.enum(exceptionShiftValues).optional(),
   startTime: z.string().regex(/^\d{2}:\d{2}$/, 'startTime must be in HH:MM format').optional(),
   endTime: z.string().regex(/^\d{2}:\d{2}$/, 'endTime must be in HH:MM format').optional(),
   reason: z.string().trim().min(5).max(1000),
