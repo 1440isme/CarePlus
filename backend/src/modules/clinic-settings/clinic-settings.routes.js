@@ -25,7 +25,13 @@ router.patch(
 );
 
 router.get(
+  CLINIC_SETTINGS_ROUTE_PATHS.BOOKING_RULES,
+  ClinicSettingsController.getBookingRules,
+);
+
+router.get(
   CLINIC_SETTINGS_ROUTE_PATHS.PUBLIC_SYSTEM,
+  // Deprecated: use GET /api/v1/clinic-settings/booking-rules instead.
   ClinicSettingsController.getPublicSystemSetting,
 );
 

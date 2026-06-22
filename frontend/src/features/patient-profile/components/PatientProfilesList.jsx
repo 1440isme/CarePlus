@@ -117,7 +117,6 @@ export default function PatientProfilesList({
                 <div className="patient-relatives-copy">
                   <div className="patient-relatives-copy-heading">
                     <h3>{profile.fullName}</h3>
-                    {profile.isDefault ? <span className="patient-relatives-badge">Mặc định</span> : null}
                   </div>
                   <p>
                     {PATIENT_PROFILE_RELATIONSHIP_LABELS[profile.relationship] ?? profile.relationship}

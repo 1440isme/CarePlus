@@ -23,12 +23,14 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
 *   **Công việc Backend:**
     *   **Middleware Xác thực:** Thiết lập JWT auth với access token ngắn hạn (15 phút) và refresh token dài hạn (7 ngày) lưu trong httpOnly cookie. Đưa các token bị thu hồi vào blacklist trên Redis.
     *   **APIs Xác thực:** Đăng ký, Đăng nhập, Xác minh Email (OTP), Đặt lại mật khẩu.
-    *   **Hồ sơ bệnh nhân & Người thân:** CRUD hồ sơ người thân (tối đa 4 hồ sơ hoạt động mỗi tài khoản, xóa mềm qua `isActive: false`).
-    *   **APIs Admin:** Reset số lần vắng mặt (no-show count), khóa/mở khóa tài khoản đặt lịch online, CRUD chuyên khoa, cập nhật thông tin phòng khám và cấu hình hệ thống.
+    *   **Hồ sơ bệnh nhân & Người thân:** CRUD hồ sơ người thân, xóa mềm qua `isActive: false`, không giới hạn số lượng hồ sơ active theo user trong nghiệp vụ hiện tại.
+    *   **Clinic & System Settings:** Cập nhật thông tin phòng khám và cấu hình hệ thống, bao gồm `maxActiveAppointmentsPerUser` để giới hạn số lịch hẹn active theo user.
+    *   **APIs Admin User Management:** Reset số lần vắng mặt (no-show count), khóa/mở khóa tài khoản đặt lịch online, cập nhật thông tin cơ bản user, tạo tài khoản nhân sự.
+    *   **Lưu ý business:** Hệ thống không dùng hồ sơ mặc định trong flow đặt lịch hiện tại; nếu route set default còn tồn tại thì không expose frontend.
 *   **Công việc Frontend:**
     *   **Trang xác thực:** Đăng nhập, Đăng ký, Xác minh Email, Quên mật khẩu.
-    *   **Patient Portal:** Trang chỉnh sửa thông tin cá nhân, quản lý hồ sơ người thân (thêm/sửa/xóa người thân với bộ đếm giới hạn `X/4`).
-    *   **Admin Portal:** Admin Dashboard (các thẻ số liệu KPI), Quản lý người dùng (khóa/mở khóa, reset no-show), Quản lý chuyên khoa, Thông tin phòng khám và Cấu hình hệ thống.
+    *   **Patient Portal:** Trang chỉnh sửa thông tin cá nhân, đổi mật khẩu, upload avatar, quản lý hồ sơ người thân (thêm/sửa/xóa mềm người thân, chỉ hiển thị tổng số hồ sơ active, không có UI đặt mặc định).
+    *   **Admin Portal:** Admin Dashboard (các thẻ số liệu KPI), Quản lý người dùng (list/search/filter/pagination, chi tiết, sửa, tạo staff, khóa/mở khóa, reset no-show), Quản lý chuyên khoa, Thông tin phòng khám và Cấu hình hệ thống.
 
 ---
 

@@ -66,7 +66,6 @@ class PatientProfileService {
         dateOfBirth: new Date(dto.dateOfBirth),
         address: typeof dto.address === 'string' ? dto.address.trim() : null,
         relationship: dto.relationship,
-        isDefault: Boolean(dto.isDefault),
         isActive: true,
       });
 
@@ -274,10 +273,6 @@ class PatientProfileService {
 
     if (typeof dto.relationship === 'string') {
       data.relationship = dto.relationship;
-    }
-
-    if (typeof dto.isDefault === 'boolean') {
-      data.isDefault = dto.isDefault;
     }
 
     return data;

@@ -100,12 +100,38 @@ export async function getSystemSettings() {
   };
 }
 
-export async function getPublicSystemSettings() {
-  const response = await axiosInstance.get(SYSTEM_SETTINGS_API_PATHS.publicRoot);
+function normalizeBookingRulesResponse(bookingRules = {}) {
+  const normalizedBookingRules = bookingRules?.bookingRules ?? bookingRules;
+
+  return {
+    maxBookingDaysAhead: normalizedBookingRules.maxBookingDaysAhead == null
+      ? undefined
+      : Number(normalizedBookingRules.maxBookingDaysAhead),
+    slotDurationMinutes: normalizedBookingRules.slotDurationMinutes == null
+      ? undefined
+      : Number(normalizedBookingRules.slotDurationMinutes),
+    cancelBeforeHours: normalizedBookingRules.cancelBeforeHours == null
+      ? undefined
+      : Number(normalizedBookingRules.cancelBeforeHours),
+    workingShifts: {
+      morning: {
+        start: normalizedBookingRules.workingShifts?.morning?.start ?? '',
+        end: normalizedBookingRules.workingShifts?.morning?.end ?? '',
+      },
+      afternoon: {
+        start: normalizedBookingRules.workingShifts?.afternoon?.start ?? '',
+        end: normalizedBookingRules.workingShifts?.afternoon?.end ?? '',
+      },
+    },
+  };
+}
+
+export async function getBookingRules() {
+  const response = await axiosInstance.get(SYSTEM_SETTINGS_API_PATHS.bookingRules);
 
   return {
     ...response.data,
-    data: normalizeSystemSettingsResponse(response.data?.data),
+    data: normalizeBookingRulesResponse(response.data?.data),
   };
 }
 

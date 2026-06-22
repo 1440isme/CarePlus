@@ -2,7 +2,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
-import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import { buildVirtualSlots, mergePersistedSlots } from '../../features/timeslot/utils/virtual-slots.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
@@ -48,20 +48,20 @@ export default function DoctorDetailPage() {
   const selectedDate = getDefaultDate(searchParams);
   const { data: doctorResponse, isLoading, error } = useDoctorDetail(id);
   const doctor = doctorResponse?.data;
-  const { data: systemSettingsResponse } = usePublicSystemSettings();
+  const { data: bookingRulesResponse } = useBookingRules();
   const { data: slotResponse, isLoading: isLoadingSlots } = useTimeSlots({ doctorId: id, date: selectedDate });
   const slotData = slotResponse?.data;
-  const dateOptions = useMemo(() => buildDateOptions(systemSettingsResponse?.data?.maxBookingDaysAhead || 7), [systemSettingsResponse?.data?.maxBookingDaysAhead]);
+  const dateOptions = useMemo(() => buildDateOptions(bookingRulesResponse?.data?.maxBookingDaysAhead || 7), [bookingRulesResponse?.data?.maxBookingDaysAhead]);
   const slotGroups = useMemo(() => {
     if (!slotData?.scheduleId || slotData.scheduleStatus !== 'WORKING') {
       return { morning: [], afternoon: [] };
     }
 
     return mergePersistedSlots(
-      buildVirtualSlots(systemSettingsResponse?.data),
+      buildVirtualSlots(bookingRulesResponse?.data),
       slotData.slots || [],
     );
-  }, [slotData, systemSettingsResponse?.data]);
+  }, [slotData, bookingRulesResponse?.data]);
   const visibleSlotCount = slotGroups.morning.length + slotGroups.afternoon.length;
 
   const handleDateChange = (event) => {

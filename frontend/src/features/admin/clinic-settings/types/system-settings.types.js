@@ -13,7 +13,7 @@
 
 export const SYSTEM_SETTINGS_API_PATHS = {
   root: '/clinic-settings/system',
-  publicRoot: '/clinic-settings/system/public',
+  bookingRules: '/clinic-settings/booking-rules',
 };
 
 export const SYSTEM_SETTINGS_QUERY_KEYS = {
