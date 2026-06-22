@@ -2,7 +2,7 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { useMemo } from 'react';
 import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
-import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import {
   buildVirtualSlots,
   filterSlotGroupsBySchedules,
@@ -63,7 +63,7 @@ export default function DoctorDetailPage() {
     }
 
     return mergePersistedSlots(
-      filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), schedules),
+      filterSlotGroupsBySchedules(buildVirtualSlots(bookingRulesResponse?.data), schedules),
       slotData.slots || [],
     );
   }, [slotData, bookingRulesResponse?.data]);

@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
-import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import {
   buildVirtualSlots,
   filterSlotGroupsBySchedules,
@@ -45,7 +45,7 @@ export default function ReceptionistBookingPage() {
       ? { doctorId: bookingData.doctor.id, date: bookingData.date }
       : null
   );
-  const { data: systemSettingsResponse } = usePublicSystemSettings();
+  const { data: systemSettingsResponse } = useBookingRules();
 
   // 4. Fetch Patient Search Results (Autocomplete)
   const searchPatientsQuery = useSearchPatients(

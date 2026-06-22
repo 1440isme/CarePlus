@@ -983,7 +983,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 **System Settings APIs hiện tại:**  
 - `GET /api/v1/clinic-settings/system`: Admin xem cấu hình hệ thống  
 - `PATCH /api/v1/clinic-settings/system`: Admin cập nhật cấu hình hệ thống  
-- `GET /api/v1/clinic-settings/system/public`: Có route public theo code hiện tại, cần kiểm soát payload và phạm vi public  
+- `GET /api/v1/clinic-settings/booking-rules`: Public DTO gọn cho UI đặt lịch, chỉ trả rule hiển thị lịch/giờ làm việc  
+- `GET /api/v1/clinic-settings/system/public`: Deprecated/alias sang booking-rules DTO, không trả full system settings  
   
 **Ý nghĩa field:**  
 - `maxBookingDaysAhead`: số ngày tối đa user được đặt lịch trước  
