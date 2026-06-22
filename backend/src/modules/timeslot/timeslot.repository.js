@@ -44,6 +44,14 @@ class TimeSlotRepository extends BaseRepository {
     });
   }
 
+  async bulkDeleteSlots(slotIds, dbClient = this.prisma) {
+    return dbClient.timeSlot.deleteMany({
+      where: {
+        id: { in: slotIds },
+      },
+    });
+  }
+
   async bulkLockSlots(slotIds, dbClient = this.prisma) {
     return dbClient.timeSlot.updateMany({
       where: {

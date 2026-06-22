@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
-import { buildVirtualSlots, mergePersistedSlots } from '../../features/timeslot/utils/virtual-slots.js';
+import { buildVirtualSlots, mergePersistedSlots } from '../../features/timeslot/virtual-slot.service.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import './public-pages.css';
