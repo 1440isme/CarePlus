@@ -9,9 +9,19 @@ const SHIFT_LABELS = {
   ALL_DAY: 'Cả ngày',
 };
 
+const STATUS_LABELS = {
+  PENDING: 'Chờ xử lý',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Đã từ chối',
+};
+
 function formatScope(item) {
   if (item.exceptionType === 'ALL_DAY') return SHIFT_LABELS.ALL_DAY;
   return SHIFT_LABELS[item.shift] || item.shift || item.exceptionType;
+}
+
+function formatStatus(status) {
+  return STATUS_LABELS[status] || status;
 }
 
 export default function AdminApprovalRequestsPage() {
@@ -69,7 +79,7 @@ export default function AdminApprovalRequestsPage() {
               <td>{item.date}</td>
               <td>{formatScope(item)}</td>
               <td>{item.reason}</td>
-              <td><span className={`status-chip status-${String(item.status || '').toLowerCase()}`}>{item.status}</span></td>
+              <td><span className={`status-chip status-${String(item.status || '').toLowerCase()}`}>{formatStatus(item.status)}</span></td>
               <td>{item.rejectionReason || (item.reviewedAt ? `Đã xử lý lúc ${new Date(item.reviewedAt).toLocaleString('vi-VN')}` : '--')}</td>
               <td>
                 {item.status === 'PENDING' ? (
