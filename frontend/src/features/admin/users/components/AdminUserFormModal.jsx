@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useCreateAdminStaffUser } from '../hooks/useCreateAdminStaffUser.js';
 import { useUpdateAdminUser } from '../hooks/useUpdateAdminUser.js';
@@ -12,6 +12,7 @@ import {
   adminStaffCreateSchema,
   adminUserEditSchema,
 } from '../schemas/admin-user.schema.js';
+import AdminDatePickerInput from './AdminDatePickerInput.jsx';
 import './admin-users.css';
 
 const CREATE_ROLE_OPTIONS = ADMIN_USER_ROLE_OPTIONS.filter((option) => option.value !== 'ALL' && option.value !== 'PATIENT');
@@ -129,6 +130,7 @@ export default function AdminUserFormModal({
   );
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -258,7 +260,7 @@ export default function AdminUserFormModal({
         <form className="admin-user-form-modal-body" onSubmit={handleSubmit(handleFormSubmit)}>
           {mode === 'create' ? (
             <>
-              <FormField label="Vai trò" error={errors.role?.message}>
+              <FormField label="Vai trò" error={errors.role?.message} required>
                 <select className="admin-user-form-input" {...register('role')}>
                   {CREATE_ROLE_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -269,24 +271,24 @@ export default function AdminUserFormModal({
               </FormField>
 
               {!isDoctorRole ? (
-                <FormField label="Họ tên" error={errors.name?.message}>
+                <FormField label="Họ tên" error={errors.name?.message} required>
                   <input className="admin-user-form-input" type="text" {...register('name')} />
                 </FormField>
               ) : null}
 
-              <FormField label="Email" error={errors.email?.message}>
+              <FormField label="Email" error={errors.email?.message} required>
                 <input className="admin-user-form-input" type="email" placeholder="email@careplus.vn" {...register('email')} />
               </FormField>
 
-              <FormField label="Số điện thoại" error={errors.phone?.message}>
+              <FormField label="Số điện thoại" error={errors.phone?.message} required>
                 <input className="admin-user-form-input" type="text" {...register('phone')} />
               </FormField>
 
-              <FormField label="Mật khẩu tạm" error={errors.temporaryPassword?.message}>
+              <FormField label="Mật khẩu tạm" error={errors.temporaryPassword?.message} required>
                 <input className="admin-user-form-input" type="text" {...register('temporaryPassword')} />
               </FormField>
 
-              <FormField label="Trạng thái" error={errors.status?.message}>
+              <FormField label="Trạng thái" error={errors.status?.message} required>
                 <select className="admin-user-form-input" {...register('status')}>
                   {CREATE_STATUS_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -300,12 +302,12 @@ export default function AdminUserFormModal({
                 <div className="admin-user-form-section">
                   <h4 className="admin-user-form-section-title">Thông tin bác sĩ</h4>
 
-                  <FormField label="Họ tên bác sĩ" error={errors.doctorName?.message}>
+                  <FormField label="Họ tên bác sĩ" error={errors.doctorName?.message} required>
                     <input className="admin-user-form-input" type="text" {...register('doctorName')} />
                   </FormField>
 
                   <div className="admin-user-form-grid">
-                    <FormField label="Chuyên khoa" error={errors.specialty?.message}>
+                    <FormField label="Chuyên khoa" error={errors.specialty?.message} required>
                       <select className="admin-user-form-input" {...register('specialty')}>
                         {specialtyOptions.map((option) => (
                           <option key={option.value || 'blank'} value={option.value}>
@@ -315,7 +317,7 @@ export default function AdminUserFormModal({
                       </select>
                     </FormField>
 
-                    <FormField label="Học hàm/Học vị" error={errors.academicTitle?.message}>
+                    <FormField label="Học hàm/Học vị" error={errors.academicTitle?.message} required>
                       <select className="admin-user-form-input" {...register('academicTitle')}>
                         {ACADEMIC_TITLE_OPTIONS.map((option) => (
                           <option key={option.value || 'blank'} value={option.value}>
@@ -350,7 +352,7 @@ export default function AdminUserFormModal({
             </>
           ) : (
             <>
-              <FormField label="Họ tên" error={errors.name?.message}>
+              <FormField label="Họ tên" error={errors.name?.message} required>
                 <input className="admin-user-form-input" type="text" {...register('name')} />
               </FormField>
 
@@ -358,12 +360,12 @@ export default function AdminUserFormModal({
                 <input className="admin-user-form-input is-disabled" type="email" value={user?.email ?? ''} readOnly disabled />
               </FormField>
 
-              <FormField label="Số điện thoại" error={errors.phone?.message}>
+              <FormField label="Số điện thoại" error={errors.phone?.message} required>
                 <input className="admin-user-form-input" type="text" {...register('phone')} />
               </FormField>
 
               <div className="admin-user-form-grid">
-                <FormField label="Giới tính" error={errors.gender?.message}>
+                <FormField label="Giới tính" error={errors.gender?.message} required>
                   <select className="admin-user-form-input" {...register('gender')}>
                     {GENDER_OPTIONS.map((option) => (
                       <option key={option.value} value={option.value}>
@@ -373,8 +375,20 @@ export default function AdminUserFormModal({
                   </select>
                 </FormField>
 
-                <FormField label="Ngày sinh" error={errors.dateOfBirth?.message}>
-                  <input className="admin-user-form-input" type="text" placeholder="DD/MM/YYYY" {...register('dateOfBirth')} />
+                <FormField label="Ngày sinh" error={errors.dateOfBirth?.message} required>
+                  <Controller
+                    control={control}
+                    name="dateOfBirth"
+                    render={({ field }) => (
+                      <AdminDatePickerInput
+                        className="admin-user-form-input"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                      />
+                    )}
+                  />
                 </FormField>
               </div>
 

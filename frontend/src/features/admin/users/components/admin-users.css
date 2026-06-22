@@ -841,6 +841,62 @@
   padding: 0 14px;
 }
 
+.admin-date-picker-input {
+  position: relative;
+}
+
+.admin-date-picker-input .admin-user-detail-input,
+.admin-date-picker-input .admin-user-form-input {
+  padding-right: 44px;
+}
+
+.admin-date-picker-trigger {
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #7f8a9b;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.admin-date-picker-trigger:hover:not(:disabled) {
+  background: #f0f9ff;
+  color: #0b95be;
+}
+
+.admin-date-picker-trigger:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.admin-date-picker-trigger svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.admin-date-picker-native {
+  position: absolute;
+  inset: auto;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .admin-user-detail-textarea {
   min-height: 96px;
   padding: 12px 14px;
