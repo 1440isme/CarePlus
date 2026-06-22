@@ -2,6 +2,7 @@ import DoctorProfileForm from '../../features/doctor/components/DoctorProfileFor
 import { useDoctorProfile, useUpdateDoctorProfile } from '../../features/doctor/index.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+import './doctor.css';
 
 export default function DoctorProfilePage() {
   const profileQuery = useDoctorProfile();

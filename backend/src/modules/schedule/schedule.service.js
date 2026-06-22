@@ -1,12 +1,15 @@
 const DoctorRepository = require('../doctor/doctor.repository');
 const ScheduleRepository = require('./schedule.repository');
+const ClinicSettingsRepository = require('../clinic-settings/clinic-settings.repository');
 const { toScheduleDto, toScheduleCalendarDto } = require('./schedule.dto');
 const {
   SCHEDULE_ERROR_CODES,
   SCHEDULE_PAGINATION,
   SCHEDULE_STATUSES,
   SCHEDULE_VIEWS,
+  WORKING_SHIFTS,
 } = require('./schedule.types');
+const { CLINIC_SETTINGS_DEFAULTS } = require('../clinic-settings/clinic-settings.types');
 const { USER_ROLES } = require('../../shared/constants/roles');
 
 class ScheduleServiceError extends Error {
@@ -54,9 +57,10 @@ function getViewRange(view, value) {
 }
 
 class ScheduleService {
-  constructor(doctorRepository, scheduleRepository) {
+  constructor(doctorRepository, scheduleRepository, clinicSettingsRepository) {
     this.doctorRepository = doctorRepository;
     this.scheduleRepository = scheduleRepository;
+    this.clinicSettingsRepository = clinicSettingsRepository;
   }
 
   async createSchedules(payload) {
@@ -85,6 +89,7 @@ class ScheduleService {
           doctorId,
           specialtyId: query.specialtyId,
           status: normalizedQuery.status,
+          workingShift: normalizedQuery.workingShift,
           startDate: normalizedQuery.startDate,
           endDate: normalizedQuery.endDate,
           skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
@@ -94,6 +99,7 @@ class ScheduleService {
           doctorId,
           specialtyId: query.specialtyId,
           status: normalizedQuery.status,
+          workingShift: normalizedQuery.workingShift,
           startDate: normalizedQuery.startDate,
           endDate: normalizedQuery.endDate,
         }),
@@ -124,6 +130,7 @@ class ScheduleService {
       const schedules = await this.scheduleRepository.findSchedulesByRange({
         doctorId,
         status: normalizedQuery.status,
+        workingShift: normalizedQuery.workingShift,
         startDate: normalizedQuery.startDate,
         endDate: normalizedQuery.endDate,
         skip: 0,
@@ -143,21 +150,19 @@ class ScheduleService {
   async _createSingleSchedule(payload) {
     const doctor = await this._getDoctorOrThrow(payload.doctorId);
     const workingDate = parseDateOnly(payload.workingDate);
+    const workingShift = this._normalizeWorkingShift(payload.workingShift);
     this._assertNotPastDate(workingDate);
 
-    const existingSchedule = await this.scheduleRepository.findByDoctorAndDate(doctor.id, workingDate);
-    if (existingSchedule) {
-      throw new ScheduleServiceError({
-        code: SCHEDULE_ERROR_CODES.SCHEDULE_ALREADY_EXISTS,
-        message: 'Lịch làm việc của bác sĩ trong ngày này đã tồn tại',
-        statusCode: 409,
-      });
-    }
+    const existingSchedules = await this.scheduleRepository.findSchedulesByDoctorAndDate(doctor.id, workingDate);
+    this._assertNoShiftConflicts(existingSchedules, workingShift, [workingDate]);
+    const shiftConfig = await this._getShiftConfig();
 
     const createdSchedule = await this.scheduleRepository.prisma.$transaction((dbClient) => (
       this.scheduleRepository.createSchedule({
         doctorId: doctor.id,
         workingDate,
+        workingShift,
+        ...shiftConfig,
         status: SCHEDULE_STATUSES.WORKING,
       }, dbClient)
     ));
@@ -172,6 +177,7 @@ class ScheduleService {
     const doctor = await this._getDoctorOrThrow(payload.doctorId);
     const fromDate = parseDateOnly(payload.fromDate);
     const toDate = parseDateOnly(payload.toDate);
+    const workingShift = this._normalizeWorkingShift(payload.workingShift);
 
     if (fromDate > toDate) {
       throw new ScheduleServiceError({
@@ -199,22 +205,8 @@ class ScheduleService {
       skip: 0,
       take: 366,
     });
-    const existingDateSet = new Set(existingSchedules.map((schedule) => formatDateOnly(schedule.workingDate)));
-    const conflictedDates = targetDates
-      .map((date) => formatDateOnly(date))
-      .filter((date) => existingDateSet.has(date));
-
-    if (conflictedDates.length > 0) {
-      throw new ScheduleServiceError({
-        code: SCHEDULE_ERROR_CODES.SCHEDULE_ALREADY_EXISTS,
-        message: 'Một số ngày đã có lịch làm việc',
-        statusCode: 409,
-        details: conflictedDates.map((date) => ({
-          field: 'workingDate',
-          message: `Schedule already exists on ${date}`,
-        })),
-      });
-    }
+    this._assertNoShiftConflicts(existingSchedules, workingShift, targetDates);
+    const shiftConfig = await this._getShiftConfig();
 
     const createdSchedules = await this.scheduleRepository.prisma.$transaction(async (dbClient) => {
       const records = [];
@@ -222,6 +214,8 @@ class ScheduleService {
         const createdSchedule = await this.scheduleRepository.createSchedule({
           doctorId: doctor.id,
           workingDate,
+          workingShift,
+          ...shiftConfig,
           status: SCHEDULE_STATUSES.WORKING,
         }, dbClient);
         records.push(createdSchedule);
@@ -270,19 +264,21 @@ class ScheduleService {
     const page = query.page || SCHEDULE_PAGINATION.DEFAULT_PAGE;
     const limit = Math.min(query.limit || SCHEDULE_PAGINATION.DEFAULT_LIMIT, SCHEDULE_PAGINATION.MAX_LIMIT);
     const status = query.status || undefined;
+    const workingShift = query.workingShift || undefined;
 
     if (query.startDate && query.endDate) {
       return {
         page,
         limit,
         status,
+        workingShift,
         startDate: parseDateOnly(query.startDate),
         endDate: parseDateOnly(query.endDate),
       };
     }
 
     const { startDate, endDate } = getViewRange(query.view, query.date);
-    return { page, limit, status, startDate, endDate };
+    return { page, limit, status, workingShift, startDate, endDate };
   }
 
   _assertNotPastDate(date) {
@@ -311,6 +307,51 @@ class ScheduleService {
     return dates;
   }
 
+  _normalizeWorkingShift(workingShift) {
+    return workingShift || WORKING_SHIFTS.ALL_DAY;
+  }
+
+  _assertNoShiftConflicts(existingSchedules, requestedShift, targetDates) {
+    const targetDateSet = new Set(targetDates.map(formatDateOnly));
+    const conflictingSchedules = existingSchedules.filter((schedule) => (
+      targetDateSet.has(formatDateOnly(schedule.workingDate))
+      && this._hasShiftOverlap(schedule.workingShift, requestedShift)
+    ));
+
+    if (conflictingSchedules.length === 0) {
+      return;
+    }
+
+    throw new ScheduleServiceError({
+      code: SCHEDULE_ERROR_CODES.SCHEDULE_ALREADY_EXISTS,
+      message: 'Lịch làm việc của bác sĩ đã tồn tại hoặc bị trùng ca trong ngày này',
+      statusCode: 409,
+      details: conflictingSchedules.map((schedule) => ({
+        field: 'workingShift',
+        message: `Schedule already exists on ${formatDateOnly(schedule.workingDate)} for ${schedule.workingShift}`,
+      })),
+    });
+  }
+
+  _hasShiftOverlap(existingShift, requestedShift) {
+    if (existingShift === WORKING_SHIFTS.ALL_DAY || requestedShift === WORKING_SHIFTS.ALL_DAY) {
+      return true;
+    }
+
+    return existingShift === requestedShift;
+  }
+
+  async _getShiftConfig() {
+    const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
+
+    return {
+      morningShiftStart: systemSetting?.morningShiftStart || CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_START,
+      morningShiftEnd: systemSetting?.morningShiftEnd || CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_END,
+      afternoonShiftStart: systemSetting?.afternoonShiftStart || CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_START,
+      afternoonShiftEnd: systemSetting?.afternoonShiftEnd || CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_END,
+    };
+  }
+
   _wrapUnexpectedError(error, code, message) {
     if (error instanceof ScheduleServiceError || (error && error.code && error.statusCode)) {
       return error;
@@ -325,4 +366,4 @@ class ScheduleService {
   }
 }
 
-module.exports = new ScheduleService(DoctorRepository, ScheduleRepository);
+module.exports = new ScheduleService(DoctorRepository, ScheduleRepository, ClinicSettingsRepository);

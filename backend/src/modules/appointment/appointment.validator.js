@@ -4,6 +4,7 @@ const {
   APPOINTMENT_PAGINATION,
   VALID_APPOINTMENT_STATUSES,
 } = require('./appointment.types');
+const { WORKING_SHIFTS } = require('../schedule/schedule.types');
 
 function sendValidationError(res, details, code = APPOINTMENT_ERROR_CODES.VALIDATION_ERROR, message = 'Validation failed') {
   return res.status(400).json({
@@ -24,6 +25,11 @@ const createAppointmentSchema = z.object({
   timeSlotId: z.string()
     .trim()
     .min(1, 'timeSlotId is required'),
+  doctorId: z.string().trim().min(1).optional(),
+  date: z.string().date().optional(),
+  workingShift: z.enum([WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON]).optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'startTime must be in HH:mm format').optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'endTime must be in HH:mm format').optional(),
   forSelf: z.boolean(),
   patientProfileId: z.string()
     .trim()
@@ -50,6 +56,11 @@ const createReceptionistAppointmentSchema = z.object({
   timeSlotId: z.string()
     .trim()
     .min(1, 'timeSlotId is required'),
+  doctorId: z.string().trim().min(1).optional(),
+  date: z.string().date().optional(),
+  workingShift: z.enum([WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON]).optional(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'startTime must be in HH:mm format').optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'endTime must be in HH:mm format').optional(),
   forSelf: z.boolean(),
   patientProfileId: z.string()
     .trim()

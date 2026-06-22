@@ -1,8 +1,11 @@
 const DoctorRepository = require('../doctor/doctor.repository');
 const ScheduleRepository = require('../schedule/schedule.repository');
 const TimeSlotRepository = require('./timeslot.repository');
+const ClinicSettingsRepository = require('../clinic-settings/clinic-settings.repository');
 const { toTimeSlotDto } = require('./timeslot.dto');
 const { TIMESLOT_ERROR_CODES } = require('./timeslot.types');
+const { CLINIC_SETTINGS_DEFAULTS } = require('../clinic-settings/clinic-settings.types');
+const { WORKING_SHIFTS } = require('../schedule/schedule.types');
 
 class TimeSlotServiceError extends Error {
   constructor({ code, message, statusCode, details = [] }) {
@@ -22,11 +25,18 @@ function timeToMinutes(value) {
   return (hours * 60) + minutes;
 }
 
+function minutesToTime(value) {
+  const hours = String(Math.floor(value / 60)).padStart(2, '0');
+  const minutes = String(value % 60).padStart(2, '0');
+  return `${hours}:${minutes}`;
+}
+
 class TimeSlotService {
-  constructor(doctorRepository, scheduleRepository, timeSlotRepository) {
+  constructor(doctorRepository, scheduleRepository, timeSlotRepository, clinicSettingsRepository) {
     this.doctorRepository = doctorRepository;
     this.scheduleRepository = scheduleRepository;
     this.timeSlotRepository = timeSlotRepository;
+    this.clinicSettingsRepository = clinicSettingsRepository;
   }
 
   async getSlotsByDoctorAndDate(query) {
@@ -41,28 +51,44 @@ class TimeSlotService {
       }
 
       const workingDate = parseDateOnly(query.date);
-      const schedule = await this.scheduleRepository.findByDoctorAndDate(query.doctorId, workingDate);
+      const schedules = await this.scheduleRepository.findSchedulesByDoctorAndDate(query.doctorId, workingDate);
 
-      if (!schedule) {
+      if (schedules.length === 0) {
         return {
           doctorId: query.doctorId,
           workingDate: query.date,
           scheduleId: null,
           scheduleStatus: null,
+          scheduleIds: [],
+          schedules: [],
           morning: [],
           afternoon: [],
           slots: [],
         };
       }
 
-      const slots = schedule.timeSlots.map((slot) => toTimeSlotDto(slot, schedule));
+      const slots = schedules.flatMap((schedule) => (
+        schedule.timeSlots.map((slot) => toTimeSlotDto(slot, schedule))
+      ));
       return {
-        doctorId: schedule.doctorId,
-        workingDate: schedule.workingDate.toISOString().slice(0, 10),
-        scheduleId: schedule.id,
-        scheduleStatus: schedule.status,
-        morning: slots.filter((slot) => timeToMinutes(slot.startTime) < (12 * 60)),
-        afternoon: slots.filter((slot) => timeToMinutes(slot.startTime) >= (12 * 60)),
+        doctorId: schedules[0].doctorId,
+        workingDate: schedules[0].workingDate.toISOString().slice(0, 10),
+        scheduleId: schedules[0].id,
+        scheduleStatus: schedules.length === 1 ? schedules[0].status : null,
+        scheduleIds: schedules.map((schedule) => schedule.id),
+        schedules: schedules.map((schedule) => ({
+          id: schedule.id,
+          scheduleId: schedule.id,
+          workingShift: schedule.workingShift,
+          shift: schedule.workingShift,
+          status: schedule.status,
+          morningShiftStart: schedule.morningShiftStart,
+          morningShiftEnd: schedule.morningShiftEnd,
+          afternoonShiftStart: schedule.afternoonShiftStart,
+          afternoonShiftEnd: schedule.afternoonShiftEnd,
+        })),
+        morning: slots.filter((slot) => slot.workingShift === WORKING_SHIFTS.MORNING),
+        afternoon: slots.filter((slot) => slot.workingShift === WORKING_SHIFTS.AFTERNOON),
         slots,
       };
     } catch (error) {
@@ -75,8 +101,8 @@ class TimeSlotService {
   }
 
   async lockSlotsForScheduleException(scope, dbClient) {
-    const schedule = await this.scheduleRepository.findByDoctorAndDate(scope.doctorId, scope.date, dbClient);
-    if (!schedule) {
+    const schedules = await this._findSchedulesForScope(scope, dbClient);
+    if (schedules.length === 0) {
       throw new TimeSlotServiceError({
         code: TIMESLOT_ERROR_CODES.NO_SCHEDULE_FOR_DATE,
         message: 'Bác sĩ chưa có lịch làm việc trong ngày yêu cầu nghỉ',
@@ -84,8 +110,11 @@ class TimeSlotService {
       });
     }
 
-    const matchedSlots = this._filterSlotsByScope(schedule.timeSlots, scope);
-    if (matchedSlots.length === 0) {
+    const systemSetting = await this._getSystemSetting();
+    const scheduleByShift = this._buildScheduleByShift(schedules);
+    const targetSlots = this._buildSlotsByScope(scope, systemSetting)
+      .filter((slot) => scheduleByShift.has(slot.workingShift));
+    if (targetSlots.length === 0) {
       throw new TimeSlotServiceError({
         code: TIMESLOT_ERROR_CODES.NO_MATCHING_SLOT,
         message: 'Không tìm thấy khung giờ phù hợp với yêu cầu nghỉ',
@@ -93,7 +122,14 @@ class TimeSlotService {
       });
     }
 
-    const bookedSlot = matchedSlots.find((slot) => slot.status === 'BOOKED');
+    const existingSlotByTime = new Map(
+      schedules.flatMap((schedule) => (
+        schedule.timeSlots.map((slot) => [this._getSlotKey(slot), { ...slot, schedule }])
+      )),
+    );
+    const bookedSlot = targetSlots
+      .map((slot) => existingSlotByTime.get(`${slot.startTime}-${slot.endTime}`))
+      .find((slot) => slot?.status === 'BOOKED');
     if (bookedSlot) {
       throw new TimeSlotServiceError({
         code: TIMESLOT_ERROR_CODES.BOOKED_SLOT_IN_EXCEPTION_SCOPE,
@@ -102,11 +138,18 @@ class TimeSlotService {
       });
     }
 
-    const slotIds = matchedSlots
-      .filter((slot) => slot.status === 'AVAILABLE')
+    const slotIds = targetSlots
+      .map((slot) => existingSlotByTime.get(`${slot.startTime}-${slot.endTime}`))
+      .filter((slot) => slot?.status === 'AVAILABLE')
       .map((slot) => slot.id);
+    const slotsToCreate = targetSlots
+      .filter((slot) => !existingSlotByTime.has(`${slot.startTime}-${slot.endTime}`))
+      .map((slot) => ({
+        ...slot,
+        status: 'LOCKED',
+      }));
 
-    if (slotIds.length === 0) {
+    if (slotIds.length === 0 && slotsToCreate.length === 0) {
       throw new TimeSlotServiceError({
         code: TIMESLOT_ERROR_CODES.NO_MATCHING_SLOT,
         message: 'Không có khung giờ khả dụng để khóa',
@@ -114,31 +157,51 @@ class TimeSlotService {
       });
     }
 
-    await this.timeSlotRepository.bulkLockSlots(slotIds, dbClient);
+    if (slotIds.length > 0) {
+      await this.timeSlotRepository.bulkLockSlots(slotIds, dbClient);
+    }
+
+    if (slotsToCreate.length > 0) {
+      const slotsBySchedule = new Map();
+      for (const slot of slotsToCreate) {
+        const targetSchedule = scheduleByShift.get(slot.workingShift);
+        if (!targetSchedule) {
+          continue;
+        }
+        const currentSlots = slotsBySchedule.get(targetSchedule.id) || [];
+        currentSlots.push(slot);
+        slotsBySchedule.set(targetSchedule.id, currentSlots);
+      }
+
+      for (const [scheduleId, slots] of slotsBySchedule.entries()) {
+        await this.timeSlotRepository.bulkCreateSlots(scheduleId, slots, dbClient);
+      }
+    }
 
     return {
-      schedule,
+      schedule: schedules[0],
       affectedSlotIds: slotIds,
+      createdSlotCount: slotsToCreate.length,
     };
   }
 
   async unlockSlotsForScheduleException(scope, dbClient) {
-    const schedule = await this.scheduleRepository.findByDoctorAndDate(scope.doctorId, scope.date, dbClient);
-    if (!schedule) {
+    const schedules = await this._findSchedulesForScope(scope, dbClient);
+    if (schedules.length === 0) {
       return { schedule: null, affectedSlotIds: [] };
     }
 
-    const matchedSlots = this._filterSlotsByScope(schedule.timeSlots, scope);
+    const matchedSlots = schedules.flatMap((schedule) => this._filterSlotsByScope(schedule.timeSlots, scope));
     const slotIds = matchedSlots
       .filter((slot) => slot.status === 'LOCKED')
       .map((slot) => slot.id);
 
     if (slotIds.length > 0) {
-      await this.timeSlotRepository.bulkUnlockSlots(slotIds, dbClient);
+      await this.timeSlotRepository.bulkDeleteSlots(slotIds, dbClient);
     }
 
     return {
-      schedule,
+      schedule: schedules[0],
       affectedSlotIds: slotIds,
     };
   }
@@ -149,11 +212,7 @@ class TimeSlotService {
     }
 
     if (scope.exceptionType === 'SHIFT') {
-      if (scope.shift === 'MORNING') {
-        return slots.filter((slot) => timeToMinutes(slot.startTime) < (12 * 60));
-      }
-
-      return slots.filter((slot) => timeToMinutes(slot.startTime) >= (12 * 60));
+      return slots.filter((slot) => this._resolveSlotShift(slot) === scope.shift);
     }
 
     const startMinutes = timeToMinutes(scope.startTime);
@@ -164,6 +223,158 @@ class TimeSlotService {
       const slotEnd = timeToMinutes(slot.endTime);
       return slotStart < endMinutes && slotEnd > startMinutes;
     });
+  }
+
+  async _getSystemSetting() {
+    const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
+
+    return systemSetting || {
+      slotDurationMinutes: CLINIC_SETTINGS_DEFAULTS.SLOT_DURATION_MINUTES,
+      morningShiftStart: CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_START,
+      morningShiftEnd: CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_END,
+      afternoonShiftStart: CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_START,
+      afternoonShiftEnd: CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_END,
+    };
+  }
+
+  _buildSlotsByScope(scope, systemSetting) {
+    const normalizedSetting = {
+      slotDurationMinutes: systemSetting.slotDurationMinutes || CLINIC_SETTINGS_DEFAULTS.SLOT_DURATION_MINUTES,
+      morningShiftStart: systemSetting.morningShiftStart || CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_START,
+      morningShiftEnd: systemSetting.morningShiftEnd || CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_END,
+      afternoonShiftStart: systemSetting.afternoonShiftStart || CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_START,
+      afternoonShiftEnd: systemSetting.afternoonShiftEnd || CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_END,
+    };
+    const allSlots = [
+      ...this._buildShiftSlots(
+        normalizedSetting.morningShiftStart,
+        normalizedSetting.morningShiftEnd,
+        normalizedSetting.slotDurationMinutes,
+        WORKING_SHIFTS.MORNING,
+      ),
+      ...this._buildShiftSlots(
+        normalizedSetting.afternoonShiftStart,
+        normalizedSetting.afternoonShiftEnd,
+        normalizedSetting.slotDurationMinutes,
+        WORKING_SHIFTS.AFTERNOON,
+      ),
+    ];
+
+    if (scope.exceptionType === 'ALL_DAY') {
+      return allSlots;
+    }
+
+    if (scope.exceptionType === 'SHIFT') {
+      if (scope.shift === 'MORNING') {
+        return this._buildShiftSlots(
+          normalizedSetting.morningShiftStart,
+          normalizedSetting.morningShiftEnd,
+          normalizedSetting.slotDurationMinutes,
+          WORKING_SHIFTS.MORNING,
+        );
+      }
+
+      return this._buildShiftSlots(
+        normalizedSetting.afternoonShiftStart,
+        normalizedSetting.afternoonShiftEnd,
+        normalizedSetting.slotDurationMinutes,
+        WORKING_SHIFTS.AFTERNOON,
+      );
+    }
+
+    const startMinutes = timeToMinutes(scope.startTime);
+    const endMinutes = timeToMinutes(scope.endTime);
+
+    if (startMinutes == null || endMinutes == null || startMinutes >= endMinutes) {
+      return [];
+    }
+
+    return allSlots.filter((slot) => {
+      const slotStart = timeToMinutes(slot.startTime);
+      const slotEnd = timeToMinutes(slot.endTime);
+      return slotStart < endMinutes && slotEnd > startMinutes;
+    });
+  }
+
+  _buildShiftSlots(startTime, endTime, duration, workingShift) {
+    const startMinutes = timeToMinutes(startTime);
+    const endMinutes = timeToMinutes(endTime);
+
+    if (!Number.isInteger(startMinutes) || !Number.isInteger(endMinutes) || startMinutes >= endMinutes) {
+      return [];
+    }
+
+    const slots = [];
+    for (let cursor = startMinutes; cursor + duration <= endMinutes; cursor += duration) {
+      slots.push({
+        workingShift,
+        startTime: minutesToTime(cursor),
+        endTime: minutesToTime(cursor + duration),
+      });
+    }
+
+    return slots;
+  }
+
+  async _findSchedulesForScope(scope, dbClient) {
+    const schedules = await this.scheduleRepository.findSchedulesByDoctorAndDate(
+      scope.doctorId,
+      scope.date,
+      dbClient,
+    );
+
+    return schedules.filter((schedule) => this._scheduleMatchesScope(schedule, scope));
+  }
+
+  _scheduleMatchesScope(schedule, scope) {
+    if (scope.exceptionType === 'ALL_DAY') {
+      return true;
+    }
+
+    if (scope.exceptionType === 'SHIFT') {
+      return schedule.workingShift === WORKING_SHIFTS.ALL_DAY || schedule.workingShift === scope.shift;
+    }
+
+    const targetShift = this._resolveTimeRangeShift(scope);
+    return !targetShift
+      || schedule.workingShift === WORKING_SHIFTS.ALL_DAY
+      || schedule.workingShift === targetShift;
+  }
+
+  _buildScheduleByShift(schedules) {
+    const scheduleByShift = new Map();
+
+    schedules.forEach((schedule) => {
+      if (schedule.workingShift === WORKING_SHIFTS.ALL_DAY) {
+        scheduleByShift.set(WORKING_SHIFTS.MORNING, schedule);
+        scheduleByShift.set(WORKING_SHIFTS.AFTERNOON, schedule);
+        return;
+      }
+
+      scheduleByShift.set(schedule.workingShift, schedule);
+    });
+
+    return scheduleByShift;
+  }
+
+  _getSlotKey(slot) {
+    return `${slot.startTime}-${slot.endTime}`;
+  }
+
+  _resolveSlotShift(slot) {
+    if (slot.workingShift) {
+      return slot.workingShift;
+    }
+
+    return timeToMinutes(slot.startTime) < (12 * 60) ? WORKING_SHIFTS.MORNING : WORKING_SHIFTS.AFTERNOON;
+  }
+
+  _resolveTimeRangeShift(scope) {
+    if (!scope.startTime) {
+      return null;
+    }
+
+    return timeToMinutes(scope.startTime) < (12 * 60) ? WORKING_SHIFTS.MORNING : WORKING_SHIFTS.AFTERNOON;
   }
 
   _wrapUnexpectedError(error, code, message) {
@@ -180,4 +391,9 @@ class TimeSlotService {
   }
 }
 
-module.exports = new TimeSlotService(DoctorRepository, ScheduleRepository, TimeSlotRepository);
+module.exports = new TimeSlotService(
+  DoctorRepository,
+  ScheduleRepository,
+  TimeSlotRepository,
+  ClinicSettingsRepository,
+);
