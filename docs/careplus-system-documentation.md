@@ -258,6 +258,12 @@
     
    
   | NO_SHOW | Không đến khám, không hủy trước |  
+  
+**Quy tắc giới hạn lịch hẹn active theo user:**  
+- Mỗi user có số lịch hẹn active tối đa được cấu hình bởi `maxActiveAppointmentsPerUser`  
+- Rule này dùng để chống spam đặt lịch thay cho rule giới hạn số hồ sơ người thân  
+- Khi lịch hẹn hoàn thành hoặc bị hủy, số lượng lịch active đang chiếm sẽ được giải phóng  
+- Active appointment status cần được appointment module xác nhận theo enum thực tế hiện tại  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAM0lEQVR4nO3OMQ0AIAwAwdJgBKdVgjecsGCAiZDcTT9+q6oRETMAAPjF6ify6QYAADdyA9Y4AyrfLLISAAAAAElFTkSuQmCC)  
  **2.6 PatientProfiles (hồ sơ người được khám)**  
    
@@ -291,10 +297,14 @@
    
     
  **Quy tắc:**  
-- Mỗi tài khoản có tối đa **4 hồ sơ người thân đang hoạt động** (isActive = true)  
+- Không giới hạn số hồ sơ người thân đang hoạt động  
 - Xóa hồ sơ = soft delete (isActive = false), không phải hard delete  
 - Không thể xóa hồ sơ đang có lịch khám chưa hoàn tất  
-- Hồ sơ "Bản thân" (relationship = SELF) là hồ sơ mặc định  
+- Trong nghiệp vụ hiện tại, hệ thống không sử dụng hồ sơ mặc định trong UI/flow đặt lịch  
+- Khi đặt lịch, user chọn trực tiếp hồ sơ người được khám từ danh sách hồ sơ active  
+- Nếu field `isDefault` còn tồn tại trong database thì không expose trên UI hiện tại  
+- API create/update patient-profile không nên nhận `isDefault` từ client  
+- Route set default nếu còn tồn tại thì không được frontend sử dụng trong flow hiện tại  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/kCmMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4D2Bc8ZGvQ1AAAAAElFTkSuQmCC)  **2.7 Reviews (đánh giá bác sĩ)**
 
 ```ts
@@ -622,11 +632,11 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Avatar: hiển thị initials (không upload)  
 - Email không thể chỉnh sửa, có lock icon + helper text  
  ***3.4 Hồ sơ người thân (*** */benh-nhan/nguoi-than* ***)***  
- **Giới hạn:** Tối đa 4 hồ sơ active  
+ **Giới hạn:** Không giới hạn số hồ sơ active  
    
     
    
-  **Hiển thị counter:** "Đang hoạt động: X/4"  
+  **Hiển thị counter:** "Đang hoạt động: X hồ sơ"  
  **Mỗi card:**  
 - Tên, quan hệ, giới tính, ngày sinh, SĐT  
 - Nút "Xem chi tiết" → modal view/edit  
@@ -917,7 +927,23 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Khóa tài khoản / Mở khóa tài khoản  
 - Reset no-show  
 - Mở khóa đặt lịch online  
- **Tạo tài khoản nhân sự:**  
+  
+**Admin User APIs hiện tại (mount dưới `/api/v1/users`):**  
+- `GET /api/v1/users`: Admin xem danh sách user, search/filter role/status, pagination  
+- `GET /api/v1/users/:id`: Admin xem chi tiết user  
+- `PATCH /api/v1/users/:id`: Admin cập nhật thông tin cơ bản của user  
+- `PATCH /api/v1/users/:id/status`: Admin khóa/mở khóa tài khoản  
+- `PATCH /api/v1/users/:id/reset-no-show`: Admin reset số lần vắng mặt  
+- `POST /api/v1/users/staff`: Admin tạo tài khoản nhân sự  
+  
+**Giới hạn scope hiện tại:**  
+- Admin update user không dùng để sửa `passwordHash`  
+- Admin update user không dùng để reset password  
+- Admin update user không dùng để sửa `noShowCount` trực tiếp  
+- Admin reset noShowCount có endpoint riêng  
+- Admin khóa/mở khóa có endpoint riêng  
+- Admin reset password chưa thuộc scope hiện tại  
+  **Tạo tài khoản nhân sự:**  
 - Role: Doctor | Receptionist | Admin  
 - Email, SĐT, Mật khẩu tạm, Trạng thái  
 - Nếu role = Doctor → thêm Doctor profile (tên, chuyên khoa, học vị, kinh nghiệm, giá, avatar)  
@@ -934,12 +960,44 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  ***6.10 Thông tin phòng khám***  
    
  CRUD: Tên phòng khám, địa chỉ, hotline, email, giờ làm việc, mô tả  
+  
+**Clinic Settings APIs hiện tại:**  
+- `GET /api/v1/clinic-settings/clinic-info`: Public lấy thông tin phòng khám  
+- `PATCH /api/v1/clinic-settings/clinic-info`: Admin cập nhật thông tin phòng khám  
+  
+**Field thông tin phòng khám:**  
+- `name`  
+- `address`  
+- `hotline`  
+- `email`  
+- `workingHours`  
+- `description`  
  ***6.11 Cài đặt hệ thống***  
 - max_booking_days_ahead (mặc định 7 ngày)  
 - slot_duration_minutes (30 phút)  
 - cancel_before_hours (2 giờ → yêu cầu hủy qua bác sĩ)  
 - max_no_show_before_lock (3 lần)  
+- max_active_appointments_per_user (giới hạn số lịch hẹn active tối đa mỗi user)  
 - Giờ ca sáng/chiều  
+  
+**System Settings APIs hiện tại:**  
+- `GET /api/v1/clinic-settings/system`: Admin xem cấu hình hệ thống  
+- `PATCH /api/v1/clinic-settings/system`: Admin cập nhật cấu hình hệ thống  
+- `GET /api/v1/clinic-settings/booking-rules`: Public DTO gọn cho UI đặt lịch, chỉ trả rule hiển thị lịch/giờ làm việc  
+- `GET /api/v1/clinic-settings/system/public`: Deprecated/alias sang booking-rules DTO, không trả full system settings  
+  
+**Ý nghĩa field:**  
+- `maxBookingDaysAhead`: số ngày tối đa user được đặt lịch trước  
+- `slotDurationMinutes`: thời lượng mỗi khung giờ khám  
+- `cancelBeforeHours`: số giờ tối thiểu trước giờ khám để được hủy trực tiếp  
+- `maxNoShowBeforeLock`: số lần vắng mặt tối đa trước khi user bị hạn chế/khóa đặt lịch  
+- `maxActiveAppointmentsPerUser`: số lịch hẹn active tối đa mỗi user được có cùng lúc  
+- `morningShiftStart` / `morningShiftEnd`: giờ ca sáng  
+- `afternoonShiftStart` / `afternoonShiftEnd`: giờ ca chiều  
+  
+**Ngoài scope UI cài đặt hệ thống:**  
+- Token TTL / access token TTL / refresh token TTL không thuộc màn Admin System Settings  
+- Các cấu hình bảo mật/auth TTL nên nằm ở env/config backend, không cho Admin chỉnh trên UI  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/khHMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4DmBdF2VlroAAAAAElFTkSuQmCC)  
  **4. Quy tắc nghiệp vụ tổng hợp**  
  **4.1 Anti-spam booking**  
@@ -957,6 +1015,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  | Rule áp dụng cho | Cả bệnh nhân tự đặt và lễ tân đặt hộ |  
    
  | Xác định người khám | forSelf=true → patientId, forSelf=false → patientProfileId |  
+  
+ | Giới hạn theo user | Mỗi user có số lịch hẹn active tối đa theo `maxActiveAppointmentsPerUser` |  
    
     
  **4.2 Quy tắc hủy lịch (Patient)**  
@@ -984,10 +1044,12 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Admin có thể reset và mở khóa  
 - Bệnh nhân nhận email thông báo khóa  
  **4.5 Người thân (Relatives)**  
-- Tối đa **4 hồ sơ người thân active** mỗi tài khoản  
+- Không giới hạn số hồ sơ người thân active mỗi tài khoản  
 - Xóa = soft delete (isActive = false)  
 - Không thể xóa nếu có lịch CONFIRMED hoặc CHECKED_IN  
-- Khi đặt lịch qua Patient Portal: popup picker (Bản thân / các người thân đã lưu / thêm mới)  
+- Không dùng hồ sơ mặc định trong nghiệp vụ hiện tại  
+- Không hiển thị UI đặt mặc định  
+- Khi đặt lịch qua Patient Portal: user chọn trực tiếp hồ sơ active cần khám từ danh sách  
 - Khi đặt qua Receptionist: search → trả về bệnh nhân + người thân của bệnh nhân đó  
  **4.6 Email notifications**  
    
@@ -1073,6 +1135,10 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
   /benh-nhan/thong-tin-ca-nhan  → PatientProfile  
    
   /benh-nhan/nguoi-than         → PatientRelatives  
+  
+**Frontend Patient screens hiện tại:**  
+- `/benh-nhan/thong-tin-ca-nhan`: user xem/cập nhật thông tin cá nhân, email readonly, có card bảo mật tài khoản và đổi mật khẩu riêng, có upload avatar nếu code hiện tại bật  
+- `/benh-nhan/nguoi-than`: user quản lý hồ sơ người thân, không giới hạn số hồ sơ, chỉ hiển thị tổng số hồ sơ active, không có UI đặt mặc định, thêm/sửa/xóa mềm hồ sơ theo rule backend  
    
     
  **Doctor Portal (**/bac-si-portal  **)**  
@@ -1126,6 +1192,12 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
   /admin/phong-kham             → ClinicInfo  
    
   /admin/cai-dat                → SystemSettings  
+  
+**Frontend Admin screens hiện tại:**  
+- `/admin/nguoi-dung`: Admin quản lý người dùng, list/search/filter role/status, pagination, xem chi tiết, sửa thông tin cơ bản, tạo tài khoản nhân sự, khóa/mở khóa, reset noShowCount; không có section đổi/đặt lại mật khẩu trong chi tiết user ở scope hiện tại; chi tiết user hiển thị số lần vắng mặt  
+- `/admin/chuyen-khoa`: Admin quản lý chuyên khoa, list/search/pagination nếu backend hỗ trợ, thêm, sửa, xem chi tiết nếu UI có, bật/tắt active  
+- `/admin/phong-kham`: Admin cập nhật thông tin phòng khám gồm tên, địa chỉ, hotline, email, giờ làm việc, mô tả  
+- `/admin/cai-dat`: Admin cập nhật system settings gồm giới hạn đặt lịch, thời lượng slot, thời gian hủy tối thiểu, số lần vắng mặt tối đa, số lịch hẹn active tối đa mỗi user, giờ ca sáng/chiều; không có Token TTL trên UI  
    
     
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANElEQVR4nO3OUQmAABBAsSeYxKSXxlxGEAOIFfwTYUuwZWa2ag8AgL841uquzq8nAAC8dj05WAYOJzduCAAAAABJRU5ErkJggg==)  

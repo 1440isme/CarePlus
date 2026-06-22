@@ -72,7 +72,6 @@ const createPatientProfileSchema = z.object({
     .refine((value) => VALID_PATIENT_PROFILE_RELATIONSHIPS.includes(value), {
       message: `relationship must be one of ${VALID_PATIENT_PROFILE_RELATIONSHIPS.join(', ')}`,
     }),
-  isDefault: z.boolean().optional(),
 }).strict();
 
 const updatePatientProfileSchema = z.object({
@@ -116,7 +115,6 @@ const updatePatientProfileSchema = z.object({
       message: `relationship must be one of ${VALID_PATIENT_PROFILE_RELATIONSHIPS.join(', ')}`,
     })
     .optional(),
-  isDefault: z.boolean().optional(),
 }).strict().refine(
   (data) => Object.keys(data).length > 0,
   {

@@ -3,7 +3,7 @@ import { useDoctorProfile } from '../../features/doctor/index.js';
 import { useDoctorSchedules } from '../../features/schedule/hooks/useSchedules.js';
 import { useApprovalRequests, useCreateLeaveRequest } from '../../features/approval/hooks/useApprovalRequests.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
-import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import {
   buildVirtualSlots,
   filterSlotGroupsBySchedules,
@@ -79,7 +79,7 @@ export default function DoctorWorkSchedulePage() {
     doctorId: doctor?.id,
     date: selectedDate,
   });
-  const { data: systemSettingsResponse } = usePublicSystemSettings();
+  const { data: systemSettingsResponse } = useBookingRules();
 
   const requestsQuery = useApprovalRequests({
     type: 'SCHEDULE_EXCEPTION',

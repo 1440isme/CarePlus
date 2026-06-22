@@ -49,8 +49,31 @@ function toSystemSettingDto(systemSetting) {
   };
 }
 
+function toBookingRulesDto(systemSetting) {
+  if (!systemSetting) {
+    return null;
+  }
+
+  return {
+    maxBookingDaysAhead: systemSetting.maxBookingDaysAhead,
+    slotDurationMinutes: systemSetting.slotDurationMinutes,
+    cancelBeforeHours: systemSetting.cancelBeforeHours,
+    workingShifts: {
+      morning: {
+        start: systemSetting.morningShiftStart,
+        end: systemSetting.morningShiftEnd,
+      },
+      afternoon: {
+        start: systemSetting.afternoonShiftStart,
+        end: systemSetting.afternoonShiftEnd,
+      },
+    },
+  };
+}
+
 module.exports = {
   toClinicInfoDto,
   toAdminClinicInfoDto,
   toSystemSettingDto,
+  toBookingRulesDto,
 };

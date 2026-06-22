@@ -836,21 +836,6 @@
   margin-top: 3px;
 }
 
-.patient-relatives-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 22px;
-  padding: 0 9px;
-  border-radius: 999px;
-  background: #ecfeff;
-  color: #0891b2;
-  font-family: Arial, sans-serif;
-  font-size: 11px;
-  line-height: 16px;
-  font-weight: 700;
-}
-
 .patient-relatives-actions {
   display: flex;
   align-items: center;

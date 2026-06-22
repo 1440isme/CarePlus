@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useDoctorList } from '../../features/doctor/index.js';
-import { usePublicSystemSettings } from '../../features/admin/clinic-settings/hooks/usePublicSystemSettings.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import { buildVirtualSlots, flattenSlotGroups } from '../../features/timeslot/virtual-slot.service.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
@@ -23,11 +23,11 @@ export default function DoctorListPage() {
   }), [searchParams]);
 
   const { data, isLoading, error } = useDoctorList(query);
-  const { data: systemSettingsResponse } = usePublicSystemSettings();
+  const { data: bookingRulesResponse } = useBookingRules();
   const doctors = data?.data || [];
   const previewSlots = useMemo(
-    () => flattenSlotGroups(buildVirtualSlots(systemSettingsResponse?.data)).slice(0, 6),
-    [systemSettingsResponse?.data],
+    () => flattenSlotGroups(buildVirtualSlots(bookingRulesResponse?.data)).slice(0, 6),
+    [bookingRulesResponse?.data],
   );
 
   const handleSubmit = (event) => {
