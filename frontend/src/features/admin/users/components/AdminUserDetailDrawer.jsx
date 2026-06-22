@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   ADMIN_USER_ROLE_LABELS,
@@ -9,6 +9,7 @@ import {
 import { adminUserEditSchema } from '../schemas/admin-user.schema.js';
 import { useAdminUserDetail } from '../hooks/useAdminUserDetail.js';
 import { useUpdateAdminUser } from '../hooks/useUpdateAdminUser.js';
+import AdminDatePickerInput from './AdminDatePickerInput.jsx';
 import './admin-users.css';
 
 const GENDER_OPTIONS = [
@@ -139,10 +140,13 @@ function DetailRow({ label, value }) {
   );
 }
 
-function DetailEditField({ label, error, children }) {
+function DetailEditField({ label, error, required = false, children }) {
   return (
     <div className="admin-user-detail-edit-field">
-      <label className="admin-user-detail-edit-label">{label}</label>
+      <label className="admin-user-detail-edit-label">
+        {label}
+        {required ? <span className="admin-user-form-required">*</span> : null}
+      </label>
       {children}
       {error ? <p className="admin-user-detail-edit-error">{error}</p> : null}
     </div>
@@ -174,6 +178,7 @@ export default function AdminUserDetailDrawer({
   const defaultValues = useMemo(() => createEditDefaultValues(user), [user]);
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -305,7 +310,7 @@ export default function AdminUserDetailDrawer({
             </div>
           ) : (
             <form className="admin-user-detail-edit-form" onSubmit={handleSubmit(handleEditSubmit)}>
-              <DetailEditField label="Họ tên" error={errors.name?.message}>
+              <DetailEditField label="Họ tên" error={errors.name?.message} required>
                 <input className="admin-user-detail-input" type="text" {...register('name')} />
               </DetailEditField>
 
@@ -313,11 +318,11 @@ export default function AdminUserDetailDrawer({
                 <input className="admin-user-detail-input is-disabled" type="email" value={user.email} readOnly disabled />
               </DetailEditField>
 
-              <DetailEditField label="SĐT" error={errors.phone?.message}>
+              <DetailEditField label="SĐT" error={errors.phone?.message} required>
                 <input className="admin-user-detail-input" type="text" {...register('phone')} />
               </DetailEditField>
 
-              <DetailEditField label="Giới tính" error={errors.gender?.message}>
+              <DetailEditField label="Giới tính" error={errors.gender?.message} required>
                 <select className="admin-user-detail-input" {...register('gender')}>
                   {GENDER_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -327,8 +332,20 @@ export default function AdminUserDetailDrawer({
                 </select>
               </DetailEditField>
 
-              <DetailEditField label="Ngày sinh" error={errors.dateOfBirth?.message}>
-                <input className="admin-user-detail-input" type="text" placeholder="DD/MM/YYYY" {...register('dateOfBirth')} />
+              <DetailEditField label="Ngày sinh" error={errors.dateOfBirth?.message} required>
+                <Controller
+                  control={control}
+                  name="dateOfBirth"
+                  render={({ field }) => (
+                    <AdminDatePickerInput
+                      className="admin-user-detail-input"
+                      value={field.value}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                    />
+                  )}
+                />
               </DetailEditField>
 
               <DetailEditField label="Địa chỉ" error={errors.address?.message}>

@@ -98,9 +98,9 @@ const updateMeSchema = z.object({
     .optional(),
   address: z.string()
     .trim()
-    .min(1, 'address must not be empty')
     .max(255, 'address must be at most 255 characters')
-    .optional(),
+    .optional()
+    .or(z.literal('')),
 }).strict().refine(
   (data) => Object.keys(data).length > 0,
   {
