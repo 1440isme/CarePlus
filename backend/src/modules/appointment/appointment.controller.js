@@ -110,6 +110,14 @@ class AppointmentController {
       return next(error);
     }
   }
+  async getAdminStats(req, res, next) {
+    try {
+      const data = await AppointmentService.getAdminStats(req.user);
+      return res.status(200).json({ success: true, data });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 module.exports = new AppointmentController();

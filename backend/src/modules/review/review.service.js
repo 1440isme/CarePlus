@@ -122,6 +122,25 @@ class ReviewService {
       }
     });
 
+    // Calculate real rating distribution
+    const ratingStats = await prisma.review.groupBy({
+      by: ['rating'],
+      where: { doctorId },
+      _count: {
+        _all: true
+      }
+    });
+
+    const distribution = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+    ratingStats.forEach(item => {
+      const r = Math.round(item.rating);
+      if (r >= 1 && r <= 5) {
+        distribution[r] = (distribution[r] || 0) + item._count._all;
+      }
+    });
+
+    result.meta.ratingDistribution = distribution;
+
     return result;
   }
 

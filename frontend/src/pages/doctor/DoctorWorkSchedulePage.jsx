@@ -15,7 +15,7 @@ import {
 import LeaveRequestForm from "../../features/approval/components/LeaveRequestForm.jsx";
 import LoadingBlock from "../../shared/components/feedback/LoadingBlock.jsx";
 import StateBlock from "../../shared/components/feedback/StateBlock.jsx";
-import { Calendar, Clock, Plus, ChevronLeft, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
 
 function formatIsoDate(date) {
   const year = date.getFullYear();

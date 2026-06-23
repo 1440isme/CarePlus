@@ -57,6 +57,7 @@ function CloudinaryUploadAdapterPlugin(editor) {
 export default function CKEditorWrapper({ value, onChange, placeholder = 'Nhập nội dung chi tiết bài viết...' }) {
   const containerRef = useRef(null);
   const editorInstanceRef = useRef(null);
+  const isInitializingRef = useRef(false);
   const [scriptLoaded, setScriptLoaded] = useState(!!window.ClassicEditor);
 
   // Keep fresh references of callbacks and configurations to prevent stale closures

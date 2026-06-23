@@ -284,6 +284,11 @@ export default function ChatWidget() {
   const colorFor = (type) => type === 'SUPPORT' ? SUPPORT_COLOR : DOCTOR_COLOR;
   const IconFor = (type) => type === 'SUPPORT' ? Headphones : Stethoscope;
 
+  // Do not render chat widget for non-patient roles (doctor, receptionist, admin)
+  if (isAuthenticated && role !== 'PATIENT') {
+    return null;
+  }
+
   return (
     <div className="fixed bottom-4 right-4 z-[999] flex flex-col items-end">
       {/* Floating Toggle Button */}

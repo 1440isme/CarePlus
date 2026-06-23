@@ -8,7 +8,8 @@ import {
   bookAppointment,
   getMyAppointments,
   getMyAppointmentDetail,
-  cancelMyAppointment
+  cancelMyAppointment,
+  getAdminStats
 } from '../services/appointment.service.js';
 import { QUERY_KEYS } from '../../../shared/constants/query-keys.js';
 
@@ -100,3 +101,10 @@ export function useCancelMyAppointment() {
   });
 }
 
+export function useAdminStats() {
+  return useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: getAdminStats,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
