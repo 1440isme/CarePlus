@@ -9,9 +9,10 @@ const SHIFT_LABELS = {
   ALL_DAY: 'Cả ngày',
 };
 
-const TYPE_LABELS = {
-  SCHEDULE_EXCEPTION: 'Nghỉ lịch',
-  CANCELLATION: 'Hủy lịch',
+const STATUS_LABELS = {
+  PENDING: 'Chờ xử lý',
+  APPROVED: 'Đã duyệt',
+  REJECTED: 'Đã từ chối',
 };
 
 function formatScope(item) {

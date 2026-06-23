@@ -44,6 +44,23 @@ router.patch(
   AppointmentController.cancelMyAppointment
 );
 
+// Bác sĩ - Xem và cập nhật lịch hẹn của chính mình
+router.get(
+  APPOINTMENT_ROUTE_PATHS.DOCTOR_ME,
+  authenticate,
+  authorize(USER_ROLES.DOCTOR),
+  validateListAppointments,
+  AppointmentController.listDoctorAppointments
+);
+
+router.patch(
+  APPOINTMENT_ROUTE_PATHS.DOCTOR_ME_STATUS,
+  authenticate,
+  authorize(USER_ROLES.DOCTOR),
+  validateUpdateStatus,
+  AppointmentController.updateDoctorAppointmentStatus
+);
+
 // Lễ tân & Admin - Quản lý toàn bộ lịch hẹn
 router.post(
   APPOINTMENT_ROUTE_PATHS.RECEPTIONIST_BOOK,

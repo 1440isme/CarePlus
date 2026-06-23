@@ -51,6 +51,19 @@ class AppointmentController {
     }
   }
 
+  async listDoctorAppointments(req, res, next) {
+    try {
+      const result = await AppointmentService.listDoctorAppointments(req.user, req.query);
+      return res.status(200).json({
+        success: true,
+        data: result.data,
+        meta: result.meta,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
   async getMyAppointmentDetail(req, res, next) {
     try {
       const data = await AppointmentService.getMyAppointmentDetail(req.user, req.params.id);
@@ -90,6 +103,18 @@ class AppointmentController {
   async updateAppointmentStatus(req, res, next) {
     try {
       const data = await AppointmentService.updateAppointmentStatus(req.user, req.params.id, req.body);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async updateDoctorAppointmentStatus(req, res, next) {
+    try {
+      const data = await AppointmentService.updateDoctorAppointmentStatus(req.user, req.params.id, req.body);
       return res.status(200).json({
         success: true,
         data,

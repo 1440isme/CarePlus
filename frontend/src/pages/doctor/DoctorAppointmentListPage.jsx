@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { useAppointments, useUpdateAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
+import { useDoctorAppointments, useUpdateDoctorAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
 import { useDoctorProfile } from '../../features/doctor/index.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
@@ -51,14 +51,13 @@ export default function DoctorAppointmentListPage() {
   const appointmentParams = useMemo(() => ({
     page,
     limit: 10,
-    doctorId: doctor?.id,
     ...(search.trim() ? { search: search.trim() } : {}),
     ...(selectedStatus ? { status: selectedStatus } : {}),
     ...(selectedDate ? { date: selectedDate } : {}),
-  }), [doctor?.id, page, search, selectedStatus, selectedDate]);
+  }), [page, search, selectedStatus, selectedDate]);
 
-  const appointmentsQuery = useAppointments(appointmentParams);
-  const updateStatusMutation = useUpdateAppointmentStatus();
+  const appointmentsQuery = useDoctorAppointments(appointmentParams);
+  const updateStatusMutation = useUpdateDoctorAppointmentStatus();
 
   const appointments = appointmentsQuery.data?.data || [];
   const meta = appointmentsQuery.data?.meta || { page: 1, totalPages: 1, total: 0 };

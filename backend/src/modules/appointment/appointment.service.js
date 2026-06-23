@@ -652,6 +652,55 @@ class AppointmentService {
     }
   }
 
+  async listDoctorAppointments(currentUser, query) {
+    try {
+      const doctor = await this.appointmentRepository.findDoctorByUserId(currentUser.userId);
+      if (!doctor) {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.APPOINTMENT_FORBIDDEN,
+          message: 'Không tìm thấy hồ sơ bác sĩ cho tài khoản hiện tại',
+          statusCode: 403,
+        });
+      }
+
+      const page = Number.parseInt(query.page, 10) || APPOINTMENT_PAGINATION.DEFAULT_PAGE;
+      const rawLimit = Number.parseInt(query.limit, 10) || APPOINTMENT_PAGINATION.DEFAULT_LIMIT;
+      const limit = Math.min(rawLimit, APPOINTMENT_PAGINATION.MAX_LIMIT);
+      const where = this._buildAppointmentListWhere({
+        ...query,
+        doctorId: doctor.id,
+      });
+
+      const [appointments, total] = await Promise.all([
+        this.appointmentRepository.findDoctorAppointments({
+          where,
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        this.appointmentRepository.countDoctorAppointments(where),
+      ]);
+
+      return {
+        data: toAppointmentListDto(appointments),
+        meta: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      };
+    } catch (error) {
+      if (error instanceof AppointmentServiceError) {
+        throw error;
+      }
+      throw this._wrapUnexpectedError(
+        error,
+        APPOINTMENT_ERROR_CODES.LIST_APPOINTMENTS_FAILED,
+        'Không thể lấy danh sách lịch hẹn của bác sĩ'
+      );
+    }
+  }
+
   async getMyAppointmentDetail(currentUser, appointmentId) {
     try {
       const appointment = await this.appointmentRepository.findAppointmentByIdWithRelations(appointmentId);
@@ -706,6 +755,84 @@ class AppointmentService {
         error,
         APPOINTMENT_ERROR_CODES.LIST_APPOINTMENTS_FAILED,
         'Không thể lấy thông tin chi tiết lịch hẹn'
+      );
+    }
+  }
+
+  async updateDoctorAppointmentStatus(currentUser, appointmentId, body) {
+    try {
+      const doctor = await this.appointmentRepository.findDoctorByUserId(currentUser.userId);
+      if (!doctor) {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.APPOINTMENT_FORBIDDEN,
+          message: 'Không tìm thấy hồ sơ bác sĩ cho tài khoản hiện tại',
+          statusCode: 403,
+        });
+      }
+
+      const appointment = await this.appointmentRepository.findAppointmentByIdWithRelations(appointmentId);
+      if (!appointment) {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.APPOINTMENT_NOT_FOUND,
+          message: 'Không tìm thấy lịch hẹn',
+          statusCode: 404,
+        });
+      }
+
+      if (appointment.doctorId !== doctor.id) {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.APPOINTMENT_FORBIDDEN,
+          message: 'Bạn không có quyền cập nhật lịch hẹn của bác sĩ khác',
+          statusCode: 403,
+        });
+      }
+
+      const newStatus = body.status.trim().toUpperCase();
+      if (newStatus !== 'COMPLETED') {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.INVALID_STATUS_TRANSITION,
+          message: 'Bác sĩ chỉ được chuyển lịch hẹn sang trạng thái hoàn thành',
+          statusCode: 400,
+        });
+      }
+
+      if (appointment.status !== 'CHECKED_IN') {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.INVALID_STATUS_TRANSITION,
+          message: 'Chỉ có thể hoàn thành lịch hẹn đã check-in',
+          statusCode: 400,
+        });
+      }
+
+      const { appointment: updatedAppointment } = await this.appointmentRepository.updateStatusWithTransaction(
+        appointment,
+        newStatus,
+        {
+          reason: body.reason,
+          note: body.note,
+        }
+      );
+
+      try {
+        const socketService = require('../../infrastructure/realtime/socket.service');
+        const appointmentDto = toAppointmentDto(updatedAppointment);
+        socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToUser(updatedAppointment.doctorId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
+        socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
+      } catch (socketErr) {
+        console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
+      }
+
+      return toAppointmentDto(updatedAppointment);
+    } catch (error) {
+      if (error instanceof AppointmentServiceError) {
+        throw error;
+      }
+      throw this._wrapUnexpectedError(
+        error,
+        APPOINTMENT_ERROR_CODES.UPDATE_STATUS_FAILED,
+        'Không thể cập nhật trạng thái lịch hẹn của bác sĩ'
       );
     }
   }
@@ -992,6 +1119,66 @@ class AppointmentService {
         'Không thể tra cứu thông tin bệnh nhân'
       );
     }
+  }
+
+  _buildAppointmentListWhere(query) {
+    const where = {};
+
+    if (query.status) {
+      where.status = query.status.trim().toUpperCase();
+    }
+
+    if (query.doctorId) {
+      where.doctorId = query.doctorId.trim();
+    }
+
+    if (query.patientId) {
+      where.patientId = query.patientId.trim();
+    }
+
+    if (query.date) {
+      where.appointmentDate = new Date(`${query.date.trim()}T00:00:00.000Z`);
+    } else if (query.startDate || query.endDate) {
+      where.appointmentDate = {};
+      if (query.startDate) {
+        where.appointmentDate.gte = new Date(`${query.startDate.trim()}T00:00:00.000Z`);
+      }
+      if (query.endDate) {
+        where.appointmentDate.lte = new Date(`${query.endDate.trim()}T00:00:00.000Z`);
+      }
+    }
+
+    if (query.specialtyId) {
+      where.specialtyId = query.specialtyId.trim();
+    }
+
+    if (query.search) {
+      const searchTrim = query.search.trim();
+      where.OR = [
+        { code: { contains: searchTrim } },
+        { relativeName: { contains: searchTrim } },
+        {
+          patient: {
+            OR: [
+              { name: { contains: searchTrim } },
+              { email: { contains: searchTrim } },
+              { phone: { contains: searchTrim } },
+            ],
+          },
+        },
+        {
+          patientProfile: {
+            OR: [
+              { fullName: { contains: searchTrim } },
+              { email: { contains: searchTrim } },
+              { phone: { contains: searchTrim } },
+            ],
+          },
+        },
+      ];
+    }
+
+    return where;
   }
 
   async _resolveBookableTimeSlot(bookingData) {

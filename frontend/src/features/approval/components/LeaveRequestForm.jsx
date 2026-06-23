@@ -4,15 +4,15 @@ import LoadingBlock from '../../../shared/components/feedback/LoadingBlock.jsx';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SHIFT_LABELS = {
-  MORNING: 'Ca sáng',
-  AFTERNOON: 'Ca chiều',
-  ALL_DAY: 'Cả ngày',
+  MORNING: "Ca sáng",
+  AFTERNOON: "Ca chiều",
+  ALL_DAY: "Cả ngày",
 };
 
 function formatIsoDate(date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -41,11 +41,11 @@ function buildCalendarDays(monthDate) {
 function getWorkingShiftsForDate(schedules) {
   const shifts = new Set();
   schedules.forEach((schedule) => {
-    if (schedule.status !== 'WORKING') return;
+    if (schedule.status !== "WORKING") return;
     const shift = schedule.workingShift || schedule.shift;
-    if (shift === 'ALL_DAY') {
-      shifts.add('MORNING');
-      shifts.add('AFTERNOON');
+    if (shift === "ALL_DAY") {
+      shifts.add("MORNING");
+      shifts.add("AFTERNOON");
       return;
     }
     shifts.add(shift);
@@ -55,18 +55,42 @@ function getWorkingShiftsForDate(schedules) {
 
 function getShiftOptions(shifts) {
   const options = [];
-  if (shifts.has('MORNING')) options.push({ value: 'MORNING', label: SHIFT_LABELS.MORNING });
-  if (shifts.has('AFTERNOON')) options.push({ value: 'AFTERNOON', label: SHIFT_LABELS.AFTERNOON });
-  if (shifts.size > 0) options.push({ value: 'ALL_DAY', label: SHIFT_LABELS.ALL_DAY });
+  if (shifts.has("MORNING"))
+    options.push({ value: "MORNING", label: SHIFT_LABELS.MORNING });
+  if (shifts.has("AFTERNOON"))
+    options.push({ value: "AFTERNOON", label: SHIFT_LABELS.AFTERNOON });
+  if (shifts.has("MORNING") && shifts.has("AFTERNOON"))
+    options.push({ value: "ALL_DAY", label: SHIFT_LABELS.ALL_DAY });
   return options;
 }
 
-export default function LeaveRequestForm({ doctorId, onSubmit, onCancel, isSubmitting, submitError }) {
+function getAllShiftOptions() {
+  return [
+    { value: "MORNING", label: SHIFT_LABELS.MORNING },
+    { value: "AFTERNOON", label: SHIFT_LABELS.AFTERNOON },
+    { value: "ALL_DAY", label: SHIFT_LABELS.ALL_DAY },
+  ];
+}
+
+function isShiftAvailable(shift, availableShifts) {
+  if (shift === "ALL_DAY") {
+    return availableShifts.has("MORNING") && availableShifts.has("AFTERNOON");
+  }
+  return availableShifts.has(shift);
+}
+
+export default function LeaveRequestForm({
+  doctorId,
+  onSubmit,
+  onCancel,
+  isSubmitting,
+  submitError,
+}) {
   const [monthDate, setMonthDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState('');
-  const [selectedShift, setSelectedShift] = useState('');
-  const [reason, setReason] = useState('');
-  const [formError, setFormError] = useState('');
+  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedShift, setSelectedShift] = useState("");
+  const [reason, setReason] = useState("");
+  const [formError, setFormError] = useState("");
 
   const monthRange = useMemo(() => getMonthRange(monthDate), [monthDate]);
   const schedulesQuery = useDoctorSchedules(doctorId, {
@@ -77,7 +101,9 @@ export default function LeaveRequestForm({ doctorId, onSubmit, onCancel, isSubmi
 
   const schedulesByDate = useMemo(() => {
     const grouped = new Map();
-    const schedules = Array.isArray(schedulesQuery.data?.data) ? schedulesQuery.data.data : [];
+    const schedules = Array.isArray(schedulesQuery.data?.data)
+      ? schedulesQuery.data.data
+      : [];
     schedules.forEach((schedule) => {
       const current = grouped.get(schedule.workingDate) || [];
       current.push(schedule);
@@ -94,10 +120,12 @@ export default function LeaveRequestForm({ doctorId, onSubmit, onCancel, isSubmi
   const todayIso = formatIsoDate(new Date());
 
   const handleMonthChange = (direction) => {
-    setMonthDate((current) => new Date(current.getFullYear(), current.getMonth() + direction, 1));
-    setSelectedDate('');
-    setSelectedShift('');
-    setFormError('');
+    setMonthDate(
+      (current) =>
+        new Date(current.getFullYear(), current.getMonth() + direction, 1),
+    );
+    setSelectedDate("");
+    setSelectedShift("");
   };
 
   const handleDateSelect = (date) => {
@@ -107,180 +135,288 @@ export default function LeaveRequestForm({ doctorId, onSubmit, onCancel, isSubmi
     if (shifts.size === 0) return;
 
     setSelectedDate(isoDate);
-    setSelectedShift(getShiftOptions(shifts)[0]?.value || '');
-    setFormError('');
+    setSelectedShift(getShiftOptions(shifts)[0]?.value || "");
+    setFormError("");
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
     if (!selectedDate || !selectedShift) {
-      setFormError('Vui lòng chọn ngày có lịch làm việc và ca nghỉ.');
+      setFormError("Vui lòng chọn ngày có lịch làm việc và ca nghỉ.");
       return;
     }
     if (reason.trim().length < 5) {
-      setFormError('Vui lòng nhập lý do nghỉ ít nhất 5 ký tự.');
+      setFormError("Vui lòng nhập lý do nghỉ ít nhất 5 ký tự.");
       return;
     }
 
     onSubmit({
-      type: 'SCHEDULE_EXCEPTION',
+      type: "SCHEDULE_EXCEPTION",
       date: selectedDate,
-      exceptionType: selectedShift === 'ALL_DAY' ? 'ALL_DAY' : 'SHIFT',
-      shift: selectedShift === 'ALL_DAY' ? undefined : selectedShift,
+      exceptionType: selectedShift === "ALL_DAY" ? "ALL_DAY" : "SHIFT",
+      shift: selectedShift === "ALL_DAY" ? undefined : selectedShift,
       reason: reason.trim(),
     });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      {/* Month navigation */}
-      <div className="flex items-center justify-between">
-        <button
-          type="button"
-          onClick={() => handleMonthChange(-1)}
-          className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors"
-        >
-          <ChevronLeft className="w-4 h-4" />
-        </button>
-        <span className="text-sm font-semibold text-gray-700 capitalize">
-          {monthDate.toLocaleDateString('vi-VN', { month: 'long', year: 'numeric' })}
-        </span>
-        <button
-          type="button"
-          onClick={() => handleMonthChange(1)}
-          className="p-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-500 transition-colors"
-        >
-          <ChevronRight className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Calendar grid */}
-      {schedulesQuery.isLoading ? (
-        <LoadingBlock label="Đang tải lịch tháng..." />
-      ) : (
-        <div className="select-none">
-          {/* Day headers */}
-          <div className="grid grid-cols-7 mb-1">
-            {['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'].map((label) => (
-              <div key={label} className="text-center text-[10px] font-semibold text-gray-400 py-1">
-                {label}
-              </div>
-            ))}
+    <form className="doctor-leave-form" onSubmit={handleSubmit}>
+      <div className="doctor-leave-form-grid">
+        <div className="doctor-leave-calendar-pane">
+          <div className="doctor-leave-calendar-toolbar">
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => handleMonthChange(-1)}
+            >
+              Tháng trước
+            </button>
+            <strong>
+              {monthDate.toLocaleDateString("vi-VN", {
+                month: "long",
+                year: "numeric",
+              })}
+            </strong>
+            <button
+              type="button"
+              className="button-secondary"
+              onClick={() => handleMonthChange(1)}
+            >
+              Tháng sau
+            </button>
           </div>
 
-          {/* Day cells */}
-          <div className="grid grid-cols-7 gap-0.5">
-            {calendarDays.map((date) => {
-              const isoDate = formatIsoDate(date);
-              const schedules = schedulesByDate.get(isoDate) || [];
-              const shifts = getWorkingShiftsForDate(schedules);
-              const isCurrentMonth = date.getMonth() === monthDate.getMonth();
-              const isSelected = isoDate === selectedDate;
-              const isAvailable = shifts.size > 0;
-              const isToday = isoDate === todayIso;
-              const isPast = isoDate < todayIso;
+          {schedulesQuery.isLoading ? (
+            <LoadingBlock label="Đang tải lịch tháng..." />
+          ) : null}
 
-              return (
-                <button
-                  key={isoDate}
-                  type="button"
-                  disabled={!isAvailable || isPast}
-                  onClick={() => handleDateSelect(date)}
-                  className={[
-                    'relative flex flex-col items-center py-1.5 rounded-lg text-xs transition-all',
-                    !isCurrentMonth ? 'opacity-30' : '',
-                    isPast && isCurrentMonth ? 'opacity-40 cursor-not-allowed' : '',
-                    isSelected
-                      ? 'bg-[#49BCE2] text-white font-bold shadow-sm'
-                      : isAvailable && !isPast
-                        ? 'bg-blue-50 text-blue-700 hover:bg-[#49BCE2]/20 cursor-pointer font-medium border border-blue-100'
-                        : 'text-gray-400 cursor-default',
-                    isToday && !isSelected ? 'ring-2 ring-[#49BCE2] ring-offset-1' : '',
-                  ].filter(Boolean).join(' ')}
-                >
-                  <span className="font-semibold leading-none">{date.getDate()}</span>
-                  {isAvailable && (
-                    <span className={`text-[8px] mt-0.5 leading-none ${isSelected ? 'text-white/80' : 'text-blue-500'}`}>
-                      {getShiftOptions(shifts).filter(o => o.value !== 'ALL_DAY').map(o => o.label.replace('Ca ', '')).join('+')}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Selected date & shift picker */}
-      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-        <p className="text-xs font-semibold text-gray-600 mb-2">Ngày & Ca nghỉ</p>
-        {selectedDate ? (
-          <>
-            <p className="text-sm font-bold text-gray-900 mb-2">
-              📅 {selectedDate.split('-').reverse().join('/')}
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {shiftOptions.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setSelectedShift(option.value)}
-                  className={`px-3 py-1.5 text-xs font-semibold rounded-lg border transition-all ${
-                    selectedShift === option.value
-                      ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-[#49BCE2]'
-                  }`}
-                >
-                  {option.label}
-                </button>
+          {!schedulesQuery.isLoading ? (
+            <div className="doctor-leave-calendar">
+              {["T2", "T3", "T4", "T5", "T6", "T7", "CN"].map((label) => (
+                <span key={label} className="doctor-leave-weekday">
+                  {label}
+                </span>
               ))}
+              {calendarDays.map((date) => {
+                const isoDate = formatIsoDate(date);
+                const schedules = schedulesByDate.get(isoDate) || [];
+                const shifts = getWorkingShiftsForDate(schedules);
+                const isCurrentMonth = date.getMonth() === monthDate.getMonth();
+                const isSelected = isoDate === selectedDate;
+                const isAvailable = shifts.size > 0;
+
+                return (
+                  <button
+                    key={isoDate}
+                    type="button"
+                    className={`doctor-leave-day ${isCurrentMonth ? "" : "is-muted"} ${isAvailable ? "has-schedule" : ""} ${isSelected ? "is-selected" : ""}`}
+                    disabled={!isAvailable}
+                    onClick={() => handleDateSelect(date)}
+                  >
+                    <strong>{date.getDate()}</strong>
+                    {isAvailable ? (
+                      <small>
+                        {getShiftOptions(shifts)
+                          .filter((item) => item.value !== "ALL_DAY")
+                          .map((item) => item.label.replace("Ca ", ""))
+                          .join(", ")}
+                      </small>
+                    ) : null}
+                  </button>
+                );
+              })}
             </div>
-          </>
-        ) : (
-          <p className="text-xs text-gray-400 italic">Chọn ngày có lịch làm việc trên lịch để tiếp tục.</p>
-        )}
-      </div>
-
-      {/* Reason textarea */}
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="leave-reason" className="text-xs font-semibold text-gray-700">
-          Lý do nghỉ <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          id="leave-reason"
-          rows={3}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          placeholder="Mô tả lý do xin nghỉ (ít nhất 5 ký tự)..."
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white resize-none placeholder:text-gray-400 transition-colors"
-        />
-      </div>
-
-      {/* Errors */}
-      {(formError || submitError) && (
-        <div className="flex items-start gap-2 px-3 py-2.5 bg-red-50 border border-red-200 rounded-lg text-xs text-red-700">
-          <span className="shrink-0 mt-0.5">⚠️</span>
-          <span>{formError || submitError}</span>
+          ) : null}
         </div>
-      )}
 
-      {/* Actions */}
-      <div className="flex gap-3 pt-1">
-        <button
-          type="button"
-          onClick={onCancel}
-          disabled={isSubmitting}
-          className="flex-1 py-2.5 border border-gray-200 rounded-lg text-sm font-semibold text-gray-600 bg-white hover:bg-gray-50 disabled:opacity-50 transition-colors"
-        >
-          Hủy bỏ
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting || !selectedDate || !selectedShift}
-          className="flex-1 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c7] text-white rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
-        >
-          {isSubmitting ? 'Đang gửi...' : 'Gửi yêu cầu nghỉ'}
-        </button>
+        <div className="doctor-leave-detail-pane">
+          <div className="doctor-leave-selected-panel">
+            <h4>Thông tin nghỉ</h4>
+            <p
+              style={{
+                fontSize: "1.05rem",
+                color: selectedDate ? "#0898B8" : "#9CA3AF",
+                fontWeight: selectedDate ? "800" : "600",
+              }}
+            >
+              {selectedDate
+                ? selectedDate.split("-").reverse().join("/")
+                : "Chưa chọn ngày"}
+            </p>
+            {!selectedDate ? (
+              <small
+                style={{
+                  color: "#6B7280",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  padding: "6px 8px",
+                  display: "inline-block",
+                }}
+              >
+                Vui lòng chọn một ngày có lịch làm việc bên trái
+              </small>
+            ) : null}
+          </div>
+
+          {shiftOptions.length > 0 ? (
+            <div className="doctor-profile-field">
+              <label style={{ marginBottom: "10px" }}>
+                Chọn ca nghỉ <span style={{ color: "#EF4444" }}>*</span>
+              </label>
+              <div className="doctor-leave-shift-options">
+                {getAllShiftOptions().map((option) => {
+                  const isAvailable = isShiftAvailable(
+                    option.value,
+                    selectedWorkingShifts,
+                  );
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`${
+                        selectedShift === option.value ? "is-active" : ""
+                      } ${!isAvailable ? "is-disabled" : ""}`}
+                      disabled={!isAvailable}
+                      onClick={() => setSelectedShift(option.value)}
+                    >
+                      {option.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ) : selectedDate ? (
+            <div
+              style={{
+                padding: "12px",
+                borderRadius: "8px",
+                background: "#FEE2E2",
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontSize: "0.9rem",
+                fontWeight: "600",
+                textAlign: "center",
+              }}
+            >
+              Ngày được chọn không có ca làm việc khả dụng
+            </div>
+          ) : null}
+
+          <div className="doctor-profile-field">
+            <label htmlFor="reason">
+              Lý do nghỉ <span style={{ color: "#EF4444" }}>*</span>
+            </label>
+            <textarea
+              id="reason"
+              value={reason}
+              onChange={(event) => setReason(event.target.value.slice(0, 200))}
+              placeholder="Nhập lý do xin nghỉ (tối thiểu 5 ký tự)..."
+              rows="4"
+              style={{
+                minHeight: "100px",
+                fontFamily: "inherit",
+                fontSize: "0.95rem",
+                lineHeight: "1.5",
+                resize: "vertical",
+              }}
+            />
+            <small
+              className="doctor-profile-helper"
+              style={{ marginTop: "4px" }}
+            >
+              {reason.length > 0
+                ? `${reason.length} ký tự`
+                : "Hãy giải thích chi tiết lý do xin nghỉ"}
+            </small>
+          </div>
+
+          {formError ? (
+            <div
+              style={{
+                padding: "10px 12px",
+                borderRadius: "8px",
+                background: "#FEE2E2",
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontSize: "0.9rem",
+                fontWeight: "600",
+              }}
+            >
+              {formError}
+            </div>
+          ) : null}
+          {submitError ? (
+            <div
+              style={{
+                padding: "10px 12px",
+                borderRadius: "8px",
+                background: "#FEE2E2",
+                border: "1px solid #FECACA",
+                color: "#991B1B",
+                fontSize: "0.9rem",
+                fontWeight: "600",
+              }}
+            >
+              {submitError}
+            </div>
+          ) : null}
+
+          <div className="doctor-leave-actions">
+            <button
+              type="button"
+              onClick={onCancel}
+              disabled={isSubmitting}
+              style={{
+                background: "#ffffff",
+                border: "1px solid #E5E7EB",
+                borderRadius: "8px",
+                padding: "10px 18px",
+                fontSize: "0.95rem",
+                fontWeight: "700",
+                color: "#6B7280",
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+                transition: "background 0.2s ease",
+                opacity: isSubmitting ? "0.5" : "1",
+              }}
+            >
+              Hủy bỏ
+            </button>
+            <button
+              type="submit"
+              disabled={
+                isSubmitting ||
+                !selectedDate ||
+                !selectedShift ||
+                reason.trim().length < 5
+              }
+              style={{
+                background:
+                  isSubmitting ||
+                  !selectedDate ||
+                  !selectedShift ||
+                  reason.trim().length < 5
+                    ? "#CBD5E1"
+                    : "var(--cyan)",
+                border: "none",
+                borderRadius: "8px",
+                padding: "10px 24px",
+                fontSize: "0.95rem",
+                fontWeight: "700",
+                color: "#ffffff",
+                cursor:
+                  isSubmitting ||
+                  !selectedDate ||
+                  !selectedShift ||
+                  reason.trim().length < 5
+                    ? "not-allowed"
+                    : "pointer",
+                transition: "background 0.2s ease",
+              }}
+            >
+              {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu nghỉ"}
+            </button>
+          </div>
+        </div>
       </div>
     </form>
   );
