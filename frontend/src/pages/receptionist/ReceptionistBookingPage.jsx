@@ -395,10 +395,10 @@ export default function ReceptionistBookingPage() {
                     {/* Step node */}
                     <div className="flex flex-col items-center gap-1">
                       <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${isCompleted
-                          ? 'bg-[#49BCE2] text-white'
-                          : isActive
-                            ? 'bg-[#49BCE2] text-white ring-4 ring-[#49BCE2]/20'
-                            : 'bg-gray-100 text-gray-400'
+                        ? 'bg-[#49BCE2] text-white'
+                        : isActive
+                          ? 'bg-[#49BCE2] text-white ring-4 ring-[#49BCE2]/20'
+                          : 'bg-gray-100 text-gray-400'
                         }`}>
                         {isCompleted ? (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -472,8 +472,8 @@ export default function ReceptionistBookingPage() {
                       type="button"
                       onClick={() => handleSelectSpecialty(spec)}
                       className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 text-center transition-all cursor-pointer ${isSelected
-                          ? 'border-[#49BCE2] bg-[#49BCE2]/5 shadow-sm'
-                          : 'border-gray-200 hover:border-[#49BCE2]/50 hover:bg-gray-50'
+                        ? 'border-[#49BCE2] bg-[#49BCE2]/5 shadow-sm'
+                        : 'border-gray-200 hover:border-[#49BCE2]/50 hover:bg-gray-50'
                         }`}
                     >
                       <span className="text-2xl">{getSpecialtyEmoji(spec.slug)}</span>
@@ -519,8 +519,8 @@ export default function ReceptionistBookingPage() {
                     type="button"
                     onClick={() => handleSelectDate(item.dateStr)}
                     className={`flex flex-col items-center justify-center min-w-[60px] px-3 py-2.5 rounded-xl border-2 transition-all shrink-0 ${isDateSel
-                        ? 'border-[#49BCE2] bg-[#49BCE2] text-white shadow-sm'
-                        : 'border-gray-200 hover:border-[#49BCE2]/50 text-gray-600 hover:bg-gray-50'
+                      ? 'border-[#49BCE2] bg-[#49BCE2] text-white shadow-sm'
+                      : 'border-gray-200 hover:border-[#49BCE2]/50 text-gray-600 hover:bg-gray-50'
                       }`}
                   >
                     <span className="text-[10px] font-semibold uppercase tracking-wide">{item.dayLabel}</span>
@@ -567,8 +567,8 @@ export default function ReceptionistBookingPage() {
                     <div
                       key={doc.id}
                       className={`border-2 rounded-xl transition-all overflow-hidden ${isSelected
-                          ? 'border-[#49BCE2] shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300'
+                        ? 'border-[#49BCE2] shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300'
                         }`}
                     >
                       {/* Doctor Info Row */}
@@ -635,10 +635,10 @@ export default function ReceptionistBookingPage() {
                                           disabled={!isAvailable}
                                           onClick={() => handleSelectTimeSlot(slot)}
                                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSlotSel
-                                              ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
-                                              : isAvailable
-                                                ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
-                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                            ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
+                                            : isAvailable
+                                              ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
+                                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
                                             }`}
                                         >
                                           {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
@@ -664,10 +664,10 @@ export default function ReceptionistBookingPage() {
                                           disabled={!isAvailable}
                                           onClick={() => handleSelectTimeSlot(slot)}
                                           className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSlotSel
-                                              ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
-                                              : isAvailable
-                                                ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
-                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                            ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
+                                            : isAvailable
+                                              ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
+                                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
                                             }`}
                                         >
                                           {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
@@ -865,13 +865,11 @@ export default function ReceptionistBookingPage() {
 
               {/* Email */}
               <div>
-                <label htmlFor="patientEmailInput" style={lbl}>
-                  Email tài khoản{!bookingData.patientUser && <Req />}
-                </label>
+                <label htmlFor="patientEmailInput" style={lbl}>Email tài khoản</label>
                 <input
                   id="patientEmailInput"
                   type="email"
-                  placeholder={bookingData.patientUser ? "Email tài khoản..." : "Nhập email tài khoản..."}
+                  placeholder="Nhập email tài khoản (không bắt buộc)..."
                   value={bookingData.email}
                   onChange={(e) => {
                     setBookingData(prev => ({ ...prev, email: e.target.value }));
