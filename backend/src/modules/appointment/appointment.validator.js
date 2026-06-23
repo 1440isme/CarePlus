@@ -50,9 +50,13 @@ const createAppointmentSchema = z.object({
 });
 
 const createReceptionistAppointmentSchema = z.object({
-  patientId: z.string()
-    .trim()
-    .min(1, 'patientId is required'),
+  patientId: z.string().trim().min(1).optional(),
+  name: z.string().trim().min(1).optional(),
+  phone: z.string().trim().min(1).optional(),
+  email: z.string().trim().email().optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  dateOfBirth: z.string().date().optional(),
+  address: z.string().trim().optional(),
   timeSlotId: z.string()
     .trim()
     .min(1, 'timeSlotId is required'),
@@ -75,13 +79,16 @@ const createReceptionistAppointmentSchema = z.object({
     .max(500, 'note must be at most 500 characters')
     .optional(),
 }).strict().refine((data) => {
+  if (!data.patientId && (!data.name || !data.phone)) {
+    return false;
+  }
   if (data.forSelf === false && !data.patientProfileId) {
     return false;
   }
   return true;
 }, {
-  message: 'patientProfileId is required when forSelf is false',
-  path: ['patientProfileId'],
+  message: 'patientProfileId is required when forSelf is false, or name and phone are required if patientId is omitted',
+  path: ['patientId'],
 });
 
 const updateStatusSchema = z.object({
@@ -134,8 +141,28 @@ function validateCreateReceptionistAppointment(req, res, next) {
 }
 
 function validateListAppointments(req, res, next) {
-  const { page, limit, status, date, doctorId, patientId, specialtyId } = req.query;
+  const { page, limit, status, date, doctorId, patientId, specialtyId, startDate, endDate } = req.query;
   const details = [];
+
+  if (startDate !== undefined) {
+    const startDateTrim = startDate.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(startDateTrim) || Number.isNaN(Date.parse(startDateTrim))) {
+      details.push({
+        field: 'startDate',
+        message: 'startDate must be a valid date string in YYYY-MM-DD format',
+      });
+    }
+  }
+
+  if (endDate !== undefined) {
+    const endDateTrim = endDate.trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(endDateTrim) || Number.isNaN(Date.parse(endDateTrim))) {
+      details.push({
+        field: 'endDate',
+        message: 'endDate must be a valid date string in YYYY-MM-DD format',
+      });
+    }
+  }
 
   if (specialtyId !== undefined && (typeof specialtyId !== 'string' || !specialtyId.trim())) {
     details.push({

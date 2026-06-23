@@ -504,7 +504,7 @@
 
 .slots-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(115px, 1fr));
   gap: 8px;
   margin-bottom: 12px;
 }
@@ -546,6 +546,69 @@
 .patient-search-container {
   position: relative;
   margin-bottom: 20px;
+}
+
+.patient-search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.patient-search-input-wrapper .search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888;
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.patient-search-input-wrapper .patient-search-input {
+  width: 100%;
+  padding: 8px 12px 8px 30px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+}
+
+.patient-search-input-wrapper .patient-search-input:focus {
+  border-color: var(--cyan);
+  outline: none;
+}
+
+.patient-search-input-wrapper .patient-search-input.selected {
+  background-color: #F9FAFB;
+  cursor: not-allowed;
+  padding-right: 30px;
+  color: #555;
+  font-weight: 500;
+  border: 1px solid #ddd;
+}
+
+.patient-search-input-wrapper .clear-search-btn {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font-size: 1.1rem;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.patient-search-input-wrapper .clear-search-btn:hover {
+  color: var(--danger);
 }
 
 .patient-autocomplete-dropdown {
@@ -680,7 +743,7 @@
 .doctor-schedule-grid {
   display: grid;
   grid-template-columns: 80px repeat(7, 1fr);
-  border: 1px solid var(--border);
+  border: 1.5px solid #b3bac5;
   border-radius: 12px;
   overflow: hidden;
   background: #ffffff;
@@ -688,8 +751,8 @@
 
 .grid-header-cell {
   background: var(--bg-offset);
-  border-bottom: 1px solid var(--border);
-  border-right: 1px solid var(--border);
+  border-bottom: 1.5px solid #b3bac5;
+  border-right: 1.5px solid #b3bac5;
   padding: 12px 6px;
   text-align: center;
   font-weight: 700;
@@ -697,13 +760,9 @@
   color: var(--text-h);
 }
 
-.grid-header-cell:last-child {
-  border-right: none;
-}
-
 .grid-header-cell.today-cell {
-  background-color: #EAF9FD;
-  color: var(--cyan);
+  background-color: #F3E8FF;
+  color: #6D28D9;
 }
 
 .grid-header-cell-sub {
@@ -715,8 +774,8 @@
 
 .grid-row-header-cell {
   background: var(--bg-offset);
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 1.5px solid #b3bac5;
+  border-bottom: 1.5px solid #b3bac5;
   padding: 14px 6px;
   display: flex;
   align-items: center;
@@ -727,21 +786,24 @@
 }
 
 .grid-cell {
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  border-right: 1.5px solid #b3bac5;
+  border-bottom: 1.5px solid #b3bac5;
   padding: 8px;
   min-height: 90px;
+  transition: background-color 0.2s ease;
 }
 
-.grid-cell:last-child {
+.grid-cell.today-column-cell {
+  background-color: #FAF5FF !important;
+}
+
+/* Remove right border on cells in the last column (8th column) */
+.doctor-schedule-grid > *:nth-child(8n) {
   border-right: none;
 }
 
-.doctor-schedule-grid .grid-cell:nth-last-child(-n+8) {
-  border-bottom: none;
-}
-
-.doctor-schedule-grid .grid-row-header-cell:last-of-type {
+/* Remove bottom border on cells in the last row (last 8 cells) */
+.doctor-schedule-grid > *:nth-last-child(-n+8) {
   border-bottom: none;
 }
 
