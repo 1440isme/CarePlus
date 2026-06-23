@@ -17,6 +17,39 @@ function formatDisplayDate(value) {
   });
 }
 
+function formatIsoDate(date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function buildWeekDates(todayValue) {
+  const pivot = todayValue ? new Date(`${todayValue}T00:00:00`) : new Date();
+  const day = pivot.getDay();
+  const diff = pivot.getDate() - day + (day === 0 ? -6 : 1);
+  const monday = new Date(pivot);
+  monday.setDate(diff);
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const current = new Date(monday);
+    current.setDate(monday.getDate() + index);
+    return current;
+  });
+}
+
+function formatShortWeekday(date) {
+  const labels = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  return labels[date.getDay()];
+}
+
+function formatShortDate(date) {
+  return date.toLocaleDateString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+  });
+}
+
 function getInitials(name) {
   if (!name) return 'BS';
   return name
@@ -27,6 +60,22 @@ function getInitials(name) {
     .join('') || 'BS';
 }
 
+const STATUS_LABELS = {
+  CONFIRMED: 'Đã xác nhận',
+  CHECKED_IN: 'Đã check-in',
+  COMPLETED: 'Hoàn thành',
+  NO_SHOW: 'Vắng mặt',
+  CANCELLED: 'Đã hủy',
+  WORKING: 'Đang làm việc',
+  APPROVED_OFF: 'Đã duyệt nghỉ',
+  PENDING: 'Chờ duyệt',
+  REJECTED: 'Từ chối',
+};
+
+function getStatusLabel(status) {
+  return STATUS_LABELS[status] || status || 'Không xác định';
+}
+
 export default function DoctorDashboardPage() {
   const { user } = useAuth();
   const { data, isLoading, error } = useDoctorDashboard();
@@ -35,6 +84,13 @@ export default function DoctorDashboardPage() {
   const totalAvailableSlots = weekSchedules.reduce((sum, item) => sum + (item.availableSlots || 0), 0);
   const totalBookedSlots = weekSchedules.reduce((sum, item) => sum + (item.bookedSlots || 0), 0);
   const totalLockedSlots = weekSchedules.reduce((sum, item) => sum + (item.lockedSlots || 0), 0);
+  const weekDates = buildWeekDates(dashboard?.today);
+  const schedulesByDate = weekSchedules.reduce((grouped, item) => {
+    if (item.workingDate) {
+      grouped[item.workingDate] = item;
+    }
+    return grouped;
+  }, {});
 
   if (isLoading) {
     return <LoadingBlock label="Đang tải dashboard bác sĩ..." />;
@@ -141,7 +197,7 @@ export default function DoctorDashboardPage() {
                     <div className="text-xs text-gray-400 truncate mt-0.5">Mã: {item.code}</div>
                   </div>
                   <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full border ${getStatusConfig(item.status)}`}>
-                    {item.status}
+                    {getStatusLabel(item.status)}
                   </span>
                 </div>
               ))}
@@ -163,10 +219,9 @@ export default function DoctorDashboardPage() {
 
           <div className="flex flex-col gap-3">
             {[
-              { label: 'Slot khả dụng', value: totalAvailableSlots },
               { label: 'Slot đã đặt', value: totalBookedSlots },
               { label: 'Slot bị khóa', value: totalLockedSlots },
-              { label: 'Lịch hôm nay', value: dashboard?.todaySchedule?.status || 'Chưa mở lịch', isText: true },
+              { label: 'Lịch hôm nay', value: dashboard?.todaySchedule?.status ? getStatusLabel(dashboard.todaySchedule.status) : 'Chưa mở lịch', isText: true },
             ].map((row, idx) => (
               <div key={idx} className="flex justify-between items-center py-2.5 border-b border-gray-50 text-sm">
                 <span className="text-gray-500 font-medium">{row.label}</span>
@@ -182,35 +237,49 @@ export default function DoctorDashboardPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
           <div>
             <h3 className="text-sm font-bold text-gray-800">Lịch làm việc tuần này</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Các ngày đã mở lịch và số lượng khung giờ hiện có.</p>
+            <p className="text-xs text-gray-400 mt-0.5">Tổng quan đơn giản ngày làm việc và ngày nghỉ trong tuần.</p>
           </div>
           <Link className="inline-flex items-center gap-1.5 px-3 py-1.5 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 bg-white hover:bg-gray-50 transition-colors" to={`${APP_ROUTES.doctorRoot}/lich-lam-viec`}>
             Lịch làm việc chi tiết
           </Link>
         </div>
 
-        {weekSchedules.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
-            {weekSchedules.map((item) => (
-              <div key={item.scheduleId} className="p-3.5 bg-gray-50 border border-gray-200 rounded-lg flex flex-col gap-2">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <div className="text-xs font-bold text-gray-700">{formatDisplayDate(item.workingDate)}</div>
-                    <div className="text-[10px] text-gray-400 mt-0.5">{item.doctor?.specialtyName || 'Chuyên khoa'}</div>
-                  </div>
-                  <span className={`px-2 py-0.5 text-[9px] font-bold rounded border ${getStatusConfig(item.status)}`}>
-                    {item.status}
-                  </span>
-                </div>
+        {weekDates.length > 0 ? (
+          <div className="overflow-x-auto rounded-lg border border-gray-200">
+            <div className="min-w-[760px] grid grid-cols-7 bg-white">
+              {weekDates.map((date) => {
+                const isoDate = formatIsoDate(date);
+                const schedule = schedulesByDate[isoDate];
+                const isWorking = schedule?.status === 'WORKING';
+                const isOff = !schedule || schedule.status === 'APPROVED_OFF' || schedule.status === 'CANCELLED';
 
-                <div className="grid grid-cols-2 gap-2 text-[10px] text-gray-500 mt-1 border-t border-gray-150 pt-2">
-                  <div>Tổng: <span className="font-semibold text-gray-700">{item.totalSlots}</span></div>
-                  <div>Trống: <span className="font-semibold text-green-600">{item.availableSlots}</span></div>
-                  <div>Đã đặt: <span className="font-semibold text-blue-600">{item.bookedSlots}</span></div>
-                  <div>Khóa: <span className="font-semibold text-red-500">{item.lockedSlots}</span></div>
-                </div>
-              </div>
-            ))}
+                return (
+                  <div
+                    key={isoDate}
+                    className={`min-h-[112px] border-r border-gray-100 p-3 text-center ${isWorking ? 'bg-[#EBF7FD]' : 'bg-white'}`}
+                  >
+                    <div className="text-xs font-bold text-gray-700">{formatShortWeekday(date)}</div>
+                    <div className="mt-1 text-[11px] font-medium text-gray-400">{formatShortDate(date)}</div>
+                    <div className="mt-4 flex justify-center">
+                      <span
+                        className={`inline-flex min-w-[86px] justify-center rounded-full border px-3 py-1 text-xs font-bold ${
+                          isWorking
+                            ? 'border-[#49BCE2]/30 bg-white text-[#1587a8]'
+                            : 'border-gray-200 bg-gray-50 text-gray-400'
+                        }`}
+                      >
+                        {isWorking ? 'Làm việc' : 'Nghỉ'}
+                      </span>
+                    </div>
+                    {!isWorking && !isOff && schedule ? (
+                      <div className="mt-2 text-[10px] font-semibold text-amber-600">
+                        {getStatusLabel(schedule.status)}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="text-center py-10 border border-dashed border-gray-200 rounded-lg bg-gray-50">

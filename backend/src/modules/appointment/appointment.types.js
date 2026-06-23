@@ -3,6 +3,8 @@ const APPOINTMENT_ROUTE_PATHS = {
   MY: '/my',
   MY_DETAIL: '/my/:id',
   MY_CANCEL: '/my/:id/cancel',
+  DOCTOR_ME: '/doctor/me',
+  DOCTOR_ME_STATUS: '/doctor/me/:id/status',
   RECEPTIONIST_BOOK: '/receptionist',
   RECEPTIONIST_PATIENTS: '/receptionist/patients',
   DETAIL: '/:id',

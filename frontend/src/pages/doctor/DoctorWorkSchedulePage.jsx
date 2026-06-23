@@ -15,7 +15,57 @@ import {
 import LeaveRequestForm from "../../features/approval/components/LeaveRequestForm.jsx";
 import LoadingBlock from "../../shared/components/feedback/LoadingBlock.jsx";
 import StateBlock from "../../shared/components/feedback/StateBlock.jsx";
-import { Calendar, Clock, Plus, ChevronLeft, ChevronRight, AlertCircle, CheckCircle } from 'lucide-react';
+import { Calendar, Clock, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+
+const SCHEDULE_STATUS_LABELS = {
+  WORKING: "Đang làm việc",
+  APPROVED_OFF: "Đã duyệt nghỉ",
+  PENDING: "Chờ duyệt nghỉ",
+  CANCELLED: "Đã hủy",
+  REJECTED: "Đã từ chối",
+  NO_SCHEDULE: "Không có lịch",
+};
+
+const REQUEST_STATUS_LABELS = {
+  PENDING: "Đang chờ",
+  APPROVED: "Đã duyệt",
+  REJECTED: "Từ chối",
+};
+
+const SLOT_STATUS_LABELS = {
+  AVAILABLE: "Còn trống",
+  BOOKED: "Đã đặt",
+  LOCKED: "Đã nghỉ",
+  EXPIRED: "Đã qua",
+};
+
+const VIEW_MODES = {
+  WEEK: "WEEK",
+  MONTH: "MONTH",
+};
+
+const SHIFT_DEFINITIONS = [
+  {
+    key: "MORNING",
+    label: "Sáng",
+    icon: "☀️",
+    startField: "morningShiftStart",
+    endField: "morningShiftEnd",
+    defaultStart: "08:00",
+    defaultEnd: "11:30",
+  },
+  {
+    key: "AFTERNOON",
+    label: "Chiều",
+    icon: "🌤️",
+    startField: "afternoonShiftStart",
+    endField: "afternoonShiftEnd",
+    defaultStart: "13:30",
+    defaultEnd: "17:00",
+  },
+];
+
+const WEEKDAY_LABELS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
 
 function formatIsoDate(date) {
   const year = date.getFullYear();
@@ -135,6 +185,16 @@ function getShiftDescription(schedule) {
   return `Có ${schedule.bookedSlots || 0} lịch khám`;
 }
 
+function getScheduleCardTone(schedule) {
+  if (!schedule) return "border-gray-200 bg-white text-gray-400";
+  if (schedule.status === "PENDING") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (schedule.status === "APPROVED_OFF" || schedule.status === "CANCELLED") {
+    return "border-gray-200 bg-gray-100 text-gray-500";
+  }
+  if (schedule.status === "REJECTED") return "border-red-200 bg-red-50 text-red-600";
+  return "border-[#49BCE2]/40 bg-[#EBF7FD] text-[#1587a8]";
+}
+
 export default function DoctorWorkSchedulePage() {
   const todayIso = formatIsoDate(new Date());
   const [baseDate, setBaseDate] = useState(new Date());
@@ -192,11 +252,19 @@ export default function DoctorWorkSchedulePage() {
   const weekSummary = useMemo(() => {
     return schedules.reduce(
       (summary, item) => {
+        summary.totalSchedules += 1;
+        summary.available += item.availableSlots || 0;
         summary.booked += item.bookedSlots || 0;
+        if (item.status === "PENDING") summary.pending += 1;
+        if (item.status === "APPROVED_OFF") summary.approvedOff += 1;
         return summary;
       },
       {
+        totalSchedules: 0,
+        available: 0,
         booked: 0,
+        pending: 0,
+        approvedOff: 0,
       },
     );
   }, [schedules]);
@@ -266,9 +334,12 @@ export default function DoctorWorkSchedulePage() {
       case 'WORKING':
         return 'bg-[#EBF7FD] text-[#49BCE2] border-[#49BCE2]/20';
       case 'APPROVED_OFF':
+      case 'REJECTED':
         return 'bg-red-50 text-red-600 border-red-200';
       case 'PENDING':
         return 'bg-amber-50 text-amber-600 border-amber-200';
+      case 'APPROVED':
+        return 'bg-green-50 text-green-600 border-green-200';
       case 'CANCELLED':
         return 'bg-gray-100 text-gray-500 border-gray-250';
       default:
@@ -295,29 +366,17 @@ export default function DoctorWorkSchedulePage() {
               <button
                 type="button"
                 className="p-1 text-gray-500 hover:bg-gray-50 rounded transition-colors cursor-pointer"
-                onClick={() =>
-                  setBaseDate((current) => {
-                    const next = new Date(current);
-                    next.setDate(current.getDate() - 7);
-                    return next;
-                  })
-                }
+                onClick={() => moveVisibleRange(-1)}
               >
                 <ChevronLeft className="w-4 h-4" />
               </button>
               <span className="text-xs font-semibold text-gray-700 min-w-[130px] text-center">
-                {formatDateRange(startDate, endDate)}
+                {visibleRangeLabel}
               </span>
               <button
                 type="button"
                 className="p-1 text-gray-500 hover:bg-gray-50 rounded transition-colors cursor-pointer"
-                onClick={() =>
-                  setBaseDate((current) => {
-                    const next = new Date(current);
-                    next.setDate(current.getDate() + 7);
-                    return next;
-                  })
-                }
+                onClick={() => moveVisibleRange(1)}
               >
                 <ChevronRight className="w-4 h-4" />
               </button>
@@ -336,7 +395,23 @@ export default function DoctorWorkSchedulePage() {
             </button>
           </div>
 
-          <div>
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="inline-flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+              <button
+                type="button"
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${viewMode === VIEW_MODES.WEEK ? "bg-[#49BCE2] text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                onClick={() => setViewMode(VIEW_MODES.WEEK)}
+              >
+                Tuần
+              </button>
+              <button
+                type="button"
+                className={`px-3 py-1.5 rounded-md text-xs font-semibold transition-colors ${viewMode === VIEW_MODES.MONTH ? "bg-[#49BCE2] text-white" : "text-gray-500 hover:bg-gray-50"}`}
+                onClick={() => setViewMode(VIEW_MODES.MONTH)}
+              >
+                Tháng
+              </button>
+            </div>
             <button
               type="button"
               className="px-4 py-2 bg-[#49BCE2] hover:bg-[#3ca4c7] text-white rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1"
@@ -351,9 +426,8 @@ export default function DoctorWorkSchedulePage() {
         {/* Week Summary Pills */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: 'Ngày có lịch', value: weekSummary.totalSchedules, color: 'bg-blue-50 text-blue-600 border-blue-100' },
-            { label: 'Slot khả dụng', value: weekSummary.available, color: 'bg-green-50 text-green-600 border-green-100' },
-            { label: 'Slot đã đặt', value: weekSummary.booked, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
+            { label: 'Số ngày làm việc', value: weekSummary.totalSchedules, color: 'bg-blue-50 text-blue-600 border-blue-100' },
+            { label: 'Số lịch hẹn', value: weekSummary.booked, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
             { label: 'Chờ duyệt', value: weekSummary.pending, color: 'bg-amber-50 text-amber-600 border-amber-100' },
             { label: 'Nghỉ đã duyệt', value: weekSummary.approvedOff, color: 'bg-red-50 text-red-600 border-red-100' },
           ].map((pill, idx) => (
@@ -364,9 +438,18 @@ export default function DoctorWorkSchedulePage() {
         </div>
       </div>
 
-      {/* Week calendar view */}
+      {/* Schedule calendar view */}
       <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 mb-5 shadow-sm">
-        <h3 className="text-sm font-bold text-gray-800 mb-4">Lịch tuần</h3>
+        <div className="mb-4">
+          <h3 className="text-sm font-bold text-gray-800">
+            {viewMode === VIEW_MODES.WEEK ? "Lịch tuần" : "Lịch tháng"}
+          </h3>
+          <p className="text-xs text-gray-400 mt-1">
+            {viewMode === VIEW_MODES.WEEK
+              ? "Lịch được chia thành 2 dòng ca sáng và ca chiều."
+              : "Mỗi ngày được chia thành 2 dòng đại diện cho ca sáng và ca chiều."}
+          </p>
+        </div>
 
         {schedulesQuery.isLoading ? (
           <LoadingBlock label="Đang tải lịch làm việc..." />
@@ -377,46 +460,126 @@ export default function DoctorWorkSchedulePage() {
             description={schedulesQuery.error.message}
           />
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-3">
-            {weekDates.map((date) => {
-              const isoDate = formatIsoDate(date);
-              const schedule = schedules.find((item) => item.workingDate === isoDate);
-              const isToday = isoDate === todayIso;
-              const isSelected = isoDate === selectedDate;
+          <>
+            {viewMode === VIEW_MODES.WEEK ? (
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <div className="min-w-[980px] grid grid-cols-[96px_repeat(7,minmax(120px,1fr))] bg-white">
+                  <div className="min-h-[66px] border-r border-b border-gray-100 bg-gray-50" />
+                  {weekDates.map((date) => {
+                    const isoDate = formatIsoDate(date);
+                    return (
+                      <div
+                        key={isoDate}
+                        className={`min-h-[66px] border-r border-b border-gray-100 px-2 py-3 text-center ${isoDate === todayIso ? "bg-cyan-50" : "bg-gray-50"}`}
+                      >
+                        <div className="text-xs font-bold text-gray-700 capitalize">{formatDayLabel(date)}</div>
+                        {isoDate === todayIso ? (
+                          <span className="mt-1 inline-flex rounded-md bg-[#49BCE2] px-2 py-0.5 text-[10px] font-bold text-white">
+                            Hôm nay
+                          </span>
+                        ) : null}
+                      </div>
+                    );
+                  })}
 
-              return (
-                <div
-                  key={isoDate}
-                  onClick={() => setSelectedDate(isoDate)}
-                  className={`p-3 rounded-lg border cursor-pointer flex flex-col gap-2 transition-all ${isSelected ? 'border-[#49BCE2] bg-[#EBF7FD]/20 shadow-sm' : 'border-gray-200 hover:border-gray-300 bg-white'} ${isToday ? 'ring-2 ring-blue-400' : ''}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="text-xs font-bold text-gray-700">{formatDayLabel(date)}</div>
-                      <div className="text-[10px] text-gray-400 mt-0.5">{isToday ? 'Hôm nay' : 'Lịch tuần'}</div>
-                    </div>
-                    {schedule ? (
-                      <span className={`px-1.5 py-0.5 text-[8px] font-bold rounded border ${getStatusConfig(schedule.status)}`}>
-                        {schedule.status === 'WORKING' ? 'LÀM' : schedule.status}
-                      </span>
-                    ) : (
-                      <span className="px-1.5 py-0.5 text-[8px] font-bold rounded border bg-gray-50 text-gray-400 border-gray-150">OFF</span>
-                    )}
-                  </div>
+                  {SHIFT_DEFINITIONS.map((shift) => (
+                    <Fragment key={shift.key}>
+                      <div className="min-h-[88px] border-r border-b border-gray-100 bg-gray-50 px-2 py-3 flex items-center justify-center gap-1 text-xs font-bold text-gray-600">
+                        <span>{shift.icon}</span>
+                        <span>Ca {shift.label.toLowerCase()}</span>
+                      </div>
+                      {weekDates.map((date) => {
+                        const isoDate = formatIsoDate(date);
+                        const daySchedules = schedulesByDate[isoDate] || [];
+                        const schedule = findShiftSchedule(daySchedules, shift.key);
+                        const isSelected = isoDate === selectedDate;
 
-                  {schedule ? (
-                    <div className="flex flex-col gap-0.5 text-[10px] text-gray-500 border-t border-gray-100 pt-1.5 mt-1">
-                      <div>Tổng: <span className="font-semibold text-gray-700">{schedule.totalSlots}</span></div>
-                      <div>Trống: <span className="font-semibold text-green-600">{schedule.availableSlots}</span></div>
-                      <div>Đã đặt: <span className="font-semibold text-blue-600">{schedule.bookedSlots}</span></div>
-                    </div>
-                  ) : (
-                    <div className="text-[10px] text-gray-400 border-t border-gray-100 pt-1.5 mt-1">Không làm việc</div>
-                  )}
+                        return (
+                          <button
+                            key={`${shift.key}-${isoDate}`}
+                            type="button"
+                            className={`min-h-[88px] border-r border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${isSelected ? "shadow-[inset_0_0_0_2px_rgba(73,188,226,0.35)]" : ""}`}
+                            onClick={() => setSelectedDate(isoDate)}
+                          >
+                            {schedule ? (
+                              <span className={`block min-h-[58px] rounded-lg border px-2.5 py-2 ${getScheduleCardTone(schedule)}`}>
+                                <strong className="block text-[11px] font-bold">
+                                  {getShiftTimeText(schedule, shift)}
+                                </strong>
+                                <small className="mt-1 block text-[11px] font-semibold">
+                                  {getShiftDescription(schedule)}
+                                </small>
+                              </span>
+                            ) : (
+                              <span className="grid min-h-[58px] place-items-center rounded-lg border border-dashed border-gray-200 text-[11px] font-semibold text-gray-400">
+                                Chưa có lịch
+                              </span>
+                            )}
+                          </button>
+                        );
+                      })}
+                    </Fragment>
+                  ))}
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            ) : (
+              <div className="overflow-x-auto rounded-lg border border-gray-200">
+                <div className="min-w-[760px] grid grid-cols-7 bg-white">
+                  {WEEKDAY_LABELS.map((weekday) => (
+                    <div
+                      key={weekday}
+                      className="min-h-[40px] border-r border-b border-gray-100 bg-gray-50 grid place-items-center text-xs font-bold text-gray-500"
+                    >
+                      {weekday}
+                    </div>
+                  ))}
+
+                  {monthDates.map((date) => {
+                    const isoDate = formatIsoDate(date);
+                    const daySchedules = schedulesByDate[isoDate] || [];
+                    const isToday = isoDate === todayIso;
+                    const isSelected = isoDate === selectedDate;
+                    const isMuted = date.getMonth() !== baseDate.getMonth();
+
+                    return (
+                      <button
+                        key={isoDate}
+                        type="button"
+                        className={`min-h-[124px] border-r border-b border-gray-100 p-2 text-left transition-colors hover:bg-gray-50 ${isMuted ? "bg-gray-50/50 text-gray-300" : "bg-white"} ${isSelected ? "shadow-[inset_0_0_0_2px_rgba(73,188,226,0.35)]" : ""}`}
+                        onClick={() => setSelectedDate(isoDate)}
+                      >
+                        <div className="mb-2 flex items-center justify-between">
+                          <strong className="text-xs font-bold text-gray-700">{date.getDate()}</strong>
+                          {isToday ? (
+                            <span className="rounded-full bg-[#49BCE2] px-2 py-0.5 text-[9px] font-bold text-white">
+                              Hôm nay
+                            </span>
+                          ) : null}
+                        </div>
+
+                        <div className="grid gap-1.5">
+                          {SHIFT_DEFINITIONS.map((shift) => {
+                            const schedule = findShiftSchedule(daySchedules, shift.key);
+                            return (
+                              <span
+                                key={shift.key}
+                                className={`flex min-h-[30px] items-center justify-between gap-1 rounded-md border px-2 py-1 ${getScheduleCardTone(schedule)}`}
+                              >
+                                <span className="text-[11px] font-bold">{shift.label}</span>
+                                <small className="text-[10px] font-semibold">
+                                  {schedule ? getScheduleStatusLabel(schedule.status) : "Trống"}
+                                </small>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -429,13 +592,13 @@ export default function DoctorWorkSchedulePage() {
               <h3 className="text-sm font-bold text-gray-800">Chi tiết ngày {selectedDateLabel}</h3>
               <p className="text-xs text-gray-400 mt-0.5">
                 {selectedSchedule
-                  ? `Trạng thái: ${selectedSchedule.status}`
+                  ? `Trạng thái: ${getScheduleStatusLabel(selectedSchedule.status)}`
                   : "Chưa có lịch trực trong ngày này."}
               </p>
             </div>
             {selectedSchedule && (
               <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedSchedule.status)}`}>
-                {selectedSchedule.status}
+                {getScheduleStatusLabel(selectedSchedule.status)}
               </span>
             )}
           </div>
@@ -459,11 +622,11 @@ export default function DoctorWorkSchedulePage() {
               <div>
                 <h4 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Ca sáng</h4>
                 {slotsByShift.morning.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2">
                     {slotsByShift.morning.map((slot) => (
                       <span
                         key={slot.id}
-                        className={`inline-block px-2.5 py-1 text-xs font-medium rounded border ${
+                        className={`min-h-[38px] w-full rounded-lg border px-3 py-1.5 text-center text-[13px] font-semibold leading-tight flex items-center justify-center ${
                           slot.status === 'BOOKED' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
                           slot.status === 'LOCKED' ? 'bg-gray-100 border-gray-250 text-gray-500' :
                           'bg-green-50 border-green-200 text-green-600'
@@ -482,11 +645,11 @@ export default function DoctorWorkSchedulePage() {
               <div>
                 <h4 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Ca chiều</h4>
                 {slotsByShift.afternoon.length > 0 ? (
-                  <div className="flex flex-wrap gap-2">
+                  <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2">
                     {slotsByShift.afternoon.map((slot) => (
                       <span
                         key={slot.id}
-                        className={`inline-block px-2.5 py-1 text-xs font-medium rounded border ${
+                        className={`min-h-[38px] w-full rounded-lg border px-3 py-1.5 text-center text-[13px] font-semibold leading-tight flex items-center justify-center ${
                           slot.status === 'BOOKED' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
                           slot.status === 'LOCKED' ? 'bg-gray-100 border-gray-250 text-gray-500' :
                           'bg-green-50 border-green-200 text-green-600'
@@ -536,7 +699,7 @@ export default function DoctorWorkSchedulePage() {
                       <div className="text-gray-500 mt-0.5">{formatShiftLabel(request)}</div>
                     </div>
                     <span className={`px-2 py-0.5 text-[9px] font-bold rounded border ${getStatusConfig(request.status)}`}>
-                      {request.status}
+                      {getRequestStatusLabel(request.status)}
                     </span>
                   </div>
 
@@ -556,7 +719,7 @@ export default function DoctorWorkSchedulePage() {
       {/* Leave request form modal */}
       {isLeaveModalOpen && (
         <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4" onClick={() => setIsLeaveModalOpen(false)}>
-          <div className="bg-white rounded-lg p-5 md:p-6 max-w-[480px] w-full shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
+          <div className="bg-white rounded-lg p-5 md:p-6 w-full max-w-[980px] max-h-[calc(100vh-32px)] overflow-y-auto shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
               <div>
                 <h3 className="text-base font-bold text-gray-800">Yêu cầu nghỉ</h3>

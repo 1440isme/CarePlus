@@ -3,6 +3,8 @@ import {
   getAppointments,
   getAppointmentById,
   updateAppointmentStatus,
+  getDoctorAppointments,
+  updateDoctorAppointmentStatus,
   searchPatients,
   bookAppointmentByReceptionist,
   bookAppointment,
@@ -34,6 +36,26 @@ export function useUpdateAppointmentStatus() {
     mutationFn: ({ id, payload }) => updateAppointmentStatus(id, payload),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment-detail', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-dashboard'] });
+    },
+  });
+}
+
+export function useDoctorAppointments(params) {
+  return useQuery({
+    queryKey: QUERY_KEYS.doctorAppointments(params),
+    queryFn: () => getDoctorAppointments(params),
+  });
+}
+
+export function useUpdateDoctorAppointmentStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateDoctorAppointmentStatus(id, payload),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment-detail', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['doctor-dashboard'] });
     },
