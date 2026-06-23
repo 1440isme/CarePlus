@@ -30,7 +30,7 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
 *   **Công việc Frontend:**
     *   **Trang xác thực:** Đăng nhập, Đăng ký, Xác minh Email, Quên mật khẩu.
     *   **Patient Portal:** Trang chỉnh sửa thông tin cá nhân, đổi mật khẩu, upload avatar, quản lý hồ sơ người thân (thêm/sửa/xóa mềm người thân, chỉ hiển thị tổng số hồ sơ active, không có UI đặt mặc định).
-    *   **Admin Portal:** Admin Dashboard (các thẻ số liệu KPI), Quản lý người dùng (list/search/filter/pagination, chi tiết, sửa, tạo staff, khóa/mở khóa, reset no-show), Quản lý chuyên khoa, Thông tin phòng khám và Cấu hình hệ thống.
+    *   **Admin Portal:** Admin Dashboard (các thẻ số liệu KPI), Quản lý người dùng (list/search/filter/pagination, chi tiết, sửa, tạo staff, khóa/mở khóa, reset no-show), Quản lý chuyên khoa, Thông tin phòng khám và Cấu hình hệ thống. Admin Specialty form trong scope hiện tại chỉ nhập Tên, Mô tả, Trạng thái active; `slug` do backend tự sinh từ tên chuyên khoa, `icon` là optional string và chưa có UI icon picker/upload.
 
 ---
 

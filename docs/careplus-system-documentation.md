@@ -134,6 +134,13 @@
    
     
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OMQ2AABAAsSNBACvucMH6NpGACyywEZJWQZeZ2aszAAD+4l6rrTo+jgAA8N71AL/GBEhnueqbAAAAAElFTkSuQmCC)  
+ **Ghi chú Admin Specialty hiện tại:**  
+- Model Specialty vẫn có `slug` và `icon`.  
+- Admin Specialty form chỉ nhập: Tên, Mô tả, Trạng thái active.  
+- `slug` dùng cho URL/lookup/public detail và được backend tự sinh từ `name` nếu Admin không gửi.  
+- `icon` là optional string, mặc định rỗng nếu không gửi; hiện chưa có UI icon picker/upload.  
+- Frontend Admin Specialty không bắt Admin nhập `slug`/`icon` trong scope hiện tại. Nếu sau này cần icon thật, tạo task riêng cho icon picker/upload.  
+   
  **2.4 Schedules & TimeSlots (lịch làm việc)**  
    
  Schedule {  
@@ -900,6 +907,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  ***6.2 Quản lý chuyên khoa***  
    
  CRUD: Tên, Mô tả, Trạng thái active  
+- Form Admin không có field bắt buộc cho `slug`/`icon`. Backend tự sinh `slug` từ tên chuyên khoa; `icon` optional và đang để chuỗi rỗng nếu chưa có dữ liệu.  
+- Bảng Admin có thể hiển thị slug đã sinh để đối chiếu URL/public detail; không yêu cầu Admin nhập slug thủ công.  
  ***6.3 Quản lý bác sĩ***  
 - Bảng list bác sĩ  
 - **Cột "Giá khám tham khảo"** (không phải "Giá khám")  
