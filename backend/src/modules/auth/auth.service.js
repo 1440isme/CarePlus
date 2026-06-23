@@ -182,6 +182,7 @@ class AuthService {
         },
       };
     } catch (error) {
+      console.error('[AuthService.login] Unexpected error during login:', error);
       if (error instanceof AuthServiceError) {
         throw error;
       }
