@@ -36,6 +36,11 @@ router.get(
 );
 
 router.get(
+  CLINIC_SETTINGS_ROUTE_PATHS.PUBLIC_STATS,
+  ClinicSettingsController.getPublicStats,
+);
+
+router.get(
   CLINIC_SETTINGS_ROUTE_PATHS.SYSTEM,
   authenticate,
   authorize(USER_ROLES.ADMIN),

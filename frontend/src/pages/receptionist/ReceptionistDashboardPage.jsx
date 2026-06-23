@@ -5,6 +5,7 @@ import { useAuth } from '../../shared/hooks/useAuth.js';
 import { useAppointments, useUpdateAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+import { APP_ROUTES } from '../../shared/constants/routes.js';
 
 function StatusBadge({ status }) {
   const cfg = {
@@ -198,10 +199,9 @@ export default function ReceptionistDashboardPage() {
         )}
       </section>
 
-      {/* ── Quick Action Links ── */}
       <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <Link
-          to="/receptionist/appointments/new"
+          to={`${APP_ROUTES.receptionistRoot}/dat-lich`}
           className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-4 hover:border-[#49BCE2] hover:shadow-md transition-all group"
         >
           <span className="w-9 h-9 rounded-lg bg-[#EFF9FD] flex items-center justify-center group-hover:bg-[#49BCE2] transition-colors">
@@ -210,7 +210,7 @@ export default function ReceptionistDashboardPage() {
           <span className="text-sm font-semibold text-gray-700">Đặt lịch mới</span>
         </Link>
         <Link
-          to="/receptionist/appointments"
+          to={`${APP_ROUTES.receptionistRoot}/lich-hen`}
           className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-4 hover:border-[#49BCE2] hover:shadow-md transition-all group"
         >
           <span className="w-9 h-9 rounded-lg bg-[#EFF9FD] flex items-center justify-center group-hover:bg-[#49BCE2] transition-colors">
@@ -219,13 +219,13 @@ export default function ReceptionistDashboardPage() {
           <span className="text-sm font-semibold text-gray-700">Tra cứu lịch hẹn</span>
         </Link>
         <Link
-          to="/receptionist/doctors"
+          to={`${APP_ROUTES.receptionistRoot}/lich-bac-si`}
           className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-4 hover:border-[#49BCE2] hover:shadow-md transition-all group"
         >
           <span className="w-9 h-9 rounded-lg bg-[#EFF9FD] flex items-center justify-center group-hover:bg-[#49BCE2] transition-colors">
             <Stethoscope className="w-4 h-4 text-[#49BCE2] group-hover:text-white" />
           </span>
-          <span className="text-sm font-semibold text-gray-700">Danh sách bác sĩ</span>
+          <span className="text-sm font-semibold text-gray-700">Lịch bác sĩ</span>
         </Link>
       </section>
 
