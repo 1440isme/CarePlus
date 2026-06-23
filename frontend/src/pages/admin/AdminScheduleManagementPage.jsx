@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { useAdminSpecialties } from '../../features/admin/specialties/hooks/useAdminSpecialties.js';
 import { useDoctorList } from '../../features/doctor/index.js';
 import { useCreateSchedules, useSchedules } from '../../features/schedule/hooks/useSchedules.js';
+import { Search, Plus, Calendar, X } from 'lucide-react';
 import './admin-doctor-schedule.css';
 
 const PAGE_SIZE = 10;
@@ -35,30 +36,6 @@ const WEEKDAY_OPTIONS = [
   { label: 'T7', value: 6 },
   { label: 'CN', value: 0 },
 ];
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="m14 14 3 3M8.75 15.25a6.5 6.5 0 1 1 0-13 6.5 6.5 0 0 1 0 13Z" />
-    </svg>
-  );
-}
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 4.25v11.5M4.25 10h11.5" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M6 2.75v2.5M14 2.75v2.5M3.75 7.75h12.5M5 4.25h10A1.75 1.75 0 0 1 16.75 6v9A1.75 1.75 0 0 1 15 16.75H5A1.75 1.75 0 0 1 3.25 15V6A1.75 1.75 0 0 1 5 4.25Z" />
-    </svg>
-  );
-}
 
 function getTodayDate() {
   return new Date().toISOString().slice(0, 10);
@@ -231,47 +208,57 @@ export default function AdminScheduleManagementPage() {
   };
 
   return (
-    <div className="admin-figma-page">
-      <header className="admin-figma-page-header">
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <p className="admin-figma-eyebrow">Quản trị hệ thống</p>
-          <h1 className="admin-figma-title">Quản lý lịch làm việc bác sĩ</h1>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Quản trị hệ thống</p>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý lịch làm việc bác sĩ</h1>
         </div>
 
         <button
-          className="admin-figma-primary-button"
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
           type="button"
           onClick={openCreateModal}
         >
-          <PlusIcon />
+          <Plus className="w-4 h-4" />
           <span>Thêm lịch làm việc</span>
         </button>
-      </header>
-
-      <div className="admin-figma-stat-grid">
-        <article>
-          <span>Tổng slot</span>
-          <strong>{totals.totalSlots}</strong>
-        </article>
-        <article>
-          <span>Còn trống</span>
-          <strong>{totals.availableSlots}</strong>
-        </article>
-        <article>
-          <span>Đã đặt</span>
-          <strong>{totals.bookedSlots}</strong>
-        </article>
       </div>
 
-      <section className="admin-figma-card">
-        <div className="admin-figma-filter-bar">
-          <label className="admin-figma-search-control admin-figma-date-control">
-            <SearchIcon />
-            <input type="date" value={date} onChange={handleDateChange} aria-label="Ngày làm việc" />
+      {/* Stats Grid */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white border border-gray-100 rounded-xl p-5">
+          <div className="text-sm text-gray-500 mb-1">Tổng slot</div>
+          <div className="text-2xl font-bold text-gray-900">{totals.totalSlots}</div>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-xl p-5">
+          <div className="text-sm text-gray-500 mb-1">Còn trống</div>
+          <div className="text-2xl font-bold text-gray-900">{totals.availableSlots}</div>
+        </div>
+        <div className="bg-white border border-gray-100 rounded-xl p-5">
+          <div className="text-sm text-gray-500 mb-1">Đã đặt</div>
+          <div className="text-2xl font-bold text-gray-900">{totals.bookedSlots}</div>
+        </div>
+      </div>
+
+      {/* Main Card */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {/* Filter Bar */}
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
+          <label className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <input
+              type="date"
+              value={date}
+              onChange={handleDateChange}
+              aria-label="Ngày làm việc"
+              className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white min-w-[180px]"
+            />
           </label>
 
           <select
-            className="admin-figma-select"
+            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
             value={doctorId}
             onChange={handleDoctorChange}
             aria-label="Lọc theo bác sĩ"
@@ -283,7 +270,7 @@ export default function AdminScheduleManagementPage() {
           </select>
 
           <select
-            className="admin-figma-select"
+            className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
             value={status}
             onChange={handleStatusChange}
             aria-label="Lọc theo trạng thái"
@@ -295,19 +282,27 @@ export default function AdminScheduleManagementPage() {
           </select>
         </div>
 
+        {/* Loading State */}
         {schedulesQuery.isLoading ? (
-          <div className="admin-figma-loading-body">
+          <div className="p-5 space-y-3">
             {Array.from({ length: 6 }).map((_, index) => (
-              <div className="admin-figma-skeleton-row" key={index} />
+              <div key={index} className="h-12 bg-gray-100 rounded-lg animate-pulse" />
             ))}
           </div>
         ) : null}
 
+        {/* Error State */}
         {schedulesQuery.error ? (
-          <div className="admin-figma-state-panel">
-            <h2>Không thể tải lịch làm việc</h2>
-            <p>{schedulesQuery.error.message}</p>
-            <button type="button" onClick={() => schedulesQuery.refetch()}>Thử lại</button>
+          <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+            <h2 className="text-lg font-semibold text-gray-900 mb-2">Không thể tải lịch làm việc</h2>
+            <p className="text-sm text-gray-500 mb-4">{schedulesQuery.error.message}</p>
+            <button
+              type="button"
+              onClick={() => schedulesQuery.refetch()}
+              className="px-4 py-2 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-lg text-sm font-semibold transition-colors"
+            >
+              Thử lại
+            </button>
           </div>
         ) : null}
 
@@ -380,7 +375,7 @@ export default function AdminScheduleManagementPage() {
             </footer>
           </>
         ) : null}
-      </section>
+      </div>
 
       {isCreateModalOpen ? (
         <div className="admin-figma-modal-backdrop" role="presentation">

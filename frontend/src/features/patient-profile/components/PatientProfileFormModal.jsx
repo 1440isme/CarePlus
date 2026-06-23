@@ -6,31 +6,7 @@ import {
   PATIENT_PROFILE_GENDER_OPTIONS,
   PATIENT_PROFILE_RELATIONSHIP_OPTIONS,
 } from '../types/patient-profile.types.js';
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M5.5 5.5 14.5 14.5M14.5 5.5 5.5 14.5" />
-    </svg>
-  );
-}
-
-function ChevronIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="m5.5 7.5 4.5 5 4.5-5" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <rect x="3.5" y="5.5" width="13" height="11" rx="2" />
-      <path d="M6.5 3.5v4M13.5 3.5v4M3.5 8.5h13" />
-    </svg>
-  );
-}
+import { X, Calendar } from 'lucide-react';
 
 function getFormErrorMessage(error) {
   switch (error?.code) {
@@ -53,33 +29,25 @@ function formatDateForDisplay(value) {
   if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return value;
   }
-
   if (!value) {
     return '';
   }
-
   const parsedDate = new Date(value);
-
   if (Number.isNaN(parsedDate.getTime())) {
     return '';
   }
-
   const day = String(parsedDate.getDate()).padStart(2, '0');
   const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
   const year = parsedDate.getFullYear();
-
   return `${day}/${month}/${year}`;
 }
 
 function toApiDateValue(value) {
   const trimmedValue = typeof value === 'string' ? value.trim() : '';
-
   if (!trimmedValue) {
     return trimmedValue;
   }
-
   const [day, month, year] = trimmedValue.split('/');
-
   return `${year}-${month}-${day}`;
 }
 
@@ -96,9 +64,9 @@ function normalizeFormValues(profile) {
 
 function RequiredLabel({ htmlFor, children }) {
   return (
-    <label className="patient-relatives-form-label" htmlFor={htmlFor}>
+    <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor={htmlFor}>
       {children}
-      <span className="patient-relatives-form-required">*</span>
+      <span className="text-red-500 ml-0.5">*</span>
     </label>
   );
 }
@@ -166,163 +134,121 @@ export default function PatientProfileFormModal({
   const title = isEditMode ? 'Chỉnh sửa người thân' : 'Thêm người thân mới';
   const submitLabel = isEditMode ? 'Lưu thay đổi' : 'Thêm';
 
+  const inputStyle = "w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white";
+
   return (
-    <div className="patient-relatives-modal-backdrop" role="presentation">
-      <div
-        className={`patient-relatives-modal patient-relatives-form-modal ${
-          isEditMode
-            ? 'patient-relatives-form-modal-edit'
-            : 'patient-relatives-form-modal-create'
-        }`}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="patient-relative-form-title"
-      >
-        {isEditMode ? (
-          <div className="patient-relatives-modal-header patient-relatives-form-modal-edit-header">
-            <h3 id="patient-relative-form-title" className="patient-relatives-modal-title patient-relatives-form-modal-title">
-              {title}
-            </h3>
-            <button
-              className="patient-relatives-modal-close"
-              type="button"
-              onClick={onClose}
-              aria-label="Đóng"
-            >
-              <CloseIcon />
-            </button>
-          </div>
-        ) : null}
+    <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-white rounded-lg p-5 md:p-6 max-w-[480px] w-full shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-base font-bold text-gray-800">{title}</h3>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
 
-        <form
-          className={`patient-relatives-form ${
-            isEditMode ? 'patient-relatives-form-edit' : 'patient-relatives-form-create'
-          }`}
-          onSubmit={handleSubmit(submitHandler)}
-          noValidate
-        >
-          {!isEditMode ? (
-            <div className="patient-relatives-form-title-wrap">
-              <h3 id="patient-relative-form-title" className="patient-relatives-form-card-title">
-                {title}
-              </h3>
-            </div>
-          ) : null}
-
-          <div className="patient-relatives-form-field">
+        <form onSubmit={handleSubmit(submitHandler)} noValidate className="flex flex-col gap-4">
+          {/* Full Name */}
+          <div>
             <RequiredLabel htmlFor="relative-full-name">Họ và tên</RequiredLabel>
             <input
               id="relative-full-name"
-              className="patient-relatives-form-input"
+              className={`${inputStyle} ${errors.fullName ? 'border-red-400 focus:ring-red-400' : ''}`}
               type="text"
               placeholder="Nhập họ và tên"
               {...register('fullName')}
             />
-            {errors.fullName ? <p className="patient-relatives-form-error">{errors.fullName.message}</p> : null}
+            {errors.fullName ? <p className="text-xs text-red-500 mt-1">{errors.fullName.message}</p> : null}
           </div>
 
-          <div className={`patient-relatives-form-grid ${isEditMode ? 'patient-relatives-form-grid-single' : ''}`}>
-            <div className="patient-relatives-form-field">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Relationship */}
+            <div>
               <RequiredLabel htmlFor="relative-relationship">Quan hệ</RequiredLabel>
-              <div className="patient-relatives-form-select-wrap">
-                <select
-                  id="relative-relationship"
-                  className="patient-relatives-form-input patient-relatives-form-select"
-                  {...register('relationship')}
-                >
-                  <option value="" disabled>
-                    Chọn quan hệ
-                  </option>
-                  {PATIENT_PROFILE_RELATIONSHIP_OPTIONS
-                    .filter((option) => option.value !== 'SELF')
-                    .map((option) => (
-                      <option key={option.value} value={option.value}>{option.label}</option>
-                    ))}
-                </select>
-                <span className="patient-relatives-form-select-icon">
-                  <ChevronIcon />
-                </span>
-              </div>
-              {errors.relationship ? <p className="patient-relatives-form-error">{errors.relationship.message}</p> : null}
-            </div>
-
-            <div className="patient-relatives-form-field">
-              <RequiredLabel htmlFor="relative-gender">Giới tính</RequiredLabel>
-              <div className="patient-relatives-form-select-wrap">
-                <select
-                  id="relative-gender"
-                  className="patient-relatives-form-input patient-relatives-form-select"
-                  {...register('gender')}
-                >
-                  <option value="" disabled>
-                    Chọn giới tính
-                  </option>
-                  {PATIENT_PROFILE_GENDER_OPTIONS.map((option) => (
+              <select
+                id="relative-relationship"
+                className={inputStyle}
+                {...register('relationship')}
+              >
+                <option value="" disabled>Chọn quan hệ</option>
+                {PATIENT_PROFILE_RELATIONSHIP_OPTIONS
+                  .filter((option) => option.value !== 'SELF')
+                  .map((option) => (
                     <option key={option.value} value={option.value}>{option.label}</option>
                   ))}
-                </select>
-                <span className="patient-relatives-form-select-icon">
-                  <ChevronIcon />
-                </span>
-              </div>
-              {errors.gender ? <p className="patient-relatives-form-error">{errors.gender.message}</p> : null}
+              </select>
+              {errors.relationship ? <p className="text-xs text-red-500 mt-1">{errors.relationship.message}</p> : null}
+            </div>
+
+            {/* Gender */}
+            <div>
+              <RequiredLabel htmlFor="relative-gender">Giới tính</RequiredLabel>
+              <select
+                id="relative-gender"
+                className={inputStyle}
+                {...register('gender')}
+              >
+                <option value="" disabled>Chọn giới tính</option>
+                {PATIENT_PROFILE_GENDER_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              {errors.gender ? <p className="text-xs text-red-500 mt-1">{errors.gender.message}</p> : null}
             </div>
           </div>
 
-          <div className={`patient-relatives-form-grid ${isEditMode ? 'patient-relatives-form-grid-single' : ''}`}>
-            <div className="patient-relatives-form-field">
+          <div className="grid grid-cols-2 gap-4">
+            {/* DOB */}
+            <div>
               <RequiredLabel htmlFor="relative-date-of-birth">Ngày sinh</RequiredLabel>
-              <div className="patient-relatives-form-input-wrap">
+              <div className="relative">
                 <input
                   id="relative-date-of-birth"
-                  className="patient-relatives-form-input patient-relatives-form-input-with-icon"
+                  className={`${inputStyle} ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
                   type="text"
                   placeholder="dd/mm/yyyy"
                   {...register('dateOfBirth')}
                 />
-                <span className="patient-relatives-form-input-icon">
-                  <CalendarIcon />
+                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
+                  <Calendar className="w-4 h-4" />
                 </span>
               </div>
-              {errors.dateOfBirth ? <p className="patient-relatives-form-error">{errors.dateOfBirth.message}</p> : null}
+              {errors.dateOfBirth ? <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth.message}</p> : null}
             </div>
 
-            <div className="patient-relatives-form-field">
+            {/* Phone */}
+            <div>
               <RequiredLabel htmlFor="relative-phone">Số điện thoại</RequiredLabel>
               <input
                 id="relative-phone"
-                className="patient-relatives-form-input"
+                className={`${inputStyle} ${errors.phone ? 'border-red-400 focus:ring-red-400' : ''}`}
                 type="tel"
                 placeholder="Nhập số điện thoại"
                 {...register('phone')}
               />
-              {errors.phone ? <p className="patient-relatives-form-error">{errors.phone.message}</p> : null}
+              {errors.phone ? <p className="text-xs text-red-500 mt-1">{errors.phone.message}</p> : null}
             </div>
           </div>
 
-          <div className="patient-relatives-form-field">
-            <label className="patient-relatives-form-label" htmlFor="relative-address">Địa chỉ</label>
+          {/* Address */}
+          <div>
+            <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor="relative-address">Địa chỉ</label>
             <textarea
               id="relative-address"
-              className="patient-relatives-form-textarea"
-              rows={isEditMode ? 3 : 2}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white resize-none"
+              rows={2}
               placeholder="Nhập địa chỉ"
               {...register('address')}
             />
-            {errors.address ? <p className="patient-relatives-form-error">{errors.address.message}</p> : null}
+            {errors.address ? <p className="text-xs text-red-500 mt-1">{errors.address.message}</p> : null}
           </div>
 
           {mutation.error ? (
-            <p className="patient-relatives-form-submit-error">{getFormErrorMessage(mutation.error)}</p>
+            <p className="text-xs text-red-500">{getFormErrorMessage(mutation.error)}</p>
           ) : null}
 
-          <div className={`patient-relatives-modal-actions ${
-            isEditMode
-              ? 'patient-relatives-form-actions-edit'
-              : 'patient-relatives-form-actions-create'
-          }`}>
+          <div className="flex gap-2.5 mt-2">
             <button
-              className="patient-relatives-outline-button"
+              className="flex-1 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 font-semibold hover:bg-gray-50 transition-colors cursor-pointer"
               type="button"
               onClick={onClose}
               disabled={mutation.isPending}
@@ -330,7 +256,7 @@ export default function PatientProfileFormModal({
               Hủy
             </button>
             <button
-              className="patient-relatives-primary-button"
+              className="flex-1 py-2 bg-[#49BCE2] text-white rounded-lg text-sm font-semibold hover:bg-[#3ca4c7] transition-colors cursor-pointer disabled:bg-gray-150 disabled:text-gray-400 disabled:cursor-not-allowed"
               type="submit"
               disabled={mutation.isPending || (mode === 'edit' && !isDirty)}
             >

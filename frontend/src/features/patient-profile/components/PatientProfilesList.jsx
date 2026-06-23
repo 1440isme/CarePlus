@@ -2,45 +2,12 @@ import {
   PATIENT_PROFILE_GENDER_LABELS,
   PATIENT_PROFILE_RELATIONSHIP_LABELS,
 } from '../types/patient-profile.types.js';
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 4.5v11M4.5 10h11" />
-    </svg>
-  );
-}
-
-function UserIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 3.75a3.25 3.25 0 1 1 0 6.5 3.25 3.25 0 0 1 0-6.5Zm-5.25 11a5.25 5.25 0 1 1 10.5 0v.5H4.75Z" />
-    </svg>
-  );
-}
-
-function EyeIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M1.75 10s3-4.75 8.25-4.75S18.25 10 18.25 10 15.25 14.75 10 14.75 1.75 10 1.75 10Z" />
-      <circle cx="10" cy="10" r="2.25" />
-    </svg>
-  );
-}
-
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M4.75 5.5h10.5M7.25 5.5V4.25a.75.75 0 0 1 .75-.75h4a.75.75 0 0 1 .75.75V5.5m-7.25 0 .5 9a1 1 0 0 0 1 .94h6a1 1 0 0 0 1-.94l.5-9M8.5 8v4.75M11.5 8v4.75" />
-    </svg>
-  );
-}
+import { Plus, User, Eye, Trash2 } from 'lucide-react';
 
 function getInitials(name) {
   if (!name) {
     return 'NT';
   }
-
   return name
     .trim()
     .split(/\s+/)
@@ -54,17 +21,13 @@ function formatDateForCard(value) {
   if (!value) {
     return '--';
   }
-
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return value;
   }
-
   const parsedDate = new Date(value);
-
   if (Number.isNaN(parsedDate.getTime())) {
     return value;
   }
-
   return parsedDate.toLocaleDateString('vi-VN');
 }
 
@@ -75,71 +38,75 @@ export default function PatientProfilesList({
   onDelete,
 }) {
   const activeCount = profiles.length;
+  const maxRelatives = 4;
+  const atLimit = activeCount >= maxRelatives;
 
   return (
-    <section className="patient-relatives-page">
-      <div className="patient-relatives-header">
+    <div className="max-w-[600px] font-sans">
+      <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="patient-relatives-title">Hồ sơ người thân</h2>
-          <p className="patient-relatives-counter">Đang hoạt động: {activeCount} hồ sơ</p>
+          <h1 className="text-xl font-bold text-gray-800">Hồ sơ người thân</h1>
+          <div className="text-xs text-gray-500 mt-1">
+            Đang hoạt động: <strong className={atLimit ? 'text-red-500' : 'text-[#49BCE2]'}>{activeCount}/{maxRelatives}</strong>
+          </div>
         </div>
 
-        <button className="patient-relatives-add-button" type="button" onClick={onCreate}>
-          <PlusIcon />
+        <button
+          onClick={onCreate}
+          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white shadow-sm transition-colors cursor-pointer ${atLimit ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' : 'bg-[#49BCE2] hover:bg-[#3ca4c7]'}`}
+          disabled={atLimit}
+        >
+          <Plus className="w-4 h-4" />
           <span>Thêm người thân</span>
         </button>
       </div>
 
       {activeCount === 0 ? (
-        <div className="patient-relatives-card patient-relatives-empty-state">
-          <div className="patient-relatives-empty-icon">
-            <UserIcon />
-          </div>
-          <h3>Bạn chưa có hồ sơ người thân nào.</h3>
-          <p>Thêm hồ sơ để đặt lịch nhanh hơn cho người thân của bạn.</p>
-          <button className="patient-relatives-add-button" type="button" onClick={onCreate}>
-            <PlusIcon />
-            <span>Thêm người thân</span>
+        <div className="bg-white border border-gray-200 rounded-lg p-10 text-center shadow-sm">
+          <User className="w-9 h-9 mx-auto mb-3.5 text-gray-300" />
+          <h3 className="text-sm font-semibold text-gray-600 mb-1">Chưa có hồ sơ người thân nào</h3>
+          <p className="text-xs text-gray-400 mb-4">Thêm hồ sơ để đặt lịch nhanh hơn cho người thân của bạn.</p>
+          <button
+            className="inline-flex items-center gap-1 px-4 py-2 bg-[#49BCE2] text-white text-xs font-semibold rounded-lg hover:bg-[#3ca4c7] transition-colors cursor-pointer shadow-sm"
+            onClick={onCreate}
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Thêm ngay</span>
           </button>
         </div>
       ) : (
-        <div className="patient-relatives-card">
-          {profiles.map((profile, index) => (
+        <div className="flex flex-col gap-3">
+          {profiles.map((profile) => (
             <div
               key={profile.id}
-              className={`patient-relatives-item ${index < profiles.length - 1 ? 'has-divider' : ''}`}
+              className="bg-white border border-gray-200 rounded-lg p-3.5 md:p-4 shadow-sm flex items-start justify-between gap-4"
             >
-              <div className="patient-relatives-item-main">
-                <div className="patient-relatives-avatar">
-                  {getInitials(profile.fullName)}
+              <div className="flex gap-3">
+                <div className="w-[38px] h-[38px] bg-purple-50 rounded-full flex items-center justify-center shrink-0">
+                  <User className="w-4 h-4 text-purple-600" />
                 </div>
-
-                <div className="patient-relatives-copy">
-                  <div className="patient-relatives-copy-heading">
-                    <h3>{profile.fullName}</h3>
+                <div>
+                  <div className="text-sm font-bold text-gray-800 mb-0.5">{profile.fullName}</div>
+                  <div className="text-xs text-gray-500">
+                    {PATIENT_PROFILE_RELATIONSHIP_LABELS[profile.relationship] ?? profile.relationship} · {PATIENT_PROFILE_GENDER_LABELS[profile.gender] ?? profile.gender} · {formatDateForCard(profile.dateOfBirth)}
                   </div>
-                  <p>
-                    {PATIENT_PROFILE_RELATIONSHIP_LABELS[profile.relationship] ?? profile.relationship}
-                    {' · '}
-                    {PATIENT_PROFILE_GENDER_LABELS[profile.gender] ?? profile.gender}
-                    {' · '}
-                    {formatDateForCard(profile.dateOfBirth)}
-                  </p>
-                  <span>{profile.phone}</span>
+                  {profile.phone && <div className="text-xs text-gray-400 mt-0.5">{profile.phone}</div>}
                 </div>
               </div>
 
-              <div className="patient-relatives-actions">
-                <button className="patient-relatives-row-button" type="button" onClick={() => onViewDetail(profile)}>
-                  <EyeIcon />
-                  <span>Xem chi tiết</span>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  className="flex items-center gap-1 px-2.5 py-1.5 border border-[#49BCE2] text-[#49BCE2] rounded-lg text-xs font-semibold bg-white hover:bg-blue-50 transition-colors cursor-pointer"
+                  onClick={() => onViewDetail(profile)}
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>Chi tiết</span>
                 </button>
                 <button
-                  className="patient-relatives-row-button is-danger"
-                  type="button"
+                  className="flex items-center gap-1 px-2.5 py-1.5 border border-red-500 text-red-500 rounded-lg text-xs font-semibold bg-white hover:bg-red-50 transition-colors cursor-pointer"
                   onClick={() => onDelete(profile)}
                 >
-                  <TrashIcon />
+                  <Trash2 className="w-3.5 h-3.5" />
                   <span>Xóa</span>
                 </button>
               </div>
@@ -147,6 +114,6 @@ export default function PatientProfilesList({
           ))}
         </div>
       )}
-    </section>
+    </div>
   );
 }

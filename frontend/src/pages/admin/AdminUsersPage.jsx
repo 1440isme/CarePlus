@@ -11,26 +11,10 @@ import {
   useResetUserNoShowCount,
   useUpdateUserStatus,
 } from '../../features/admin/users/index.js';
-import '../../features/admin/users/components/admin-users.css';
+import { Plus, X, CheckCircle, XCircle } from 'lucide-react';
 
 const PAGE_LIMIT = 10;
 const FEEDBACK_AUTO_HIDE_MS = 5000;
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 4.25v11.5M4.25 10h11.5" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="m5 5 10 10M15 5 5 15" />
-    </svg>
-  );
-}
 
 function getListErrorMessage(error) {
   switch (error?.code) {
@@ -295,12 +279,14 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <section className="admin-users-page">
-      <div className="admin-users-page-header">
-        <h2 className="admin-users-page-title">Quản lý người dùng</h2>
-
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý người dùng</h1>
+          <p className="text-sm text-gray-500 mt-1">Quản lý tài khoản người dùng và nhân sự trong hệ thống</p>
+        </div>
         <button
-          className="admin-users-create-button"
           type="button"
           onClick={() => {
             setFeedback(null);
@@ -310,13 +296,15 @@ export default function AdminUsersPage() {
               user: null,
             });
           }}
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
         >
-          <PlusIcon />
-          <span>Tạo tài khoản nhân sự</span>
+          <Plus className="w-4 h-4" />
+          Tạo tài khoản nhân sự
         </button>
       </div>
 
-      <div className="admin-users-card">
+      {/* Card */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <AdminUsersFilters
           searchValue={searchValue}
           onSearchChange={(value) => {
@@ -337,20 +325,31 @@ export default function AdminUsersPage() {
           statusOptions={ADMIN_USER_STATUS_OPTIONS}
         />
 
+        {/* Feedback Banner */}
         {feedback ? (
           <div
-            className={`admin-users-feedback ${feedback.type === 'success' ? 'is-success' : 'is-error'}`}
+            className={`mx-5 mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
+              feedback.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}
             role="status"
             aria-live="polite"
           >
-            <span>{feedback.message}</span>
+            <div className="flex items-center gap-2">
+              {feedback.type === 'success'
+                ? <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                : <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              }
+              {feedback.message}
+            </div>
             <button
-              className="admin-users-feedback-close"
               type="button"
               onClick={() => setFeedback(null)}
               aria-label="Ẩn thông báo"
+              className="text-current opacity-60 hover:opacity-100 transition-opacity flex-shrink-0 text-lg leading-none"
             >
-              <CloseIcon />
+              ×
             </button>
           </div>
         ) : null}
@@ -432,6 +431,6 @@ export default function AdminUsersPage() {
         onClose={handleCloseDialog}
         onConfirm={handleConfirmDialog}
       />
-    </section>
+    </div>
   );
 }

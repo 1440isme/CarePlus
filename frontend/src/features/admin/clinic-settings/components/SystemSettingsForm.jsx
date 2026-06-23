@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { systemSettingsFormSchema } from '../schemas/system-settings.schema.js';
 import { useUpdateSystemSettings } from '../hooks/useUpdateSystemSettings.js';
+import './admin-system-settings.css';
 
 function getMutationErrorMessage(error) {
   switch (error?.code) {

@@ -4,7 +4,27 @@ import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './receptionist.css';
+import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
+
+function StatusBadge({ status }) {
+  const cfg = {
+    CONFIRMED: { label: 'Đã xác nhận', bg: '#EFF6FF', text: '#1D4ED8', dot: '#3B82F6' },
+    CHECKED_IN: { label: 'Đã check-in', bg: '#F0FDF4', text: '#16A34A', dot: '#22C55E' },
+    COMPLETED: { label: 'Hoàn thành', bg: '#F0FDF4', text: '#15803D', dot: '#16A34A' },
+    NO_SHOW: { label: 'Vắng mặt', bg: '#FEF2F2', text: '#EF4444', dot: '#EF4444' },
+    CANCELLED: { label: 'Đã hủy', bg: '#F5F5F5', text: '#888', dot: '#aaa' },
+  };
+  const c = cfg[status] || { label: status, bg: '#F5F5F5', text: '#888', dot: '#aaa' };
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={{ background: c.bg, color: c.text }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: c.dot }} />
+      {c.label}
+    </span>
+  );
+}
 
 export default function ReceptionistAppointmentManagementPage() {
   // Filter States
@@ -15,7 +35,7 @@ export default function ReceptionistAppointmentManagementPage() {
   const [selectedDate, setSelectedDate] = useState(todayStr);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
-  const [dateMode, setDateMode] = useState('today'); // 'today', 'tomorrow', 'week', 'range', 'custom'
+  const [dateMode, setDateMode] = useState('today');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [page, setPage] = useState(1);
   const limit = 10;
@@ -50,23 +70,6 @@ export default function ReceptionistAppointmentManagementPage() {
   const appointmentsList = appointmentsQuery.data?.data || [];
   const paginationMeta = appointmentsQuery.data?.meta || { page: 1, totalPages: 1, total: 0 };
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return { label: 'Đã xác nhận', className: 'status-confirmed', dotClass: 'status-dot-confirmed' };
-      case 'CHECKED_IN':
-        return { label: 'Đã check-in', className: 'status-checked_in', dotClass: 'status-dot-checked_in' };
-      case 'COMPLETED':
-        return { label: 'Hoàn thành', className: 'status-completed', dotClass: 'status-dot-completed' };
-      case 'NO_SHOW':
-        return { label: 'Không đến', className: 'status-no_show', dotClass: 'status-dot-no_show' };
-      case 'CANCELLED':
-        return { label: 'Đã hủy', className: 'status-cancelled', dotClass: 'status-dot-cancelled' };
-      default:
-        return { label: status, className: '', dotClass: '' };
-    }
-  };
-
   const handleUpdateStatus = async (id, newStatus, reason = '') => {
     try {
       await updateStatusMutation.mutateAsync({
@@ -81,10 +84,10 @@ export default function ReceptionistAppointmentManagementPage() {
   };
 
   const handleFilterChange = (filterType, value) => {
-    setPage(1); // Reset to page 1 on filter changes
+    setPage(1);
     if (filterType === 'specialty') {
       setSelectedSpecialtyId(value);
-      setSelectedDoctorId(''); // Reset doctor when specialty changes
+      setSelectedDoctorId('');
     } else if (filterType === 'doctor') {
       setSelectedDoctorId(value);
     } else if (filterType === 'date') {
@@ -122,13 +125,11 @@ export default function ReceptionistAppointmentManagementPage() {
       sunday.setDate(monday.getDate() + 6);
       const mondayStr = monday.toLocaleDateString('sv').slice(0, 10);
       const sundayStr = sunday.toLocaleDateString('sv').slice(0, 10);
-
       setSelectedDate('');
       setStartDate(mondayStr);
       setEndDate(sundayStr);
     } else if (mode === 'range') {
       setSelectedDate('');
-      // Set to today's date initially
       setStartDate(todayStr);
       setEndDate(todayStr);
     }
@@ -150,543 +151,442 @@ export default function ReceptionistAppointmentManagementPage() {
   const specialtiesList = specialtiesQuery.data?.data || [];
   const doctorsList = doctorsQuery.data?.data || [];
 
+  const selectClass = 'border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white text-gray-700';
+
   return (
-    <div className="content-grid receptionist-page">
-      {/* Title */}
+    <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h2 style={{ fontSize: '1.6rem', marginBottom: '4px', fontWeight: 700 }}>Quản lý lịch hẹn</h2>
-        <p className="helper-text">Tra cứu và cập nhật trạng thái lịch hẹn khám bệnh tại quầy</p>
+        <h1 className="text-2xl font-bold text-gray-900">Quản lý lịch hẹn</h1>
+        <p className="text-sm text-gray-500 mt-1">Tra cứu và cập nhật trạng thái lịch hẹn khám bệnh tại quầy</p>
       </div>
 
       {/* Filter Toolbar */}
-      <section className="surface-card toolbar-filters" style={{ padding: '20px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-        {/* Row 1: Search input (Full Width) */}
-        <div style={{ display: 'flex', width: '100%' }}>
+      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-4">
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
             placeholder="Tìm bệnh nhân (Tên, SĐT, Email hoặc Mã lịch)..."
             value={search}
             onChange={(e) => handleFilterChange('search', e.target.value)}
-            style={{ width: '100%', padding: '10px 16px', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.95rem' }}
+            className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
           />
         </div>
 
-        {/* Row 2: Date select mode & drop-downs */}
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
-          {/* Left: Date options */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ display: 'inline-flex', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden', backgroundColor: 'var(--bg-offset)' }}>
+        {/* Date + Dropdowns row */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Date mode toggle */}
+          <div className="inline-flex border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+            {[
+              { key: 'today', label: 'Hôm nay' },
+              { key: 'tomorrow', label: 'Ngày mai' },
+              { key: 'week', label: 'Tuần này' },
+              { key: 'range', label: 'Khoảng ngày' },
+            ].map((btn, i) => (
               <button
+                key={btn.key}
                 type="button"
-                className={`quick-date-btn ${dateMode === 'today' ? 'active' : ''}`}
-                onClick={() => handleDateModeChange('today')}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: dateMode === 'today' ? 'var(--cyan)' : 'transparent',
-                  color: dateMode === 'today' ? '#ffffff' : 'var(--text-h)',
-                  transition: 'all 0.2s'
-                }}
+                onClick={() => handleDateModeChange(btn.key)}
+                className={`px-3 py-2 text-xs font-semibold border-r border-gray-200 last:border-r-0 transition-colors ${
+                  dateMode === btn.key
+                    ? 'bg-[#49BCE2] text-white'
+                    : 'bg-transparent text-gray-600 hover:bg-gray-100'
+                }`}
               >
-                Hôm nay
+                {btn.label}
               </button>
-              <button
-                type="button"
-                className={`quick-date-btn ${dateMode === 'tomorrow' ? 'active' : ''}`}
-                onClick={() => handleDateModeChange('tomorrow')}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderLeft: '1px solid var(--border)',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: dateMode === 'tomorrow' ? 'var(--cyan)' : 'transparent',
-                  color: dateMode === 'tomorrow' ? '#ffffff' : 'var(--text-h)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                Ngày mai
-              </button>
-              <button
-                type="button"
-                className={`quick-date-btn ${dateMode === 'week' ? 'active' : ''}`}
-                onClick={() => handleDateModeChange('week')}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderLeft: '1px solid var(--border)',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: dateMode === 'week' ? 'var(--cyan)' : 'transparent',
-                  color: dateMode === 'week' ? '#ffffff' : 'var(--text-h)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                Tuần này
-              </button>
-              <button
-                type="button"
-                className={`quick-date-btn ${dateMode === 'range' ? 'active' : ''}`}
-                onClick={() => handleDateModeChange('range')}
-                style={{
-                  padding: '8px 16px',
-                  border: 'none',
-                  borderLeft: '1px solid var(--border)',
-                  fontSize: '0.88rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  backgroundColor: dateMode === 'range' ? 'var(--cyan)' : 'transparent',
-                  color: dateMode === 'range' ? '#ffffff' : 'var(--text-h)',
-                  transition: 'all 0.2s'
-                }}
-              >
-                Khoảng thời gian
-              </button>
-            </div>
+            ))}
+          </div>
 
-            {/* Inputs based on selection */}
-            {dateMode !== 'range' ? (
+          {/* Date picker(s) */}
+          {dateMode !== 'range' ? (
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => handleFilterChange('date', e.target.value)}
+              className={selectClass}
+            />
+          ) : (
+            <div className="flex items-center gap-2">
               <input
                 type="date"
-                value={selectedDate}
-                onChange={(e) => handleFilterChange('date', e.target.value)}
-                style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
+                value={startDate}
+                onChange={(e) => { setStartDate(e.target.value); setSelectedDate(''); setPage(1); }}
+                className={selectClass}
               />
-            ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <input
-                  type="date"
-                  placeholder="Từ ngày"
-                  value={startDate}
-                  onChange={(e) => {
-                    setStartDate(e.target.value);
-                    setSelectedDate('');
-                    setPage(1);
-                  }}
-                  style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
-                />
-                <span style={{ fontSize: '0.88rem', color: '#666' }}>đến</span>
-                <input
-                  type="date"
-                  placeholder="Đến ngày"
-                  value={endDate}
-                  onChange={(e) => {
-                    setEndDate(e.target.value);
-                    setSelectedDate('');
-                    setPage(1);
-                  }}
-                  style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem' }}
-                />
-              </div>
-            )}
-          </div>
+              <span className="text-sm text-gray-400">đến</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => { setEndDate(e.target.value); setSelectedDate(''); setPage(1); }}
+                className={selectClass}
+              />
+            </div>
+          )}
 
-          {/* Right: Dropdowns Group */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
-            {/* Specialty Dropdown */}
-            <select
-              value={selectedSpecialtyId}
-              onChange={(e) => handleFilterChange('specialty', e.target.value)}
-              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem', minWidth: '150px' }}
-            >
-              <option value="">-- Chuyên khoa --</option>
-              {specialtiesList.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
+          {/* Specialty */}
+          <select
+            value={selectedSpecialtyId}
+            onChange={(e) => handleFilterChange('specialty', e.target.value)}
+            className={selectClass}
+          >
+            <option value="">-- Chuyên khoa --</option>
+            {specialtiesList.map((s) => (
+              <option key={s.id} value={s.id}>{s.name}</option>
+            ))}
+          </select>
 
-            {/* Doctor Dropdown */}
-            <select
-              value={selectedDoctorId}
-              onChange={(e) => handleFilterChange('doctor', e.target.value)}
-              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem', minWidth: '150px' }}
-            >
-              <option value="">-- Bác sĩ --</option>
-              {doctorsList.map((d) => (
-                <option key={d.id} value={d.id}>{d.name}</option>
-              ))}
-            </select>
+          {/* Doctor */}
+          <select
+            value={selectedDoctorId}
+            onChange={(e) => handleFilterChange('doctor', e.target.value)}
+            className={selectClass}
+          >
+            <option value="">-- Bác sĩ --</option>
+            {doctorsList.map((d) => (
+              <option key={d.id} value={d.id}>{d.name}</option>
+            ))}
+          </select>
 
-            {/* Status Dropdown */}
-            <select
-              value={selectedStatus}
-              onChange={(e) => handleFilterChange('status', e.target.value)}
-              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.88rem', minWidth: '140px' }}
-            >
-              <option value="">-- Trạng thái --</option>
-              <option value="CONFIRMED">Đã xác nhận</option>
-              <option value="CHECKED_IN">Đã check-in</option>
-              <option value="COMPLETED">Đã hoàn thành</option>
-              <option value="NO_SHOW">Vắng mặt</option>
-              <option value="CANCELLED">Đã hủy</option>
-            </select>
+          {/* Status */}
+          <select
+            value={selectedStatus}
+            onChange={(e) => handleFilterChange('status', e.target.value)}
+            className={selectClass}
+          >
+            <option value="">-- Trạng thái --</option>
+            <option value="CONFIRMED">Đã xác nhận</option>
+            <option value="CHECKED_IN">Đã check-in</option>
+            <option value="COMPLETED">Đã hoàn thành</option>
+            <option value="NO_SHOW">Vắng mặt</option>
+            <option value="CANCELLED">Đã hủy</option>
+          </select>
 
-            {/* Clear Filters Button */}
-            <button
-              type="button"
-              className="button-secondary"
-              onClick={handleClearFilters}
-              style={{ minHeight: 'auto', height: '36px', padding: '0 12px', fontSize: '0.88rem', borderRadius: '8px' }}
-            >
-              Xóa bộ lọc
-            </button>
-          </div>
+          {/* Clear */}
+          <button
+            type="button"
+            onClick={handleClearFilters}
+            className="flex items-center gap-1.5 px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-500 hover:bg-gray-50 transition-colors"
+          >
+            <X className="w-3.5 h-3.5" />
+            Xóa bộ lọc
+          </button>
         </div>
-      </section>
+      </div>
 
-      {/* Main Grid Table */}
-      <section className="surface-card" style={{ minHeight: '400px' }}>
+      {/* Table Card */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {appointmentsQuery.isLoading ? (
-          <LoadingBlock label="Đang tải danh sách lịch hẹn..." />
+          <div className="p-8">
+            <LoadingBlock label="Đang tải danh sách lịch hẹn..." />
+          </div>
         ) : appointmentsQuery.error ? (
-          <StateBlock
-            variant="error"
-            title="Không thể tải lịch hẹn"
-            description={appointmentsQuery.error.message}
-          />
+          <div className="p-8">
+            <StateBlock
+              variant="error"
+              title="Không thể tải lịch hẹn"
+              description={appointmentsQuery.error.message}
+            />
+          </div>
         ) : appointmentsList.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <p className="helper-text">Không tìm thấy lịch hẹn nào khớp với bộ lọc.</p>
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mb-3">
+              <Filter className="w-6 h-6 text-gray-400" />
+            </div>
+            <p className="text-gray-500 text-sm">Không tìm thấy lịch hẹn nào khớp với bộ lọc.</p>
           </div>
         ) : (
           <>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Mã lịch</th>
-                  <th>Ngày khám</th>
-                  <th>Giờ</th>
-                  <th>Bệnh nhân</th>
-                  <th>Bác sĩ</th>
-                  <th>Chuyên khoa</th>
-                  <th>Trạng thái</th>
-                  <th style={{ textAlign: 'right' }}>Hành động</th>
-                </tr>
-              </thead>
-              <tbody>
-                {appointmentsList.map((appointment) => {
-                  const patientName = appointment.patientName || 'Bệnh nhân';
-                  
-                  const doctorName = appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
-                  const specialtyName = appointment.specialty?.name || 'N/A';
-                  const time = appointment.timeSlot?.startTime 
-                    ? appointment.timeSlot.startTime.slice(0, 5) 
-                    : '08:00';
-                  
-                  const statusCfg = getStatusConfig(appointment.status);
-                  const formattedDate = appointment.appointmentDate 
-                    ? appointment.appointmentDate.split('-').reverse().join('/')
-                    : 'N/A';
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100 bg-gray-50">
+                    {['Mã lịch', 'Ngày khám', 'Giờ', 'Bệnh nhân', 'Bác sĩ', 'Chuyên khoa', 'Trạng thái', 'Hành động'].map(h => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        {h}
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {appointmentsList.map((appointment) => {
+                    const patientName = appointment.patientName || 'Bệnh nhân';
+                    const doctorName = appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
+                    const specialtyName = appointment.specialty?.name || 'N/A';
+                    const time = appointment.timeSlot?.startTime
+                      ? appointment.timeSlot.startTime.slice(0, 5)
+                      : '08:00';
+                    const formattedDate = appointment.appointmentDate
+                      ? appointment.appointmentDate.split('-').reverse().join('/')
+                      : 'N/A';
 
-                  return (
-                    <tr key={appointment.id}>
-                      <td>
-                        <code style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>
-                          {appointment.code}
-                        </code>
-                      </td>
-                      <td>{formattedDate}</td>
-                      <td style={{ fontWeight: 600, color: 'var(--text-h)' }}>{time}</td>
-                      <td>
-                        <div style={{ fontWeight: 500 }}>{patientName}</div>
-                        {appointment.patientDob && (
-                          <div style={{ fontSize: '0.8rem', color: '#666', marginTop: '2px' }}>
-                            NS: {appointment.patientDob}
+                    return (
+                      <tr key={appointment.id} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3.5">
+                          <code className="text-xs font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                            {appointment.code}
+                          </code>
+                        </td>
+                        <td className="px-4 py-3.5 text-gray-600">{formattedDate}</td>
+                        <td className="px-4 py-3.5 font-semibold text-gray-900">{time}</td>
+                        <td className="px-4 py-3.5">
+                          <div className="font-medium text-gray-900">{patientName}</div>
+                          {appointment.patientDob && (
+                            <div className="text-xs text-gray-400 mt-0.5">NS: {appointment.patientDob}</div>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5 text-gray-700">{doctorName}</td>
+                        <td className="px-4 py-3.5 text-gray-500">{specialtyName}</td>
+                        <td className="px-4 py-3.5">
+                          <StatusBadge status={appointment.status} />
+                        </td>
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2 justify-end">
+                            {appointment.status === 'CONFIRMED' && (
+                              <button
+                                type="button"
+                                onClick={() => handleUpdateStatus(appointment.id, 'CHECKED_IN')}
+                                className="px-2.5 py-1 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white text-xs rounded-lg font-semibold transition-colors"
+                              >
+                                Check-in
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedAppointmentId(appointment.id);
+                                setIsCancelling(false);
+                                setCancelReason('');
+                              }}
+                              className="text-[#49BCE2] hover:text-[#3ca4c5] text-xs font-semibold transition-colors"
+                            >
+                              Chi tiết
+                            </button>
                           </div>
-                        )}
-                      </td>
-                      <td>{doctorName}</td>
-                      <td>{specialtyName}</td>
-                      <td>
-                        <span className={`status-chip ${statusCfg.className}`}>
-                          <span className={`status-dot ${statusCfg.dotClass}`} />
-                          {statusCfg.label}
-                        </span>
-                      </td>
-                      <td style={{ textAlign: 'right', display: 'flex', gap: '8px', justifyContent: 'flex-end', alignItems: 'center' }}>
-                        {appointment.status === 'CONFIRMED' && (
-                          <button
-                            type="button"
-                            className="button-primary"
-                            onClick={() => handleUpdateStatus(appointment.id, 'CHECKED_IN')}
-                            style={{ minHeight: 'auto', height: '28px', padding: '0 10px', fontSize: '0.78rem', borderRadius: '6px' }}
-                          >
-                            Check-in
-                          </button>
-                        )}
-                        <button
-                          type="button"
-                          className="btn-detail-link"
-                          onClick={() => {
-                            setSelectedAppointmentId(appointment.id);
-                            setIsCancelling(false);
-                            setCancelReason('');
-                          }}
-                        >
-                          Chi tiết
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-            {/* Pagination Controls */}
+            {/* Pagination */}
             {paginationMeta.totalPages > 1 && (
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '20px', borderTop: '1px solid var(--border)', paddingTop: '16px' }}>
-                <span className="helper-text" style={{ fontSize: '0.88rem' }}>
-                  Hiển thị trang <strong>{paginationMeta.page}</strong> / <strong>{paginationMeta.totalPages}</strong> (Tổng <strong>{paginationMeta.total}</strong> lịch khám)
+              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100">
+                <span className="text-xs text-gray-500">
+                  Trang <strong>{paginationMeta.page}</strong> / <strong>{paginationMeta.totalPages}</strong>
+                  {' '}(Tổng <strong>{paginationMeta.total}</strong> lịch khám)
                 </span>
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    className="button-secondary"
                     disabled={page === 1}
                     onClick={() => setPage(p => Math.max(p - 1, 1))}
-                    style={{ minHeight: 'auto', height: '34px', padding: '0 12px', fontSize: '0.85rem', borderRadius: '6px' }}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
                   >
+                    <ChevronLeft className="w-3.5 h-3.5" />
                     Trước
                   </button>
                   <button
                     type="button"
-                    className="button-secondary"
                     disabled={page === paginationMeta.totalPages}
                     onClick={() => setPage(p => Math.min(p + 1, paginationMeta.totalPages))}
-                    style={{ minHeight: 'auto', height: '34px', padding: '0 12px', fontSize: '0.85rem', borderRadius: '6px' }}
+                    className="flex items-center gap-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs text-gray-600 disabled:opacity-40 hover:bg-gray-50 transition-colors"
                   >
                     Sau
+                    <ChevronRight className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
             )}
           </>
         )}
-      </section>
+      </div>
 
       {/* Appointment Detail Drawer */}
       {selectedAppointmentId && selectedAppointment && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setSelectedAppointmentId(null)} />
-          <div className="drawer-content">
-            <div className="drawer-header">
-              <h2>Chi tiết cuộc hẹn</h2>
-              <button 
-                type="button" 
-                className="drawer-close-btn"
+        <div
+          className="fixed inset-0 z-50 flex"
+          style={{ background: 'rgba(0,0,0,0.4)' }}
+          onClick={(e) => { if (e.target === e.currentTarget) setSelectedAppointmentId(null); }}
+        >
+          <div
+            className="ml-auto h-full overflow-y-auto flex flex-col"
+            style={{ width: '100%', maxWidth: 460, background: '#fff' }}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <h2 className="font-bold text-gray-900 text-base">Chi tiết cuộc hẹn</h2>
+              <button
+                type="button"
                 onClick={() => setSelectedAppointmentId(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors text-lg"
               >
-                &times;
+                ×
               </button>
             </div>
 
-            <div className="drawer-body">
-              {/* Status Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700 }}>Trạng thái:</span>
-                <span className={`status-chip ${getStatusConfig(selectedAppointment.status).className}`}>
-                  <span className={`status-dot ${getStatusConfig(selectedAppointment.status).dotClass}`} />
-                  {getStatusConfig(selectedAppointment.status).label}
-                </span>
+            {/* Drawer Body */}
+            <div className="flex-1 p-6 space-y-5">
+              {/* Status */}
+              <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
+                <span className="text-sm font-semibold text-gray-700">Trạng thái</span>
+                <StatusBadge status={selectedAppointment.status} />
               </div>
 
-              {/* Doctor Section */}
+              {/* Doctor Info */}
               <div>
-                <h4 className="drawer-section-title">Thông tin Bác sĩ</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row">
-                    <span className="info-label">Bác sĩ</span>
-                    <span className="info-value">{selectedAppointment.doctor?.name || selectedAppointment.doctorName}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Chuyên khoa</span>
-                    <span className="info-value">{selectedAppointment.specialty?.name || 'Đang cập nhật'}</span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Giá khám</span>
-                    <span className="info-value">
-                      {(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} VNĐ
-                    </span>
-                  </div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Thông tin Bác sĩ</h4>
+                <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+                  {[
+                    { label: 'Bác sĩ', value: selectedAppointment.doctor?.name || selectedAppointment.doctorName },
+                    { label: 'Chuyên khoa', value: selectedAppointment.specialty?.name || 'Đang cập nhật' },
+                    { label: 'Giá khám', value: `${(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} VNĐ` },
+                  ].map(row => (
+                    <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm text-gray-500">{row.label}</span>
+                      <span className="text-sm font-medium text-gray-900">{row.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Schedule Section */}
+              {/* Schedule Info */}
               <div>
-                <h4 className="drawer-section-title">Thông tin Lịch khám</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row">
-                    <span className="info-label">Ngày khám</span>
-                    <span className="info-value">
-                      {selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Giờ khám</span>
-                    <span className="info-value">
-                      {selectedAppointment.timeSlot?.startTime?.slice(0, 5) || '08:00'} - {selectedAppointment.timeSlot?.endTime?.slice(0, 5) || '08:30'}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Mã lịch</span>
-                    <span className="info-value" style={{ fontFamily: 'monospace' }}>
-                      {selectedAppointment.code}
-                    </span>
-                  </div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Thông tin Lịch khám</h4>
+                <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+                  {[
+                    { label: 'Ngày khám', value: selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A' },
+                    { label: 'Giờ khám', value: `${selectedAppointment.timeSlot?.startTime?.slice(0, 5) || '08:00'} - ${selectedAppointment.timeSlot?.endTime?.slice(0, 5) || '08:30'}` },
+                    { label: 'Mã lịch', value: selectedAppointment.code, mono: true },
+                  ].map(row => (
+                    <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm text-gray-500">{row.label}</span>
+                      <span className={`text-sm font-medium text-gray-900 ${row.mono ? 'font-mono text-xs bg-gray-100 px-2 py-0.5 rounded' : ''}`}>{row.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Patient Section */}
+              {/* Patient Info */}
               <div>
-                <h4 className="drawer-section-title">Thông tin Bệnh nhân</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row">
-                    <span className="info-label">Họ tên</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientName}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Số điện thoại</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.phone || selectedAppointment.patient?.phone || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Email</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.email || selectedAppointment.patient?.email || selectedAppointment.patientEmail || 'N/A'}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Giới tính</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.gender === 'MALE' ? 'Nam' : selectedAppointment.patientProfile?.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
-                    </span>
-                  </div>
-                  <div className="info-row">
-                    <span className="info-label">Ngày sinh</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.birthday 
-                        ? new Date(selectedAppointment.patientProfile.birthday).toLocaleDateString('vi-VN')
-                        : 'N/A'}
-                    </span>
-                  </div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Thông tin Bệnh nhân</h4>
+                <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
+                  {[
+                    { label: 'Họ tên', value: selectedAppointment.patientName },
+                    { label: 'Số điện thoại', value: selectedAppointment.patientProfile?.phone || selectedAppointment.patient?.phone || 'N/A' },
+                    { label: 'Email', value: selectedAppointment.patientProfile?.email || selectedAppointment.patient?.email || selectedAppointment.patientEmail || 'N/A' },
+                    { label: 'Giới tính', value: selectedAppointment.patientProfile?.gender === 'MALE' ? 'Nam' : selectedAppointment.patientProfile?.gender === 'FEMALE' ? 'Nữ' : 'Khác' },
+                    { label: 'Ngày sinh', value: selectedAppointment.patientProfile?.birthday ? new Date(selectedAppointment.patientProfile.birthday).toLocaleDateString('vi-VN') : 'N/A' },
+                  ].map(row => (
+                    <div key={row.label} className="flex items-center justify-between px-4 py-3">
+                      <span className="text-sm text-gray-500">{row.label}</span>
+                      <span className="text-sm font-medium text-gray-900 text-right max-w-[240px] break-words">{row.value}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {/* Symptoms / Reason */}
+              {/* Reason */}
               <div>
-                <h4 className="drawer-section-title">Triệu chứng & Lý do khám</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                    <span className="info-value" style={{ textAlign: 'left', maxWidth: '100%', whiteSpace: 'pre-wrap' }}>
-                      {selectedAppointment.reason || 'Không có triệu chứng ghi nhận.'}
-                    </span>
-                  </div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Triệu chứng & Lý do khám</h4>
+                <div className="bg-gray-50 border border-gray-100 rounded-xl p-4 text-sm text-gray-700 whitespace-pre-wrap leading-relaxed min-h-[60px]">
+                  {selectedAppointment.reason || 'Không có triệu chứng ghi nhận.'}
                 </div>
               </div>
 
-              {/* Cancellation Reason if cancelled */}
+              {/* Cancellation reason if cancelled */}
               {selectedAppointment.status === 'CANCELLED' && selectedAppointment.cancellationReason && (
                 <div>
-                  <h4 className="drawer-section-title">Lý do hủy lịch</h4>
-                  <div className="cancellation-reason-box">
+                  <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Lý do hủy lịch</h4>
+                  <div className="bg-red-50 border border-red-100 rounded-xl p-4 text-sm text-red-700">
                     {selectedAppointment.cancellationReason}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Actions Footer */}
-            <div className="drawer-footer">
+            {/* Drawer Footer - Actions */}
+            <div className="p-4 border-t border-gray-100 sticky bottom-0 bg-white space-y-2">
               {updateStatusMutation.isPending ? (
-                <LoadingBlock label="Đang cập nhật trạng thái..." />
+                <div className="py-2">
+                  <LoadingBlock label="Đang cập nhật trạng thái..." />
+                </div>
               ) : (
                 <>
-                  {/* Status: CONFIRMED */}
                   {selectedAppointment.status === 'CONFIRMED' && !isCancelling && (
-                    <div className="drawer-actions-row">
+                    <div className="flex gap-2">
                       <button
                         type="button"
-                        className="button-primary"
                         onClick={() => handleUpdateStatus(selectedAppointment.id, 'CHECKED_IN')}
+                        className="flex-1 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-xl text-sm font-semibold transition-colors"
                       >
-                        Check-in
+                        ✓ Check-in
                       </button>
                       <button
                         type="button"
-                        className="button-secondary"
                         onClick={() => handleUpdateStatus(selectedAppointment.id, 'NO_SHOW')}
+                        className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
                       >
                         Vắng mặt
                       </button>
                       <button
                         type="button"
-                        className="button-danger"
                         onClick={() => setIsCancelling(true)}
+                        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors"
                       >
                         Hủy lịch
                       </button>
                     </div>
                   )}
 
-                  {/* Status: CHECKED_IN */}
                   {selectedAppointment.status === 'CHECKED_IN' && !isCancelling && (
-                    <div className="drawer-actions-row">
+                    <div className="flex gap-2">
                       <button
                         type="button"
-                        className="button-primary"
                         onClick={() => handleUpdateStatus(selectedAppointment.id, 'COMPLETED')}
+                        className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-semibold transition-colors"
                       >
-                        Hoàn thành khám
+                        ✓ Hoàn thành khám
                       </button>
                       <button
                         type="button"
-                        className="button-danger"
                         onClick={() => setIsCancelling(true)}
+                        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors"
                       >
                         Hủy lịch
                       </button>
                     </div>
                   )}
 
-                  {/* Cancellation Reason input form */}
                   {isCancelling && (
-                    <div className="cancel-reason-form">
-                      <label htmlFor="cancelReasonInput" style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                        Lý do hủy lịch*
+                    <div className="space-y-2.5">
+                      <label className="block text-sm font-semibold text-gray-700">
+                        Lý do hủy lịch <span className="text-red-500">*</span>
                       </label>
                       <textarea
-                        id="cancelReasonInput"
                         placeholder="Vui lòng nhập lý do hủy lịch..."
                         rows={3}
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
                       />
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          className="button-danger"
-                          style={{ flex: 1 }}
                           disabled={!cancelReason.trim()}
                           onClick={() => handleUpdateStatus(selectedAppointment.id, 'CANCELLED', cancelReason)}
+                          className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Xác nhận hủy
                         </button>
                         <button
                           type="button"
-                          className="button-secondary"
-                          style={{ flex: 1 }}
-                          onClick={() => {
-                            setIsCancelling(false);
-                            setCancelReason('');
-                          }}
+                          onClick={() => { setIsCancelling(false); setCancelReason(''); }}
+                          className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition-colors"
                         >
                           Hủy bỏ
                         </button>
@@ -694,11 +594,10 @@ export default function ReceptionistAppointmentManagementPage() {
                     </div>
                   )}
 
-                  {/* Completed / Cancelled / No show -> Read-only warning */}
-                  {(selectedAppointment.status === 'COMPLETED' || 
-                    selectedAppointment.status === 'CANCELLED' || 
+                  {(selectedAppointment.status === 'COMPLETED' ||
+                    selectedAppointment.status === 'CANCELLED' ||
                     selectedAppointment.status === 'NO_SHOW') && (
-                    <p style={{ textAlign: 'center', fontSize: '0.88rem', margin: 0 }} className="helper-text">
+                    <p className="text-center text-xs text-gray-400 py-1">
                       Lịch hẹn này đã hoàn tất chu kỳ trạng thái.
                     </p>
                   )}
@@ -706,7 +605,7 @@ export default function ReceptionistAppointmentManagementPage() {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

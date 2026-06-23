@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import { GuestOnlyRoute } from './route-guards.jsx';
 import { APP_ROUTES } from '../shared/constants/routes.js';
 import PublicLayout from '../shared/components/layout/PublicLayout';

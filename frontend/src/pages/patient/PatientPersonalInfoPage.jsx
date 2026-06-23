@@ -8,13 +8,12 @@ import {
   SecurityCard,
   useMe,
 } from '../../features/user/index.js';
-import './patient-portal.css';
+import { Edit2 } from 'lucide-react';
 
 function formatDisplayValue(value) {
   if (value === null || value === undefined || value === '') {
     return '--';
   }
-
   return value;
 }
 
@@ -22,17 +21,13 @@ function formatDateForInput(value) {
   if (!value) {
     return '';
   }
-
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return value;
   }
-
   const parsedDate = new Date(value);
-
   if (Number.isNaN(parsedDate.getTime())) {
     return '';
   }
-
   return parsedDate.toLocaleDateString('vi-VN');
 }
 
@@ -53,26 +48,14 @@ function toDateDisplay(value) {
   if (!value) {
     return '--';
   }
-
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
     return value;
   }
-
   const parsedDate = new Date(value);
-
   if (Number.isNaN(parsedDate.getTime())) {
     return value;
   }
-
   return parsedDate.toLocaleDateString('vi-VN');
-}
-
-function PencilIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M13.85 3.9a1.5 1.5 0 0 1 2.12 2.12l-8.2 8.2-2.77.65.65-2.77Zm-1.06 1.06L6 11.75l-.28 1.22 1.22-.28 6.8-6.8Z" />
-    </svg>
-  );
 }
 
 function buildDraftFromUser(user) {
@@ -88,53 +71,47 @@ function buildDraftFromUser(user) {
 function PatientProfileView({ profile, onEdit }) {
   return (
     <>
-      <div className="patient-profile-page-header">
-        <div>
-          <h2 className="patient-profile-page-title">Thông tin cá nhân</h2>
-        </div>
-
-        <button className="patient-profile-toolbar-button" type="button" onClick={onEdit}>
-          <PencilIcon />
+      <div className="flex items-center justify-between mb-5">
+        <h1 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h1>
+        <button
+          className="flex items-center gap-1.5 px-3.5 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 bg-white hover:bg-gray-50 transition-colors cursor-pointer"
+          type="button"
+          onClick={onEdit}
+        >
+          <Edit2 className="w-3.5 h-3.5" />
           <span>Chỉnh sửa</span>
         </button>
       </div>
 
-      <article className="patient-profile-card patient-profile-view-card">
-        <div className="patient-profile-identity-card">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        {/* Identity card */}
+        <div className="p-5 border-b border-gray-100 flex items-center gap-4">
           <ProfileAvatarUpload name={profile.name} avatarUrl={profile.avatarUrl} compact />
-          <div className="patient-profile-identity-copy has-avatar-meta">
-            <h3 className="patient-profile-name">{profile.name}</h3>
-            <p className="patient-profile-role-chip">Bệnh nhân</p>
+          <div>
+            <h3 className="text-base font-bold text-gray-800">{profile.name}</h3>
+            <span className="inline-block mt-1 px-2.5 py-0.5 text-xs font-semibold rounded-full bg-blue-50 text-[#49BCE2] border border-blue-100">
+              Bệnh nhân
+            </span>
           </div>
         </div>
 
-        <div className="patient-profile-view-list">
-          <div className="patient-profile-view-row">
-            <span>Họ và tên</span>
-            <strong>{formatDisplayValue(profile.name)}</strong>
-          </div>
-          <div className="patient-profile-view-row">
-            <span>Email</span>
-            <strong>{formatDisplayValue(profile.email)}</strong>
-          </div>
-          <div className="patient-profile-view-row">
-            <span>Số điện thoại</span>
-            <strong>{formatDisplayValue(profile.phone)}</strong>
-          </div>
-          <div className="patient-profile-view-row">
-            <span>Giới tính</span>
-            <strong>{formatDisplayValue(getGenderLabel(profile.gender))}</strong>
-          </div>
-          <div className="patient-profile-view-row">
-            <span>Ngày sinh</span>
-            <strong>{formatDisplayValue(toDateDisplay(profile.dateOfBirth))}</strong>
-          </div>
-          <div className="patient-profile-view-row">
-            <span>Địa chỉ</span>
-            <strong>{formatDisplayValue(profile.address)}</strong>
-          </div>
+        {/* View fields list */}
+        <div className="p-5 flex flex-col gap-3.5">
+          {[
+            { label: 'Họ và tên', value: formatDisplayValue(profile.name) },
+            { label: 'Email', value: formatDisplayValue(profile.email) },
+            { label: 'Số điện thoại', value: formatDisplayValue(profile.phone) },
+            { label: 'Giới tính', value: formatDisplayValue(getGenderLabel(profile.gender)) },
+            { label: 'Ngày sinh', value: formatDisplayValue(toDateDisplay(profile.dateOfBirth)) },
+            { label: 'Địa chỉ', value: formatDisplayValue(profile.address) },
+          ].map(row => (
+            <div key={row.label} className="flex justify-between items-center py-1.5 border-b border-gray-50 text-sm">
+              <span className="text-gray-500">{row.label}</span>
+              <span className="font-semibold text-gray-800">{row.value}</span>
+            </div>
+          ))}
         </div>
-      </article>
+      </div>
     </>
   );
 }
@@ -160,65 +137,63 @@ export default function PatientPersonalInfoPage() {
 
   if (!accessToken) {
     return (
-      <section className="patient-profile-page">
-        <div className="patient-profile-state-panel">
-          <h2 className="patient-profile-page-title">Thông tin cá nhân</h2>
-          <p className="patient-profile-state-text">
+      <div className="max-w-[560px] font-sans">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm">
+          <h2 className="text-base font-bold text-gray-800 mb-2">Thông tin cá nhân</h2>
+          <p className="text-sm text-gray-500 mb-4">
             Bạn cần đăng nhập để xem và cập nhật thông tin cá nhân.
           </p>
-          <Link className="patient-profile-primary-button patient-profile-inline-button" to="/dang-nhap">
+          <Link className="inline-block px-5 py-2.5 bg-[#49BCE2] text-white text-sm font-semibold rounded-lg hover:bg-[#3ca4c7] transition-colors" to="/dang-nhap">
             Đi đến đăng nhập
           </Link>
         </div>
-      </section>
+      </div>
     );
   }
 
   if (meQuery.isLoading) {
     return (
-      <section className="patient-profile-page">
-        <div className="patient-profile-page-header">
-          <h2 className="patient-profile-page-title">Thông tin cá nhân</h2>
+      <div className="max-w-[560px] font-sans">
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h2>
         </div>
-        <div className="patient-profile-card patient-profile-loading-card">
-          <div className="patient-profile-skeleton patient-profile-skeleton-avatarrow" />
-          <div className="patient-profile-skeleton patient-profile-skeleton-row" />
-          <div className="patient-profile-skeleton patient-profile-skeleton-row" />
-          <div className="patient-profile-skeleton patient-profile-skeleton-row" />
-          <div className="patient-profile-skeleton patient-profile-skeleton-row" />
+        <div className="bg-white border border-gray-200 rounded-lg p-5 flex flex-col gap-4 shadow-sm">
+          <div className="h-14 w-full bg-gray-100 animate-pulse rounded-lg" />
+          <div className="h-8 w-full bg-gray-50 animate-pulse rounded" />
+          <div className="h-8 w-full bg-gray-50 animate-pulse rounded" />
+          <div className="h-8 w-full bg-gray-50 animate-pulse rounded" />
+          <div className="h-8 w-full bg-gray-50 animate-pulse rounded" />
         </div>
-      </section>
+      </div>
     );
   }
 
   if (meQuery.isError || !user) {
     return (
-      <section className="patient-profile-page">
-        <div className="patient-profile-state-panel">
-          <h2 className="patient-profile-page-title">Thông tin cá nhân</h2>
-          <p className="patient-profile-state-text">
+      <div className="max-w-[560px] font-sans">
+        <div className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm">
+          <h2 className="text-base font-bold text-gray-800 mb-2">Thông tin cá nhân</h2>
+          <p className="text-sm text-gray-500 mb-4">
             {meQuery.error?.message ?? 'Đã có lỗi xảy ra khi lấy thông tin tài khoản.'}
           </p>
           <button
-            className="patient-profile-primary-button patient-profile-inline-button"
+            className="px-5 py-2.5 bg-[#49BCE2] text-white text-sm font-semibold rounded-lg hover:bg-[#3ca4c7] transition-colors cursor-pointer"
             type="button"
             onClick={() => meQuery.refetch()}
           >
             Thử lại
           </button>
         </div>
-      </section>
+      </div>
     );
   }
 
   return (
-    <section className="patient-profile-page">
+    <div className="max-w-[560px] font-sans">
       {isEditing ? (
         <>
-          <div className="patient-profile-page-header">
-            <div>
-              <h2 className="patient-profile-page-title">Thông tin cá nhân</h2>
-            </div>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h2>
           </div>
 
           <PersonalInfoForm
@@ -252,6 +227,6 @@ export default function PatientPersonalInfoPage() {
         open={isPasswordModalOpen}
         onClose={() => setIsPasswordModalOpen(false)}
       />
-    </section>
+    </div>
   );
 }
