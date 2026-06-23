@@ -29,3 +29,19 @@ export async function bookAppointment(payload) {
   const response = await axiosInstance.post('/appointments', payload);
   return response.data;
 }
+
+export async function getMyAppointments(params) {
+  const response = await axiosInstance.get('/appointments/my', { params });
+  return response.data;
+}
+
+export async function getMyAppointmentDetail(id) {
+  const response = await axiosInstance.get(`/appointments/my/${id}`);
+  return response.data;
+}
+
+export async function cancelMyAppointment(id, payload) {
+  const response = await axiosInstance.patch(`/appointments/my/${id}/cancel`, payload);
+  return response.data;
+}
+

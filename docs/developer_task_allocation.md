@@ -10,7 +10,7 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
 | :--- | :--- | :--- | :--- |
 | **Dev 1** | Auth, Profiles & Admin | `auth` (Xác thực), `user` (Người dùng), `patient-profile` (Hồ sơ người thân), `clinic-settings` (Cấu hình) | Redis (token blacklist & rate-limit) |
 | **Dev 2** | Lịch làm việc & Doctor Portal | `schedule` (Lịch làm việc), `timeslot` (Ca khám), `doctor` (Bác sĩ), `approval` (Yêu cầu nghỉ) | MySQL Date/Time functions |
-| **Dev 3** | Đặt lịch & Receptionist Portal | `appointment` (Lịch hẹn), `notification` (Gửi email) | Nodemailer |
+| **Dev 3** | Đặt lịch & Receptionist Portal | `appointment` (Lịch hẹn), `notification` (Gửi email) | Nodemailer, Redis (để lock ca khám) |
 | **Dev 4** | Chat, Blog & Tìm kiếm | `chat` (Trò chuyện), `review` (Đánh giá), `blog` (Cẩm nang), `upload` (Tải tệp) | Socket.IO, Elasticsearch, Cloudinary |
 
 ---
@@ -57,6 +57,7 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
     *   **Engine Đặt lịch (Booking):** Tạo lịch hẹn với các quy tắc chống spam nghiêm ngặt:
         *   Kiểm tra email của bệnh nhân đã xác minh và tài khoản không bị khóa (vắng mặt $\ge 3$ lần).
         *   Mỗi người khám chỉ được đặt tối đa 1 lịch hẹn hoạt động trong ngày và 1 lịch hẹn hoạt động với cùng một bác sĩ.
+        *   Tích hợp Redis lock slot (`lock:slot:{slotId}`) với TTL 5 phút khi bệnh nhân bắt đầu chọn slot ở Bước 2 của Booking Wizard.
         *   Sử dụng Prisma Transaction để đảm bảo tính toàn vẹn (tạo lịch hẹn + chuyển trạng thái `TimeSlot` sang `BOOKED` + sinh mã lịch hẹn `CP` + 10 chữ số).
         *   Lưu snapshot của `consultationFee` (giá khám tham khảo) và `patientEmail` tại thời điểm đặt.
     *   **Cập nhật trạng thái lịch hẹn:** Check-in, Hoàn thành, Hủy lịch (kiểm tra hạn hủy trước 2 giờ/1 ngày), và vắng mặt (No-show).

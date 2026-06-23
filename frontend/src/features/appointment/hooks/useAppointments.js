@@ -5,7 +5,10 @@ import {
   updateAppointmentStatus,
   searchPatients,
   bookAppointmentByReceptionist,
-  bookAppointment
+  bookAppointment,
+  getMyAppointments,
+  getMyAppointmentDetail,
+  cancelMyAppointment
 } from '../services/appointment.service.js';
 import { QUERY_KEYS } from '../../../shared/constants/query-keys.js';
 
@@ -69,3 +72,31 @@ export function useBookAppointment() {
     },
   });
 }
+
+export function useMyAppointments(params) {
+  return useQuery({
+    queryKey: QUERY_KEYS.myAppointments(params),
+    queryFn: () => getMyAppointments(params),
+  });
+}
+
+export function useMyAppointmentDetail(id) {
+  return useQuery({
+    queryKey: QUERY_KEYS.myAppointmentDetail(id),
+    queryFn: () => getMyAppointmentDetail(id),
+    enabled: Boolean(id),
+  });
+}
+
+export function useCancelMyAppointment() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }) => cancelMyAppointment(id, payload),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['my-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['my-appointment-detail', variables.id] });
+    },
+  });
+}
+

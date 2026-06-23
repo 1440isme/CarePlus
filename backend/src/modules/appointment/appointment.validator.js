@@ -39,6 +39,7 @@ const createAppointmentSchema = z.object({
     .trim()
     .max(500, 'reason must be at most 500 characters')
     .optional(),
+  lockClientId: z.string().trim().optional(),
 }).strict().refine((data) => {
   if (data.forSelf === false && !data.patientProfileId) {
     return false;
@@ -78,8 +79,9 @@ const createReceptionistAppointmentSchema = z.object({
     .trim()
     .max(500, 'note must be at most 500 characters')
     .optional(),
+  lockClientId: z.string().trim().optional(),
 }).strict().refine((data) => {
-  if (!data.patientId && (!data.name || !data.phone)) {
+  if (!data.patientId && (!data.name || !data.phone || !data.email)) {
     return false;
   }
   if (data.forSelf === false && !data.patientProfileId) {
@@ -87,7 +89,7 @@ const createReceptionistAppointmentSchema = z.object({
   }
   return true;
 }, {
-  message: 'patientProfileId is required when forSelf is false, or name and phone are required if patientId is omitted',
+  message: 'patientProfileId is required when forSelf is false, or name, phone and email are required if patientId is omitted',
   path: ['patientId'],
 });
 

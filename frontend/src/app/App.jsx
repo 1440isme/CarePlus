@@ -30,6 +30,7 @@ import NotFoundPage from '../pages/public/NotFoundPage.jsx';
 import PatientAppointments from '../pages/patient/PatientAppointments.jsx';
 import PatientPersonalInfoPage from '../pages/patient/PatientPersonalInfoPage';
 import PatientRelativesPage from '../pages/patient/PatientRelativesPage';
+import PatientDashboard from '../pages/patient/PatientDashboard.jsx';
 
 import DoctorDashboardPage from '../pages/doctor/DoctorDashboardPage.jsx';
 import DoctorAppointmentListPage from '../pages/doctor/DoctorAppointmentListPage.jsx';
@@ -75,7 +76,7 @@ function App() {
         </Route>
 
         <Route path={APP_ROUTES.patientRoot} element={<PatientLayout />}>
-          <Route index element={<Navigate to="thong-tin-ca-nhan" replace />} />
+          <Route index element={<PatientDashboard />} />
           <Route path="thong-tin-ca-nhan" element={<PatientPersonalInfoPage />} />
           <Route path="lich-hen" element={<PatientAppointments />} />
           <Route path="nguoi-than" element={<PatientRelativesPage />} />

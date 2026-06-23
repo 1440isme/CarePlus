@@ -11,6 +11,8 @@ export const QUERY_KEYS = {
   me: ['me'],
   appointments: (params) => ['appointments', params],
   appointmentDetail: (id) => ['appointment-detail', id],
+  myAppointments: (params) => ['my-appointments', params],
+  myAppointmentDetail: (id) => ['my-appointment-detail', id],
   specialties: (params) => ['specialties', params],
   patientsSearch: (params) => ['patients-search', params],
 };
