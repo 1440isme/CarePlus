@@ -17,6 +17,7 @@ import { useMe } from '../../features/user/hooks/useMe.js';
 import { useBookAppointment } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+import { lockTimeSlot, unlockTimeSlot } from '../../features/timeslot/services/timeslot.service.js';
 import './booking-wizard.css';
 
 export default function BookingWizardPage() {
@@ -85,6 +86,15 @@ export default function BookingWizardPage() {
 
   const [bookingResult, setBookingResult] = useState(null);
 
+  const [lockClientId] = useState(() => {
+    let id = sessionStorage.getItem('booking_lock_client_id');
+    if (!id) {
+      id = 'client_' + Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+      sessionStorage.setItem('booking_lock_client_id', id);
+    }
+    return id;
+  });
+
   // 1. Fetch Specialties
   const specialtiesQuery = useSpecialties();
 
@@ -96,7 +106,7 @@ export default function BookingWizardPage() {
   // 3. Fetch Timeslots (Filtered by doctor & date)
   const timeSlotsQuery = useTimeSlots(
     bookingData.doctor && bookingData.date 
-      ? { doctorId: bookingData.doctor.id, date: bookingData.date } 
+      ? { doctorId: bookingData.doctor.id, date: bookingData.date, lockClientId } 
       : null
   );
   const { data: systemSettingsResponse } = useBookingRules();
@@ -376,6 +386,11 @@ export default function BookingWizardPage() {
 
   // Handle doctor selection in Step 2
   const handleSelectDoctor = (doctor) => {
+    if (bookingData.timeSlot) {
+      unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+        console.error('Failed to unlock previous slot:', err);
+      });
+    }
     setBookingData((prev) => ({
       ...prev,
       doctor,
@@ -386,6 +401,11 @@ export default function BookingWizardPage() {
 
   // Handle date selection in Step 2 date bar
   const handleSelectDate = (dateStr) => {
+    if (bookingData.timeSlot) {
+      unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+        console.error('Failed to unlock previous slot:', err);
+      });
+    }
     setBookingData((prev) => ({
       ...prev,
       date: dateStr,
@@ -395,12 +415,31 @@ export default function BookingWizardPage() {
   };
 
   // Handle timeslot click in Step 2
-  const handleSelectTimeSlot = (timeSlot) => {
-    setBookingData((prev) => ({
-      ...prev,
-      timeSlot
-    }));
+  const handleSelectTimeSlot = async (timeSlot) => {
+    if (bookingData.timeSlot?.id === timeSlot.id) {
+      return;
+    }
     setStepError(null);
+    try {
+      await lockTimeSlot(timeSlot.id, lockClientId);
+      
+      if (bookingData.timeSlot) {
+        unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+          console.error('Failed to unlock previous slot:', err);
+        });
+      }
+
+      setBookingData((prev) => ({
+        ...prev,
+        timeSlot
+      }));
+    } catch (err) {
+      const msg = err.response?.data?.error?.message || 
+        err.message || 
+        'Không thể giữ khung giờ khám. Vui lòng thử lại.';
+      setStepError(msg);
+      timeSlotsQuery.refetch();
+    }
   };
 
   // Automatically select the first doctor in Step 2 if none is selected
@@ -484,6 +523,7 @@ export default function BookingWizardPage() {
         endTime: bookingData.timeSlot.endTime,
         forSelf: bookingData.forSelf,
         reason: bookingData.reason.trim(),
+        lockClientId,
         ...(bookingData.forSelf ? {} : { patientProfileId: bookingData.patientProfileId })
       };
 
@@ -502,6 +542,11 @@ export default function BookingWizardPage() {
   };
 
   const handleResetBooking = () => {
+    if (bookingData.timeSlot) {
+      unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+        console.error('Failed to unlock slot:', err);
+      });
+    }
     setBookingData({
       specialty: null,
       doctor: null,

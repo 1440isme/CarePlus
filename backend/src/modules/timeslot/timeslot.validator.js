@@ -22,6 +22,7 @@ function buildIssueDetails(error) {
 const listTimeSlotsSchema = z.object({
   doctorId: z.string().trim().min(1),
   date: z.string().date(),
+  lockClientId: z.string().trim().optional(),
 }).strict();
 
 function validateListTimeSlots(req, res, next) {
@@ -35,6 +36,23 @@ function validateListTimeSlots(req, res, next) {
   return next();
 }
 
+const lockTimeSlotSchema = z.object({
+  lockClientId: z.string().trim().min(1, 'lockClientId is required'),
+}).strict();
+
+function validateLockTimeSlot(req, res, next) {
+  const parsed = lockTimeSlotSchema.safeParse(req.body || {});
+
+  if (!parsed.success) {
+    return sendValidationError(res, buildIssueDetails(parsed.error));
+  }
+
+  req.body = parsed.data;
+  return next();
+}
+
 module.exports = {
   validateListTimeSlots,
+  validateLockTimeSlot,
 };
+
