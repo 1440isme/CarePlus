@@ -236,7 +236,12 @@ model TimeSlot {
 model Appointment {
   id               String            @id @default(uuid())
   code             String            @unique // CP + 10 digits
-  patientId        String
+  patientId        String?
+  patientName      String?
+  patientPhone     String?
+  patientGender    Gender?
+  patientDob       DateTime?         @db.Date
+  patientAddress   String?           @db.Text
   patientProfileId String?
   doctorId         String
   specialtyId      String
@@ -252,13 +257,13 @@ model Appointment {
   forSelf          Boolean
   relativeName     String?
   consultationFee  Float // snapshot fee at booking time
-  patientEmail     String // snapshot email
+  patientEmail     String? // snapshot email
   reason           String?           @db.Text
   note             String?           @db.Text
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
 
-  patient        User            @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Restrict)
+  patient        User?           @relation("PatientAppointments", fields: [patientId], references: [id], onDelete: Restrict)
   patientProfile PatientProfile? @relation(fields: [patientProfileId], references: [id], onDelete: Restrict)
   doctor         Doctor          @relation(fields: [doctorId], references: [id], onDelete: Restrict)
   specialty      Specialty       @relation(fields: [specialtyId], references: [id], onDelete: Restrict)

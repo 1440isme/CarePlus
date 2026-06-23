@@ -248,10 +248,8 @@ export default function ReceptionistBookingPage() {
       } else if (!/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(bookingData.phone.trim())) {
         newErrors.phone = 'Số điện thoại không hợp lệ';
       }
-      if (!bookingData.patientUser) {
-        if (!bookingData.email.trim()) {
-          newErrors.email = 'Email không được để trống';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingData.email.trim())) {
+      if (bookingData.email.trim()) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingData.email.trim())) {
           newErrors.email = 'Email không hợp lệ';
         }
       }
@@ -838,13 +836,11 @@ export default function ReceptionistBookingPage() {
 
             {/* Email */}
             <div>
-              <label htmlFor="patientEmailInput" style={lbl}>
-                Email tài khoản{!bookingData.patientUser && <Req />}
-              </label>
+              <label htmlFor="patientEmailInput" style={lbl}>Email tài khoản</label>
               <input
                 id="patientEmailInput"
                 type="email"
-                placeholder={bookingData.patientUser ? "Email tài khoản..." : "Nhập email tài khoản..."}
+                placeholder="Nhập email tài khoản (không bắt buộc)..."
                 value={bookingData.email}
                 onChange={(e) => {
                   setBookingData(prev => ({ ...prev, email: e.target.value }));

@@ -54,7 +54,7 @@ const createReceptionistAppointmentSchema = z.object({
   patientId: z.string().trim().min(1).optional(),
   name: z.string().trim().min(1).optional(),
   phone: z.string().trim().min(1).optional(),
-  email: z.string().trim().email().optional(),
+  email: z.preprocess((val) => (val === '' ? undefined : val), z.string().trim().email().optional()),
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
   dateOfBirth: z.string().date().optional(),
   address: z.string().trim().optional(),
@@ -81,7 +81,7 @@ const createReceptionistAppointmentSchema = z.object({
     .optional(),
   lockClientId: z.string().trim().optional(),
 }).strict().refine((data) => {
-  if (!data.patientId && (!data.name || !data.phone || !data.email)) {
+  if (!data.patientId && (!data.name || !data.phone)) {
     return false;
   }
   if (data.forSelf === false && !data.patientProfileId) {
@@ -89,7 +89,7 @@ const createReceptionistAppointmentSchema = z.object({
   }
   return true;
 }, {
-  message: 'patientProfileId is required when forSelf is false, or name, phone and email are required if patientId is omitted',
+  message: 'patientProfileId is required when forSelf is false, or name and phone are required if patientId is omitted',
   path: ['patientId'],
 });
 

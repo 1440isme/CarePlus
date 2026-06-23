@@ -50,7 +50,19 @@ function toAppointmentDto(appointment) {
       name: appointment.patient.name,
       email: appointment.patient.email,
       phone: appointment.patient.phone,
+      gender: appointment.patient.gender,
       dateOfBirth: formatDateOfBirth(appointment.patient.dateOfBirth),
+      address: appointment.patient.address,
+    };
+  } else if (appointment.patientName) {
+    dto.patient = {
+      id: null,
+      name: appointment.patientName,
+      email: appointment.patientEmail || null,
+      phone: appointment.patientPhone || null,
+      gender: appointment.patientGender || null,
+      dateOfBirth: formatDateOfBirth(appointment.patientDob),
+      address: appointment.patientAddress || null,
     };
   }
 
@@ -87,11 +99,13 @@ function toAppointmentDto(appointment) {
   dto.patientName = appointment.patientProfile?.fullName 
     || appointment.relativeName 
     || appointment.patient?.name 
+    || appointment.patientName
     || 'Bệnh nhân';
 
   // Generate friendly patient/relative date of birth
   dto.patientDob = formatDateOfBirth(appointment.patientProfile?.dateOfBirth)
     || formatDateOfBirth(appointment.patient?.dateOfBirth)
+    || formatDateOfBirth(appointment.patientDob)
     || null;
 
   return dto;
