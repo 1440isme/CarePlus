@@ -45,3 +45,7 @@ export async function cancelMyAppointment(id, payload) {
   return response.data;
 }
 
+export async function getAdminStats() {
+  const response = await axiosInstance.get('/appointments/stats');
+  return response.data;
+}

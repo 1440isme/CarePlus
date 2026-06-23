@@ -20,7 +20,7 @@ function mapIssues(issues) {
 }
 
 const createReviewSchema = z.object({
-  appointmentId: z.string().uuid('ID lịch hẹn phải là UUID hợp lệ'),
+  appointmentId: z.string().min(1, 'ID lịch hẹn không hợp lệ'),
   rating: z.coerce.number().int().min(1, 'Đánh giá tối thiểu là 1 sao').max(5, 'Đánh giá tối đa là 5 sao'),
   comment: z.string()
     .trim()

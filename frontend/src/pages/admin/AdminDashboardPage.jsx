@@ -1,7 +1,7 @@
 import { useDoctorList } from '../../features/doctor/index.js';
 import { useApprovalRequests } from '../../features/approval/hooks/useApprovalRequests.js';
 import { useUsers } from '../../features/user-management/hooks/useUsers.js';
-import { useAppointments } from '../../features/appointment/hooks/useAppointments.js';
+import { useAppointments, useAdminStats } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import {
@@ -9,6 +9,7 @@ import {
   Users, TrendingUp, Clock, ArrowRight
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { APP_ROUTES } from '../../shared/constants/routes.js';
 
 const BRAND = '#49BCE2';
 
@@ -20,7 +21,7 @@ function BarChartSimple({ data }) {
       {data.map((d) => {
         const pct = Math.round((d.count / max) * 100);
         return (
-          <div key={d.date} className="flex-1 flex flex-col items-center gap-1">
+          <div key={d.fullDate || d.date} className="flex-1 flex flex-col items-center gap-1">
             <span className="text-[10px] text-gray-400">{d.count}</span>
             <div
               className="w-full rounded-t-sm transition-all"
@@ -42,6 +43,7 @@ export default function AdminDashboardPage() {
   const approvalsQuery = useApprovalRequests({ page: 1, limit: 5, status: 'PENDING' });
   const usersQuery = useUsers({ page: 1, limit: 5 });
   const todayApptsQuery = useAppointments({ date: todayStr, limit: 100 });
+  const adminStatsQuery = useAdminStats();
 
   const isLoading = doctorsQuery.isLoading || approvalsQuery.isLoading || usersQuery.isLoading;
   const hasError = doctorsQuery.error || approvalsQuery.error || usersQuery.error;
@@ -75,6 +77,15 @@ export default function AdminDashboardPage() {
   const completedToday = todayAppts.filter(a => a.status === 'COMPLETED').length;
   const noShowToday = todayAppts.filter(a => a.status === 'NO_SHOW').length;
 
+  // Real chart data from API
+  const chartData = adminStatsQuery.data?.data?.weeklyData || [
+    { date: 'T2', fullDate: '', count: 0 }, { date: 'T3', fullDate: '', count: 0 },
+    { date: 'T4', fullDate: '', count: 0 }, { date: 'T5', fullDate: '', count: 0 },
+    { date: 'T6', fullDate: '', count: 0 }, { date: 'T7', fullDate: '', count: 0 },
+    { date: 'CN', fullDate: '', count: 0 },
+  ];
+  const specialtyData = adminStatsQuery.data?.data?.specialtyData || [];
+
   const kpis = [
     {
       label: 'Lịch hôm nay',
@@ -83,7 +94,7 @@ export default function AdminDashboardPage() {
       iconBg: 'bg-cyan-50',
       iconColor: 'text-cyan-600',
       delta: todayApptsQuery.isLoading ? '...' : null,
-      to: '/admin/appointments',
+      to: `${APP_ROUTES.adminRoot}/lich-hen`,
     },
     {
       label: 'Chờ duyệt',
@@ -93,7 +104,7 @@ export default function AdminDashboardPage() {
       iconColor: 'text-amber-600',
       deltaText: pendingApprovals > 0 ? 'cần xử lý' : null,
       deltaColor: 'text-amber-600',
-      to: '/admin/approvals',
+      to: `${APP_ROUTES.adminRoot}/duyet-yeu-cau`,
     },
     {
       label: 'Hoàn thành',
@@ -117,7 +128,7 @@ export default function AdminDashboardPage() {
       icon: Stethoscope,
       iconBg: 'bg-blue-50',
       iconColor: 'text-blue-600',
-      to: '/admin/doctors',
+      to: `${APP_ROUTES.adminRoot}/bac-si`,
     },
     {
       label: 'Tổng người dùng',
@@ -125,14 +136,8 @@ export default function AdminDashboardPage() {
       icon: Users,
       iconBg: 'bg-purple-50',
       iconColor: 'text-purple-600',
-      to: '/admin/users',
+      to: `${APP_ROUTES.adminRoot}/nguoi-dung`,
     },
-  ];
-
-  // Chart data: mock by day-of-week for demo (replace with real API if available)
-  const chartData = [
-    { date: 'T2', count: 8 }, { date: 'T3', count: 12 }, { date: 'T4', count: 6 },
-    { date: 'T5', count: 15 }, { date: 'T6', count: 9 }, { date: 'T7', count: 11 }, { date: 'CN', count: 4 },
   ];
 
   // Pending approvals list
@@ -177,10 +182,12 @@ export default function AdminDashboardPage() {
         {/* Bar chart */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl p-5">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-gray-900">Lịch hẹn theo ngày (tuần này)</h3>
+            <h3 className="font-semibold text-gray-900">Lịch hẹn theo ngày (7 ngày gần nhất)</h3>
             <TrendingUp className="w-4 h-4 text-gray-300" />
           </div>
-          <p className="text-xs text-gray-400 mb-3">Số lượng lịch khám mỗi ngày</p>
+          <p className="text-xs text-gray-400 mb-3">
+            {adminStatsQuery.isLoading ? 'Đang tải...' : 'Số lượng lịch khám mỗi ngày (không tính hủy)'}
+          </p>
           <BarChartSimple data={chartData} />
         </div>
 
@@ -199,45 +206,64 @@ export default function AdminDashboardPage() {
             </div>
           ) : (
             <div className="space-y-2.5">
-              {pendingList.slice(0, 4).map((r) => (
-                <div key={r.id} className="p-3 bg-amber-50 border border-amber-100 rounded-xl">
-                  <div className="text-xs text-amber-600 font-medium mb-1">
-                    {r.type === 'SCHEDULE_EXCEPTION' ? '📅 Nghỉ lịch' : '❌ Hủy lịch'}
+              {pendingList.slice(0, 4).map((r) => {
+                const scopeLabel = r.exceptionType === 'ALL_DAY'
+                  ? 'Cả ngày'
+                  : r.shift === 'MORNING'
+                    ? 'Ca sáng'
+                    : r.shift === 'AFTERNOON'
+                      ? 'Ca chiều'
+                      : r.exceptionType || '';
+                const dateLabel = r.date
+                  ? r.date.split('-').reverse().join('/')
+                  : '';
+                return (
+                  <div key={r.id} className="p-3 bg-amber-50 border border-amber-100 rounded-xl">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs text-amber-600 font-semibold">
+                        📅 Nghỉ lịch
+                      </span>
+                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-medium">
+                        {scopeLabel}
+                      </span>
+                    </div>
+                    <div className="text-sm font-semibold text-gray-900">{r.doctorName}</div>
+                    {dateLabel && (
+                      <div className="text-xs text-gray-500 mt-0.5">📆 Ngày: {dateLabel}</div>
+                    )}
+                    <div className="text-xs text-gray-400 truncate mt-0.5 italic">"{r.reason}"</div>
                   </div>
-                  <div className="text-sm font-medium text-gray-900">{r.doctorName}</div>
-                  <div className="text-xs text-gray-500 truncate mt-0.5">{r.reason}</div>
-                </div>
-              ))}
-              {pendingList.length > 4 && (
-                <Link
-                  to="/admin/approvals"
-                  className="flex items-center justify-center gap-1 text-xs text-[#49BCE2] hover:text-[#3ca4c5] font-semibold py-1 transition-colors"
-                >
-                  Xem tất cả <ArrowRight className="w-3 h-3" />
-                </Link>
-              )}
+                );
+              })}
+              <Link
+                to={`${APP_ROUTES.adminRoot}/duyet-yeu-cau`}
+                className="flex items-center justify-center gap-1 text-xs text-[#49BCE2] hover:text-[#3ca4c5] font-semibold py-1 transition-colors"
+              >
+                Xem tất cả ({pendingApprovals}) <ArrowRight className="w-3 h-3" />
+              </Link>
             </div>
           )}
+
         </div>
       </div>
 
-      {/* Specialty breakdown */}
+      {/* Specialty breakdown - real data */}
       <div className="bg-white border border-gray-100 rounded-xl p-5">
-        <h3 className="font-semibold text-gray-900 mb-4">Lịch hẹn theo chuyên khoa (demo)</h3>
-        {(() => {
-          const data = [
-            { name: 'Tim mạch', count: 25, color: '#49BCE2' },
-            { name: 'Nhi khoa', count: 18, color: '#FFC10E' },
-            { name: 'Cơ Xương Khớp', count: 12, color: '#A78BFA' },
-            { name: 'Da liễu', count: 10, color: '#34D399' },
-            { name: 'Tiêu hóa', count: 8, color: '#F87171' },
-          ];
-          const max = Math.max(...data.map(d => d.count));
+        <h3 className="font-semibold text-gray-900 mb-1">Lịch hẹn theo chuyên khoa (tháng này)</h3>
+        <p className="text-xs text-gray-400 mb-4">
+          {adminStatsQuery.isLoading ? 'Đang tải...' : 'Top chuyên khoa có nhiều lịch khám nhất (không tính hủy)'}
+        </p>
+        {specialtyData.length === 0 ? (
+          <div className="text-center py-8 text-sm text-gray-400">
+            {adminStatsQuery.isLoading ? 'Đang tải dữ liệu...' : 'Chưa có dữ liệu lịch hẹn tháng này.'}
+          </div>
+        ) : (() => {
+          const max = Math.max(...specialtyData.map(d => d.count));
           return (
             <div className="space-y-3">
-              {data.map(d => (
+              {specialtyData.map(d => (
                 <div key={d.name} className="flex items-center gap-3">
-                  <div className="w-28 text-sm text-gray-600 flex-shrink-0">{d.name}</div>
+                  <div className="w-28 text-sm text-gray-600 flex-shrink-0 truncate">{d.name}</div>
                   <div className="flex-1 h-5 bg-gray-100 rounded-md overflow-hidden">
                     <div
                       className="h-full rounded-md transition-all duration-500"
@@ -255,10 +281,10 @@ export default function AdminDashboardPage() {
       {/* Quick Links */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label: 'Quản lý bác sĩ', to: '/admin/doctors', icon: Stethoscope, color: 'text-blue-600 bg-blue-50' },
-          { label: 'Quản lý lịch hẹn', to: '/admin/appointments', icon: Calendar, color: 'text-cyan-600 bg-cyan-50' },
-          { label: 'Người dùng', to: '/admin/users', icon: Users, color: 'text-purple-600 bg-purple-50' },
-          { label: 'Duyệt yêu cầu', to: '/admin/approvals', icon: AlertCircle, color: 'text-amber-600 bg-amber-50' },
+          { label: 'Quản lý bác sĩ', to: `${APP_ROUTES.adminRoot}/bac-si`, icon: Stethoscope, color: 'text-blue-600 bg-blue-50' },
+          { label: 'Quản lý lịch hẹn', to: `${APP_ROUTES.adminRoot}/lich-hen`, icon: Calendar, color: 'text-cyan-600 bg-cyan-50' },
+          { label: 'Người dùng', to: `${APP_ROUTES.adminRoot}/nguoi-dung`, icon: Users, color: 'text-purple-600 bg-purple-50' },
+          { label: 'Duyệt yêu cầu', to: `${APP_ROUTES.adminRoot}/duyet-yeu-cau`, icon: AlertCircle, color: 'text-amber-600 bg-amber-50' },
         ].map(q => {
           const Icon = q.icon;
           return (

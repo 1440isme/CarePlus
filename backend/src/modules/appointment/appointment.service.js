@@ -489,6 +489,79 @@ class AppointmentService {
     }
   }
 
+  async getAdminStats(currentUser) {
+    try {
+      // Weekly stats: last 7 days
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const days = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(d.getDate() - i);
+        days.push(d);
+      }
+
+      const weeklyCountsRaw = await Promise.all(
+        days.map((d) => {
+          const nextDay = new Date(d);
+          nextDay.setDate(nextDay.getDate() + 1);
+          return this.prisma.appointment.count({
+            where: {
+              appointmentDate: { gte: d, lt: nextDay },
+              status: { not: 'CANCELLED' },
+            },
+          });
+        })
+      );
+
+      const DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      const weeklyData = days.map((d, i) => ({
+        date: DAY_LABELS[d.getDay()],
+        fullDate: d.toISOString().slice(0, 10),
+        count: weeklyCountsRaw[i],
+      }));
+
+      // Specialty stats: this month
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+      const specialtyGroups = await this.prisma.appointment.groupBy({
+        by: ['specialtyId'],
+        where: {
+          appointmentDate: { gte: monthStart, lte: monthEnd },
+          status: { not: 'CANCELLED' },
+        },
+        _count: { id: true },
+        orderBy: { _count: { id: 'desc' } },
+        take: 5,
+      });
+
+      const specialtyIds = specialtyGroups.map((g) => g.specialtyId).filter(Boolean);
+      const specialties = await this.prisma.specialty.findMany({
+        where: { id: { in: specialtyIds } },
+        select: { id: true, name: true },
+      });
+
+      const specialtyMap = {};
+      specialties.forEach((s) => { specialtyMap[s.id] = s.name; });
+
+      const COLORS = ['#49BCE2', '#FFC10E', '#A78BFA', '#34D399', '#F87171'];
+      const specialtyData = specialtyGroups.map((g, i) => ({
+        name: specialtyMap[g.specialtyId] || 'Khác',
+        count: g._count.id,
+        color: COLORS[i % COLORS.length],
+      }));
+
+      return { weeklyData, specialtyData };
+    } catch (error) {
+      throw this._wrapUnexpectedError(
+        error,
+        APPOINTMENT_ERROR_CODES.LIST_APPOINTMENTS_FAILED,
+        'Không thể lấy thống kê admin'
+      );
+    }
+  }
+
   async listAllAppointments(currentUser, query) {
     try {
       const page = Number.parseInt(query.page, 10) || APPOINTMENT_PAGINATION.DEFAULT_PAGE;
