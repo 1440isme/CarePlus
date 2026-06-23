@@ -149,6 +149,12 @@ export default function LoginForm({
           {!loginMutation.isPending && <ArrowRight className="w-4 h-4" />}
         </button>
       </form>
+      <p className="text-center text-sm text-gray-500 mt-4">
+        Chưa có tài khoản?{' '}
+        <Link className="text-cyan-600 font-semibold hover:underline" to="/dang-ky">
+          Đăng ký ngay
+        </Link>
+      </p>
     </div>
   );
 }
