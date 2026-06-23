@@ -1,30 +1,24 @@
+import { Link } from 'react-router-dom';
+import { Stethoscope } from 'lucide-react';
 import ForgotPasswordForm from '../../features/auth/components/ForgotPasswordForm.jsx';
-import './register-page.css';
-
-const logoIcon = 'https://www.figma.com/api/mcp/asset/87f58041-bd76-4ab3-8e01-b43927d8aa68';
 
 export default function ForgotPasswordPage() {
   return (
-    <div className="auth-page auth-page-register">
-      <div className="auth-page-card auth-page-card-compact">
-        <header className="auth-page-header">
-          <div className="auth-page-brand" aria-label="CarePlus">
-            <div className="auth-page-brand-icon">
-              <img src={logoIcon} alt="" aria-hidden="true" />
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-teal-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            <div className="w-9 h-9 bg-cyan-600 rounded-xl flex items-center justify-center">
+              <Stethoscope className="w-5 h-5 text-white" />
             </div>
-            <div className="auth-page-brand-text">
-              <span>Care</span>
-              <span>Plus</span>
-            </div>
-          </div>
-
-          <h1 className="auth-page-title">Quên mật khẩu</h1>
-          <p className="auth-page-subtitle">Nhập email để nhận link đặt lại mật khẩu</p>
-        </header>
-
-        <section className="auth-page-form-card auth-page-form-card-compact">
+            <span className="text-xl font-bold text-gray-900">Care<span className="text-cyan-600">Plus</span></span>
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">Quên mật khẩu</h1>
+          <p className="text-gray-500 mt-1 text-sm">Nhập email để nhận link đặt lại mật khẩu</p>
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <ForgotPasswordForm />
-        </section>
+        </div>
       </div>
     </div>
   );

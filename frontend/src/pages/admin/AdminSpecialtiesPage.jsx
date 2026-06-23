@@ -6,34 +6,10 @@ import {
   useAdminSpecialties,
   useDeleteSpecialty,
 } from '../../features/admin/specialties/index.js';
+import { Plus, Search, CheckCircle, XCircle } from 'lucide-react';
 import '../../features/admin/specialties/components/admin-specialties.css';
 
 const PAGE_LIMIT = 10;
-
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M10 4.25v11.5M4.25 10h11.5" />
-    </svg>
-  );
-}
-
-function SearchIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <circle cx="8.75" cy="8.75" r="4.75" />
-      <path d="m12.5 12.5 3.5 3.5" />
-    </svg>
-  );
-}
-
-function CloseIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="m5 5 10 10M15 5 5 15" />
-    </svg>
-  );
-}
 
 function getListErrorMessage(error) {
   switch (error?.code) {
@@ -77,13 +53,11 @@ export default function AdminSpecialtiesPage() {
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
       const normalizedKeyword = searchInput.trim();
-
       setCurrentPage(1);
       setSearchKeyword((currentKeyword) => (
         currentKeyword === normalizedKeyword ? currentKeyword : normalizedKeyword
       ));
     }, 300);
-
     return () => window.clearTimeout(timeoutId);
   }, [searchInput]);
 
@@ -91,11 +65,9 @@ export default function AdminSpecialtiesPage() {
     if (!feedback) {
       return undefined;
     }
-
     const timeoutId = window.setTimeout(() => {
       setFeedback(null);
     }, 5000);
-
     return () => window.clearTimeout(timeoutId);
   }, [feedback]);
 
@@ -128,74 +100,82 @@ export default function AdminSpecialtiesPage() {
   };
 
   const handleCloseModal = () => {
-    setModalState({
-      open: false,
-      mode: 'create',
-      specialty: null,
-    });
+    setModalState({ open: false, mode: 'create', specialty: null });
   };
 
   const handleOpenCreateModal = () => {
     setFeedback(null);
-    setModalState({
-      open: true,
-      mode: 'create',
-      specialty: null,
-    });
+    setModalState({ open: true, mode: 'create', specialty: null });
   };
 
   const handleOpenEditModal = (specialty) => {
     setFeedback(null);
-    setModalState({
-      open: true,
-      mode: 'edit',
-      specialty,
-    });
+    setModalState({ open: true, mode: 'edit', specialty });
   };
 
   return (
-    <section className="admin-specialties-page">
-      <div className="admin-specialties-page-header">
-        <h2 className="admin-specialties-page-title">Quản lý chuyên khoa</h2>
-
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Quản lý chuyên khoa</h1>
+          <p className="text-sm text-gray-500 mt-1">Thêm, chỉnh sửa và quản lý các chuyên khoa trong hệ thống</p>
+        </div>
         <button
-          className="admin-specialties-create-button"
           type="button"
           onClick={handleOpenCreateModal}
+          className="flex items-center gap-2 px-4 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
         >
-          <PlusIcon />
-          <span>Thêm chuyên khoa</span>
+          <Plus className="w-4 h-4" />
+          Thêm chuyên khoa
         </button>
       </div>
 
-      <div className="admin-specialties-card">
-        <div className="admin-specialties-toolbar">
-          <label className="admin-specialties-search" htmlFor="admin-specialties-search">
-            <SearchIcon />
+      {/* Card */}
+      <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        {/* Toolbar */}
+        <div className="px-5 py-4 border-b border-gray-100">
+          <div className="relative max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               id="admin-specialties-search"
               type="search"
               value={searchInput}
-              onChange={(event) => setSearchInput(event.target.value)}
+              onChange={(e) => setSearchInput(e.target.value)}
               placeholder="Tìm theo tên chuyên khoa..."
+              className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
             />
-          </label>
+          </div>
         </div>
 
-        {feedback ? (
-          <div className={`admin-specialties-feedback ${feedback.type === 'success' ? 'is-success' : 'is-error'}`}>
-            <p className="admin-specialties-feedback-text">{feedback.message}</p>
+        {/* Feedback Banner */}
+        {feedback && (
+          <div
+            className={`mx-5 mt-4 flex items-center justify-between gap-3 px-4 py-3 rounded-xl border text-sm font-medium ${
+              feedback.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-800'
+                : 'bg-red-50 border-red-200 text-red-800'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              {feedback.type === 'success'
+                ? <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                : <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+              }
+              {feedback.message}
+            </div>
             <button
               type="button"
-              className="admin-specialties-feedback-close"
               aria-label="Ẩn thông báo"
               onClick={() => setFeedback(null)}
+              className="text-current opacity-60 hover:opacity-100 transition-opacity flex-shrink-0 text-lg leading-none"
             >
-              <CloseIcon />
+              ×
             </button>
           </div>
-        ) : null}
+        )}
 
+        {/* Table - uses existing AdminSpecialtiesTable component */}
         <AdminSpecialtiesTable
           specialties={specialties}
           meta={meta}
@@ -208,10 +188,7 @@ export default function AdminSpecialtiesPage() {
           onEdit={handleOpenEditModal}
           onDelete={(specialty) => {
             setFeedback(null);
-            setConfirmState({
-              open: true,
-              specialty,
-            });
+            setConfirmState({ open: true, specialty });
           }}
           onPreviousPage={() => {
             setCurrentPage((page) => Math.max(1, page - 1));
@@ -222,6 +199,7 @@ export default function AdminSpecialtiesPage() {
         />
       </div>
 
+      {/* Modals */}
       <SpecialtyFormModal
         open={modalState.open}
         mode={modalState.mode}
@@ -257,6 +235,6 @@ export default function AdminSpecialtiesPage() {
           }
         }}
       />
-    </section>
+    </div>
   );
 }

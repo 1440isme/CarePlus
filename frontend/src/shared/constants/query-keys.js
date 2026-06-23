@@ -15,4 +15,7 @@ export const QUERY_KEYS = {
   myAppointmentDetail: (id) => ['my-appointment-detail', id],
   specialties: (params) => ['specialties', params],
   patientsSearch: (params) => ['patients-search', params],
+  doctorReviews: (doctorId, params) => ['doctor-reviews', doctorId, params],
+  appointmentReview: (appointmentId) => ['appointment-review', appointmentId],
 };
+

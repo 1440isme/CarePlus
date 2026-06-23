@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const hotlineRegex = /^(?:(?:0|\+84)(?:3|5|7|8|9)\d{8}|1900\d{4}|028\d{7})$/;
+const hotlineRegex = /^[0-9+\s().-]{8,20}$/;
 
 export const clinicInfoFormSchema = z.object({
   name: z
