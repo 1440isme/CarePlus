@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clinicInfoFormSchema } from '../schemas/clinic-info.schema.js';
 import { useUpdateClinicInfo } from '../hooks/useUpdateClinicInfo.js';
+import './admin-clinic-info.css';
 
 function CloseIcon() {
   return (

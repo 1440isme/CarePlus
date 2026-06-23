@@ -1,6 +1,7 @@
 const DoctorRepository = require('../doctor/doctor.repository');
 const ScheduleRepository = require('../schedule/schedule.repository');
 const TimeSlotRepository = require('./timeslot.repository');
+const redis = require('../../infrastructure/cache/redis.client');
 const ClinicSettingsRepository = require('../clinic-settings/clinic-settings.repository');
 const { toTimeSlotDto } = require('./timeslot.dto');
 const { TIMESLOT_ERROR_CODES } = require('./timeslot.types');
@@ -70,6 +71,27 @@ class TimeSlotService {
       const slots = schedules.flatMap((schedule) => (
         schedule.timeSlots.map((slot) => toTimeSlotDto(slot, schedule))
       ));
+
+      const slotKeys = slots.map((slot) => `lock:slot:${slot.id}`);
+      let lockedValues = [];
+      if (slotKeys.length > 0) {
+        try {
+          lockedValues = await redis.mget(slotKeys);
+        } catch (err) {
+          console.error('Failed to fetch slot locks from Redis:', err.message);
+          lockedValues = new Array(slotKeys.length).fill(null);
+        }
+      }
+
+      slots.forEach((slot, index) => {
+        const lockedBy = lockedValues[index];
+        if (lockedBy) {
+          if (lockedBy !== query.lockClientId) {
+            slot.status = 'LOCKED';
+          }
+        }
+      });
+
       return {
         doctorId: schedules[0].doctorId,
         workingDate: schedules[0].workingDate.toISOString().slice(0, 10),
@@ -375,6 +397,93 @@ class TimeSlotService {
     }
 
     return timeToMinutes(scope.startTime) < (12 * 60) ? WORKING_SHIFTS.MORNING : WORKING_SHIFTS.AFTERNOON;
+  }
+
+  async lockTimeSlot(slotId, lockClientId) {
+    try {
+      const slot = await this.timeSlotRepository.findById(slotId);
+      if (!slot) {
+        throw new TimeSlotServiceError({
+          code: TIMESLOT_ERROR_CODES.SLOT_NOT_FOUND,
+          message: 'Khung giờ khám không tồn tại',
+          statusCode: 404,
+        });
+      }
+
+      if (slot.status !== 'AVAILABLE') {
+        throw new TimeSlotServiceError({
+          code: TIMESLOT_ERROR_CODES.BOOKED_SLOT_IN_EXCEPTION_SCOPE,
+          message: 'Khung giờ này đã được đặt hoặc khóa.',
+          statusCode: 409,
+        });
+      }
+
+      const key = `lock:slot:${slotId}`;
+      const existingLock = await redis.get(key);
+
+      if (existingLock) {
+        if (existingLock === lockClientId) {
+          await redis.expire(key, 300);
+          return { slotId, lockClientId, success: true };
+        } else {
+          throw new TimeSlotServiceError({
+            code: TIMESLOT_ERROR_CODES.SLOT_ALREADY_LOCKED,
+            message: 'Khung giờ này đã được giữ bởi người khác.',
+            statusCode: 409,
+          });
+        }
+      }
+
+      const acquired = await redis.set(key, lockClientId, 'NX', 'EX', 300);
+      if (!acquired) {
+        throw new TimeSlotServiceError({
+          code: TIMESLOT_ERROR_CODES.SLOT_ALREADY_LOCKED,
+          message: 'Khung giờ này đã được giữ bởi người khác.',
+          statusCode: 409,
+        });
+      }
+
+      return { slotId, lockClientId, success: true };
+    } catch (error) {
+      if (error instanceof TimeSlotServiceError || (error && error.code && error.statusCode)) {
+        throw error;
+      }
+      throw this._wrapUnexpectedError(
+        error,
+        TIMESLOT_ERROR_CODES.LOCK_SLOT_FAILED,
+        'Không thể giữ khung giờ khám',
+      );
+    }
+  }
+
+  async unlockTimeSlot(slotId, lockClientId) {
+    try {
+      const key = `lock:slot:${slotId}`;
+      const existingLock = await redis.get(key);
+
+      if (existingLock) {
+        if (existingLock === lockClientId) {
+          await redis.del(key);
+        } else {
+          throw new TimeSlotServiceError({
+            code: TIMESLOT_ERROR_CODES.SLOT_ALREADY_LOCKED,
+            message: 'Không thể giải phóng khung giờ do đang bị giữ bởi người khác.',
+            statusCode: 403,
+          });
+        }
+      }
+
+      return { slotId, lockClientId, success: true };
+    } catch (error) {
+      if (error instanceof TimeSlotServiceError || (error && error.code && error.statusCode)) {
+        throw error;
+      }
+      throw this._wrapUnexpectedError(
+        error,
+        TIMESLOT_ERROR_CODES.UNLOCK_SLOT_FAILED,
+        'Không thể giải phóng khung giờ khám',
+      );
+    }
   }
 
   _wrapUnexpectedError(error, code, message) {

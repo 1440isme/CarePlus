@@ -1,114 +1,175 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import {
+  Search, ArrowRight, CheckCircle, Star, ChevronRight, ChevronLeft,
+  Calendar, Clock, Shield, Mail, Stethoscope, Users, BookOpen
+} from 'lucide-react';
 import axiosInstance from '../../shared/services/axios.instance';
-import './homepage.css';
+import { SpecialtyCard } from '../../shared/components/shared/SpecialtyCard';
+import { DoctorCard } from '../../shared/components/shared/DoctorCard';
+import { useSpecialties } from '../../features/specialty/hooks/useSpecialties';
+import { useDoctorList } from '../../features/doctor/hooks/useDoctorList';
+import { usePublicBlogs } from '../../features/blog/hooks/useBlog';
 
-const mockSpecialties = [
-  { id: 's1', name: 'Cơ Xương Khớp', slug: 'co-xuong-khop', description: 'Chẩn đoán và điều trị bệnh khớp, xương, cơ, cột sống.', icon: '🦴', doctorCount: 3 },
-  { id: 's2', name: 'Tim mạch', slug: 'tim-mach', description: 'Khám và điều trị các bệnh lý tim mạch, cao huyết áp.', icon: '❤️', doctorCount: 2 },
-  { id: 's3', name: 'Tai Mũi Họng', slug: 'tai-mui-hong', description: 'Điều trị viêm xoang, viêm tai giữa, viêm họng, amidan.', icon: '👂', doctorCount: 2 },
-  { id: 's4', name: 'Nhi khoa', slug: 'nhi-khoa', description: 'Chăm sóc sức khỏe toàn diện cho trẻ sơ sinh đến 15 tuổi.', icon: '👶', doctorCount: 3 },
-  { id: 's5', name: 'Da liễu', slug: 'da-lieu', description: 'Điều trị các bệnh về da, mụn, dị ứng, viêm da cơ địa.', icon: '🩺', doctorCount: 2 },
-  { id: 's6', name: 'Sản phụ khoa', slug: 'san-phu-khoa', description: 'Chăm sóc sức khỏe thai kỳ và các bệnh phụ khoa nữ.', icon: '🤱', doctorCount: 2 },
-  { id: 's7', name: 'Răng Hàm Mặt', slug: 'rang-ham-mat', description: 'Khám răng, niềng răng, nhổ răng khôn và thẩm mỹ nha khoa.', icon: '🦷', doctorCount: 2 },
-  { id: 's8', name: 'Mắt', slug: 'mat', description: 'Đo tật khúc xạ, khám và điều trị đục thủy tinh thể, cận thị.', icon: '👁️', doctorCount: 2 },
+const services = [
+  { icon: <Stethoscope className="w-7 h-7" />, label: 'Khám chuyên khoa', desc: '8 chuyên khoa đa dạng', color: 'bg-cyan-50 text-cyan-600', href: '/chuyen-khoa' },
+  { icon: <Users className="w-7 h-7" />, label: 'Bác sĩ nổi bật', desc: 'Đội ngũ giàu kinh nghiệm', color: 'bg-blue-50 text-blue-600', href: '/bac-si' },
+  { icon: <Calendar className="w-7 h-7" />, label: 'Đặt lịch trong ngày', desc: 'Slot còn trống ngay hôm nay', color: 'bg-amber-50 text-amber-600', href: '/dat-lich' },
+  { icon: <BookOpen className="w-7 h-7" />, label: 'Hỏi đáp & Hướng dẫn', desc: 'Giải đáp thắc mắc nhanh', color: 'bg-green-50 text-green-600', href: '/faq' },
 ];
 
-const mockExpDoctors = [
-  { id: 'd1', title: 'TS.BS', name: 'Phạm Hoàng Nam', experience: 15, rating: 4.9, reviewCount: 120, price: 350000, specialtyName: 'Cơ Xương Khớp' },
-  { id: 'd2', title: 'BS.CKII', name: 'Trần Quốc Huy', experience: 14, rating: 4.8, reviewCount: 98, price: 300000, specialtyName: 'Tim mạch' },
-  { id: 'd3', title: 'ThS.BS', name: 'Vũ Đức Thành', experience: 12, rating: 4.7, reviewCount: 75, price: 280000, specialtyName: 'Tai Mũi Họng' },
-  { id: 'd4', title: 'BS.CKI', name: 'Nguyễn Thu Hương', experience: 9, rating: 4.6, reviewCount: 64, price: 280000, specialtyName: 'Da liễu' },
+const steps = [
+  { num: '01', title: 'Chọn chuyên khoa hoặc bác sĩ', desc: 'Tìm kiếm theo chuyên khoa hoặc tên bác sĩ phù hợp với nhu cầu của bạn.' },
+  { num: '02', title: 'Chọn ngày và khung giờ còn trống', desc: 'Xem lịch rảnh của bác sĩ và chọn khung giờ thuận tiện trong vòng 7 ngày tới.' },
+  { num: '03', title: 'Điền thông tin và xác nhận lịch hẹn', desc: 'Nhập thông tin người khám và nhận email xác nhận lịch hẹn ngay lập tức.' },
 ];
 
-const mockFavDoctors = [
-  { id: 'd1', title: 'TS.BS', name: 'Phạm Hoàng Nam', experience: 15, rating: 4.9, reviewCount: 120, price: 350000, specialtyName: 'Cơ Xương Khớp' },
-  { id: 'd5', title: 'ThS.BS', name: 'Nguyễn Minh Anh', experience: 8, rating: 4.8, reviewCount: 88, price: 300000, specialtyName: 'Tim mạch' },
-  { id: 'd2', title: 'BS.CKII', name: 'Trần Quốc Huy', experience: 14, rating: 4.8, reviewCount: 98, price: 300000, specialtyName: 'Tim mạch' },
-  { id: 'd6', title: 'BS', name: 'Lê Thảo Vy', experience: 7, rating: 4.7, reviewCount: 54, price: 250000, specialtyName: 'Nhi khoa' },
+const benefits = [
+  { icon: <Clock className="w-5 h-5 text-cyan-600" />, title: 'Giảm thời gian chờ', desc: 'Biết trước lịch hẹn, không phải đợi xếp hàng.' },
+  { icon: <Shield className="w-5 h-5 text-cyan-600" />, title: 'Biết trước giá khám', desc: 'Giá khám tham khảo minh bạch cho từng bác sĩ.' },
+  { icon: <Mail className="w-5 h-5 text-cyan-600" />, title: 'Nhận email xác nhận', desc: 'Hệ thống tự động gửi email xác nhận sau khi đặt thành công.' },
+  { icon: <Calendar className="w-5 h-5 text-cyan-600" />, title: 'Chủ động quản lý lịch', desc: 'Xem, hủy hoặc thay đổi lịch hẹn mọi lúc mọi nơi.' },
 ];
 
-const mockBlogs = [
-  { id: 'b1', title: 'Phòng ngừa bệnh tim mạch hiệu quả tại nhà', slug: 'phong-ngua-tim-mach', tag: 'Tim mạch', createdAt: '2026-05-21', icon: '❤️' },
-  { id: 'b2', title: 'Chế độ ăn uống tốt cho người bệnh tiêu hóa', slug: 'che-do-an-tieu-hoa', tag: 'Tiêu hóa', createdAt: '2026-05-16', icon: '🍏' },
-  { id: 'b3', title: 'Cách chăm sóc da đúng cách trong mùa hè', slug: 'cham-soc-da-mua-he', tag: 'Da liễu', createdAt: '2026-05-11', icon: '☀️' },
-  { id: 'b4', title: 'Dinh dưỡng cho trẻ em trong giai đoạn phát triển', slug: 'dinh-duong-cho-tre', tag: 'Nhi khoa', createdAt: '2026-05-08', icon: '👶' },
-];
+function DoctorSlider({ title, subtitle, items, loading }) {
+  const [start, setStart] = useState(0);
+  const visibleCount = 4;
+  const canPrev = start > 0;
+  const canNext = start + visibleCount < items.length;
+
+  if (loading) {
+    return (
+      <div>
+        <div className="flex items-end justify-between mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+            <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, idx) => (
+            <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm animate-pulse">
+              <div className="w-full h-48 bg-gray-200 rounded-xl mb-4" />
+              <div className="h-4 bg-gray-200 rounded w-1/3 mb-2" />
+              <div className="h-5 bg-gray-200 rounded w-2/3 mb-4" />
+              <div className="h-4 bg-gray-200 rounded w-full mb-2" />
+              <div className="h-4 bg-gray-200 rounded w-2/3" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (items.length === 0) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">{title}</h2>
+        <div className="p-8 bg-gray-50 rounded-2xl text-center text-gray-500 border border-gray-100">
+          Chưa có hồ sơ bác sĩ nào hoạt động.
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">{title}</h2>
+          <p className="text-sm text-gray-500 mt-1">{subtitle}</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setStart(s => Math.max(0, s - 1))}
+            disabled={!canPrev}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${
+              canPrev ? 'border-cyan-500 bg-white hover:bg-cyan-50 text-cyan-500 cursor-pointer' : 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            <ChevronLeft className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => setStart(s => Math.min(items.length - visibleCount, s + 1))}
+            disabled={!canNext}
+            className={`w-9 h-9 rounded-full border flex items-center justify-center transition-colors ${
+              canNext ? 'border-cyan-500 bg-white hover:bg-cyan-50 text-cyan-500 cursor-pointer' : 'border-gray-200 bg-gray-50 text-gray-300 cursor-not-allowed'
+            }`}
+          >
+            <ChevronRight className="w-4 h-4" />
+          </button>
+        </div>
+      </div>
+      <div className="overflow-hidden">
+        <div
+          className="flex gap-4 transition-transform duration-300 ease-out"
+          style={{ transform: `translateX(calc(-${start} * (25% + 12px)))` }}
+        >
+          {items.map(d => (
+            <div key={d.id} className="flex-none w-full sm:w-[calc(50%-8px)] md:w-[calc(25%-12px)]">
+              <DoctorCard doctor={d} />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function HomePage() {
   const navigate = useNavigate();
   const [specialtyQuery, setSpecialtyQuery] = useState('');
-  
-  // Data States
-  const [specialties, setSpecialties] = useState([]);
-  const [expDoctors, setExpDoctors] = useState([]);
-  const [favDoctors, setFavDoctors] = useState([]);
-  const [blogs, setBlogs] = useState([]);
+  const [searchResults, setSearchResults] = useState(null);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
 
-  // Fetching States
-  const [loadingSpecialties, setLoadingSpecialties] = useState(true);
-  const [loadingExpDoctors, setLoadingExpDoctors] = useState(true);
-  const [loadingFavDoctors, setLoadingFavDoctors] = useState(true);
-  const [loadingBlogs, setLoadingBlogs] = useState(true);
+  // Fetch data using React Query hooks
+  const { data: specialtiesData, isLoading: loadingSpecialties } = useSpecialties({ limit: 8 });
+  const { data: expDoctorsData, isLoading: loadingExpDoctors } = useDoctorList({ sortBy: 'experience', sortOrder: 'desc', limit: 8 });
+  const { data: favDoctorsData, isLoading: loadingFavDoctors } = useDoctorList({ sortBy: 'rating', sortOrder: 'desc', limit: 8 });
+  const { data: blogsData, isLoading: loadingBlogs } = usePublicBlogs({ limit: 4 });
 
-  // Connection Error States
-  const [isApiOffline, setIsApiOffline] = useState(false);
+  const specialties = specialtiesData?.data || [];
+  const expDoctors = expDoctorsData?.data || [];
+  const favDoctors = favDoctorsData?.data || [];
+  const blogs = blogsData?.data || [];
 
+  // Debounced search effect calling Elasticsearch API
   useEffect(() => {
-    // 1. Fetch Specialties
-    axiosInstance.get('/specialties')
-      .then(res => {
-        if (res.data && res.data.success) {
-          setSpecialties(res.data.data);
+    if (specialtyQuery.trim().length < 2) {
+      setSearchResults(null);
+      setShowDropdown(false);
+      return;
+    }
+
+    const delayDebounce = setTimeout(async () => {
+      setIsSearching(true);
+      setShowDropdown(true);
+      try {
+        const response = await axiosInstance.get(`/search?query=${encodeURIComponent(specialtyQuery.trim())}`);
+        if (response.data && response.data.success) {
+          setSearchResults(response.data.data);
         } else {
-          // Empty state fallback if success is false or no data
-          setSpecialties([]);
+          setSearchResults(null);
         }
-      })
-      .catch(() => {
-        setIsApiOffline(true);
-        setSpecialties(mockSpecialties); // Fallback to mock to let UI render normally
-      })
-      .finally(() => setLoadingSpecialties(false));
+      } catch (error) {
+        console.error('Error fetching search results:', error);
+        setSearchResults(null);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
 
-    // 2. Fetch Experienced Doctors
-    axiosInstance.get('/doctors?sortBy=experience&sortOrder=desc&limit=4')
-      .then(res => {
-        if (res.data && res.data.success) {
-          setExpDoctors(res.data.data);
-        }
-      })
-      .catch(() => {
-        setIsApiOffline(true);
-        setExpDoctors(mockExpDoctors);
-      })
-      .finally(() => setLoadingExpDoctors(false));
+    return () => clearTimeout(delayDebounce);
+  }, [specialtyQuery]);
 
-    // 3. Fetch Favorite Doctors
-    axiosInstance.get('/doctors?sortBy=rating&sortOrder=desc&limit=4')
-      .then(res => {
-        if (res.data && res.data.success) {
-          setFavDoctors(res.data.data);
-        }
-      })
-      .catch(() => {
-        setIsApiOffline(true);
-        setFavDoctors(mockFavDoctors);
-      })
-      .finally(() => setLoadingFavDoctors(false));
-
-    // 4. Fetch Blogs
-    axiosInstance.get('/blogs?limit=4')
-      .then(res => {
-        if (res.data && res.data.success) {
-          setBlogs(res.data.data);
-        }
-      })
-      .catch(() => {
-        setIsApiOffline(true);
-        setBlogs(mockBlogs);
-      })
-      .finally(() => setLoadingBlogs(false));
+  // Handle clicking outside the search dropdown
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setShowDropdown(false);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
   }, []);
 
   const handleHeroSearch = (e) => {
@@ -127,402 +188,334 @@ export default function HomePage() {
     return name.slice(0, 2).toUpperCase();
   };
 
-  const formatPrice = (value) => {
-    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-  };
-
   return (
-    <div className="homepage-container">
-      {/* API Connection Indicator for Developers */}
-      {isApiOffline && (
-        <div className="api-fallback-status">
-          <span className="api-fallback-badge">OFFLINE PREVIEW</span>
-          <span>Không thể kết nối với Backend Server. Đang hiển thị dữ liệu mẫu từ Figma làm sườn chính để kiểm tra UI.</span>
-        </div>
-      )}
+    <div className="w-full">
 
-      {/* 1. HERO BANNER */}
-      <section className="hero-section">
-        <div className="container-center hero-container">
-          <div className="hero-content">
-            <span className="hero-badge">Y Khoa Chuyên Nghiệp</span>
-            <h1>Chăm sóc sức khỏe<br />Chủ động & Đáng tin cậy</h1>
-            <p>
-              Đặt lịch khám trực tuyến nhanh chóng với đội ngũ bác sĩ chuyên khoa đầu ngành. Giải pháp y tế thông minh, minh bạch và chu đáo dành cho cả gia đình bạn.
+      {/* Hero Banner */}
+      <section className="relative bg-gradient-to-br from-cyan-700 via-cyan-600 to-teal-500 text-white overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute top-10 right-20 w-72 h-72 bg-white rounded-full blur-2xl" />
+          <div className="absolute bottom-0 left-10 w-48 h-48 bg-white rounded-full blur-xl" />
+        </div>
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
+          <div className="max-w-2xl">
+            <div className="inline-flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-4 py-1.5 text-sm mb-6">
+              <Star className="w-4 h-4 text-amber-300 fill-amber-300" />
+              Được tin tưởng bởi hàng nghìn bệnh nhân
+            </div>
+            <h1 className="text-3xl md:text-5xl font-bold leading-tight mb-4">
+              Đặt lịch khám tại CarePlus<br />
+              <span className="text-amber-300">nhanh chóng, đúng bác sĩ,</span><br />
+              đúng giờ
+            </h1>
+            <p className="text-lg text-cyan-100 mb-8">
+              Tìm bác sĩ, chuyên khoa và đặt lịch khám chỉ trong vài bước. Không cần xếp hàng chờ đợi.
             </p>
-            
-            <form onSubmit={handleHeroSearch} className="hero-search-box">
-              <input
-                type="text"
-                placeholder="Tìm kiếm chuyên khoa bạn đang quan tâm..."
-                value={specialtyQuery}
-                onChange={(e) => setSpecialtyQuery(e.target.value)}
-                className="hero-search-input"
-              />
-              <button type="submit" className="hero-search-btn">Tìm kiếm</button>
-            </form>
 
-            <div className="hero-actions">
-              <Link to="/dat-lich" className="btn btn-primary btn-large">Đặt lịch khám ngay</Link>
-              <Link to="/ve-chung-toi" className="btn btn-outline">Tìm hiểu thêm</Link>
+            {/* Debounced Search Bar */}
+            <div className="relative mb-6" onClick={(e) => e.stopPropagation()}>
+              <form onSubmit={handleHeroSearch} className="flex bg-white rounded-2xl shadow-xl overflow-hidden mb-0">
+                <div className="flex-1 flex items-center gap-3 px-4">
+                  <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
+                  <input
+                    type="text"
+                    value={specialtyQuery}
+                    onChange={e => setSpecialtyQuery(e.target.value)}
+                    onFocus={() => {
+                      if (specialtyQuery.trim().length >= 2) {
+                        setShowDropdown(true);
+                      }
+                    }}
+                    placeholder="Tìm kiếm bác sĩ, chuyên khoa hoặc cẩm nang..."
+                    className="flex-1 py-4 text-gray-800 placeholder-gray-400 outline-none bg-transparent"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  className="px-6 py-4 bg-amber-500 hover:bg-amber-600 text-white font-medium transition-colors whitespace-nowrap"
+                >
+                  Tìm kiếm
+                </button>
+              </form>
+
+              {/* Dropdown search results */}
+              {showDropdown && (
+                <div className="absolute left-0 right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 text-gray-800 max-h-[400px] overflow-y-auto">
+                  {isSearching ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">
+                      Đang tìm kiếm kết quả...
+                    </div>
+                  ) : (!searchResults || (searchResults.doctors.length === 0 && searchResults.blogs.length === 0)) ? (
+                    <div className="p-4 text-center text-gray-500 text-sm">
+                      Không tìm thấy kết quả nào phù hợp.
+                    </div>
+                  ) : (
+                    <div className="p-2">
+                      {searchResults.doctors && searchResults.doctors.length > 0 && (
+                        <div className="mb-2">
+                          <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Bác sĩ & Chuyên khoa
+                          </div>
+                          {searchResults.doctors.slice(0, 5).map((doc) => {
+                            const initials = getInitials(doc.name);
+                            return (
+                              <Link
+                                to={`/bac-si/${doc.id}`}
+                                key={doc.id}
+                                className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-xl transition-colors"
+                                onClick={() => setShowDropdown(false)}
+                              >
+                                <div className="w-8 h-8 rounded-full bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs font-bold flex-shrink-0">
+                                  {initials}
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-gray-900">{doc.title} {doc.name}</div>
+                                  <div className="text-xs text-gray-500">
+                                    {doc.specialtyName} • ⭐ {doc.rating ? Number(doc.rating).toFixed(1) : '5.0'}
+                                  </div>
+                                </div>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      )}
+
+                      {searchResults.blogs && searchResults.blogs.length > 0 && (
+                        <div>
+                          <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Cẩm nang sức khỏe
+                          </div>
+                          {searchResults.blogs.slice(0, 5).map((blog) => (
+                            <Link
+                              to={`/cam-nang/${blog.slug}`}
+                              key={blog.id}
+                              className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-xl transition-colors"
+                              onClick={() => setShowDropdown(false)}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-green-100 text-green-700 flex items-center justify-center text-sm flex-shrink-0">
+                                📖
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="text-sm font-semibold text-gray-900 truncate">{blog.title}</div>
+                                <div className="text-xs text-gray-500">Chuyên mục: {blog.tag}</div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-wrap gap-3">
+              <Link
+                to="/dat-lich"
+                className="px-6 py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-medium transition-colors flex items-center gap-2"
+              >
+                <Calendar className="w-5 h-5" />
+                Đặt lịch khám
+              </Link>
+              <Link
+                to="/chuyen-khoa"
+                className="px-6 py-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border border-white/30 rounded-xl font-medium transition-colors"
+              >
+                Xem chuyên khoa
+              </Link>
             </div>
           </div>
+        </div>
 
-          <div className="hero-visual">
-            <div className="hero-circle-bg"></div>
-            <div className="hero-placeholder-card">
-              <div className="hero-placeholder-icon">🏥</div>
-              <h3>CarePlus Clinic</h3>
-              <p>Hệ thống đặt lịch khám trực tuyến hoạt động 24/7</p>
+        {/* Stats */}
+        <div className="relative border-t border-white/10 bg-black/10">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+              {[
+                { num: '8+', label: 'Chuyên khoa' },
+                { num: '6+', label: 'Bác sĩ chuyên khoa' },
+                { num: '1000+', label: 'Bệnh nhân tin tưởng' },
+                { num: '4.8★', label: 'Đánh giá trung bình' },
+              ].map(s => (
+                <div key={s.label} className="text-center">
+                  <div className="text-2xl md:text-3xl font-bold text-amber-300">{s.num}</div>
+                  <div className="text-sm text-cyan-150 text-cyan-100">{s.label}</div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 2. QUICK SERVICES */}
-      <section className="services-section section-padding">
-        <div className="container-center">
-          <div className="services-grid">
-            <Link to="/chuyen-khoa" className="service-card">
-              <div className="service-icon-wrapper bg-cyan-light">🗂️</div>
-              <h3>Khám chuyên khoa</h3>
-              <p>8 chuyên khoa đa dạng phục vụ mọi nhu cầu sức khỏe của gia đình bạn.</p>
-            </Link>
-            
-            <Link to="/bac-si" className="service-card">
-              <div className="service-icon-wrapper bg-yellow-light">👨‍⚕️</div>
-              <h3>Bác sĩ nổi bật</h3>
-              <p>Đội ngũ chuyên gia giàu kinh nghiệm, chu đáo và tận tâm.</p>
-            </Link>
-
-            <Link to="/dat-lich" className="service-card">
-              <div className="service-icon-wrapper bg-green-light">📅</div>
-              <h3>Đặt lịch trong ngày</h3>
-              <p>Tìm khung giờ trống và đăng ký khám ngay trong ngày hôm nay.</p>
-            </Link>
-
-            <Link to="/faq" className="service-card">
-              <div className="service-icon-wrapper bg-purple-light">❓</div>
-              <h3>Hỏi đáp & Hướng dẫn</h3>
-              <p>Giải đáp thắc mắc nhanh chóng về thủ tục và hồ sơ y tế.</p>
-            </Link>
+      {/* Quick Services */}
+      <section className="py-12 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {services.map(s => (
+              <Link
+                key={s.label}
+                to={s.href}
+                className="flex flex-col items-center text-center p-5 rounded-2xl border border-gray-100 hover:shadow-md transition-all hover:-translate-y-1 group bg-white"
+              >
+                <div className={`w-14 h-14 ${s.color} rounded-2xl flex items-center justify-center mb-3 transition-transform group-hover:scale-110`}>
+                  {s.icon}
+                </div>
+                <div className="font-semibold text-gray-900 text-sm">{s.label}</div>
+                <div className="text-xs text-gray-500 mt-0.5">{s.desc}</div>
+              </Link>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* 3. SPECIALTIES */}
-      <section className="specialties-section section-padding">
-        <div className="container-center">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>Chuyên khoa phổ biến</h2>
-              <p>Đội ngũ chuyên gia hàng đầu trong nhiều lĩnh vực y tế</p>
+      {/* Specialties */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Chuyên khoa phổ biến</h2>
+              <p className="text-gray-500 mt-1">Đội ngũ chuyên gia hàng đầu trong nhiều lĩnh vực y tế</p>
             </div>
-            <Link to="/chuyen-khoa" className="view-all-link">
-              Xem tất cả <span>&rarr;</span>
+            <Link to="/chuyen-khoa" className="hidden md:flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 font-medium">
+              Xem tất cả <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-
-          <div className="specialties-grid">
+          
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {loadingSpecialties ? (
-              // Specialties Skeletons
               Array.from({ length: 8 }).map((_, idx) => (
-                <div key={idx} className="skeleton-card">
-                  <div className="skeleton-circle skeleton-shimmer"></div>
-                  <div className="skeleton-title skeleton-shimmer"></div>
-                  <div className="skeleton-text-line skeleton-shimmer"></div>
-                  <div className="skeleton-text-line skeleton-shimmer short"></div>
+                <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-5 shadow-sm animate-pulse">
+                  <div className="w-12 h-12 bg-gray-200 rounded-xl mb-3" />
+                  <div className="h-5 bg-gray-200 rounded w-2/3 mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-full mb-1" />
+                  <div className="h-4 bg-gray-200 rounded w-5/6 mb-4" />
+                  <div className="flex justify-between items-center">
+                    <div className="h-4 bg-gray-200 rounded w-1/3" />
+                    <div className="w-4 h-4 bg-gray-200 rounded-full" />
+                  </div>
                 </div>
               ))
             ) : specialties.length === 0 ? (
-              <div className="error-fallback-container">
-                <h4>Không tìm thấy dữ liệu chuyên khoa</h4>
-                <p>Vui lòng kiểm tra lại kết nối hoặc thiết lập trong quản trị viên.</p>
+              <div className="col-span-full py-8 text-center text-gray-500 bg-white rounded-2xl border border-gray-100">
+                Không tìm thấy dữ liệu chuyên khoa.
               </div>
             ) : (
-              specialties.map((spec) => (
-                <Link to={`/chuyen-khoa/${spec.slug}`} key={spec.id} className="specialty-card">
-                  <div className="specialty-header">
-                    <span className="specialty-icon">{spec.icon || '🩺'}</span>
-                    <h3>{spec.name}</h3>
-                  </div>
-                  <p className="specialty-desc">{spec.description}</p>
-                  <div className="specialty-footer">
-                    <span className="specialty-count">{spec.doctorCount || 0} bác sĩ</span>
-                    <span className="arrow-icon">&rarr;</span>
-                  </div>
-                </Link>
+              specialties.map((spec, i) => (
+                <SpecialtyCard key={spec.id} specialty={spec} index={i} />
               ))
             )}
           </div>
         </div>
       </section>
 
-      {/* 4. EXPERIENCED DOCTORS */}
-      <section className="doctors-section section-padding">
-        <div className="container-center">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>Đội ngũ bác sĩ kinh nghiệm</h2>
-              <p>Những chuyên gia y tế có nhiều năm công tác tại các bệnh viện lớn</p>
+      {/* Experienced Doctors Slider */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <DoctorSlider
+            title="Đội ngũ bác sĩ kinh nghiệm"
+            subtitle="Những chuyên gia y tế có nhiều năm công tác tại các bệnh viện lớn"
+            items={expDoctors}
+            loading={loadingExpDoctors}
+          />
+        </div>
+      </section>
+
+      {/* Favorite Doctors Slider */}
+      <section className="py-16 bg-gray-50 border-t border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <DoctorSlider
+            title="Bác sĩ được yêu thích nhất"
+            subtitle="Đội ngũ nhận được phản hồi tích cực nhất từ phía khách hàng"
+            items={favDoctors}
+            loading={loadingFavDoctors}
+          />
+        </div>
+      </section>
+
+      {/* Benefits */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 gap-12 items-center">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">Lợi ích khi đăng ký đặt lịch trước</h2>
+              <p className="text-gray-500 mb-8">Chúng tôi tối ưu hóa quy trình y tế để mang lại sự tiện lợi nhất cho gia đình bạn.</p>
+              
+              <div className="grid sm:grid-cols-2 gap-6">
+                {benefits.map((b, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="w-10 h-10 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center flex-shrink-0">
+                      {b.icon}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 text-sm mb-1">{b.title}</h3>
+                      <p className="text-xs text-gray-500 leading-relaxed">{b.desc}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-            <Link to="/bac-si" className="view-all-link">
-              Xem tất cả <span>&rarr;</span>
+
+            <div className="bg-gradient-to-br from-cyan-50 to-teal-50 rounded-3xl p-8 border border-cyan-100/50 flex flex-col justify-center items-center text-center py-16">
+              <div className="w-16 h-16 bg-cyan-600 text-white rounded-2xl flex items-center justify-center text-2xl font-bold mb-4 shadow-lg shadow-cyan-600/20">
+                📈
+              </div>
+              <h4 className="font-bold text-gray-900 text-lg mb-2">Chăm sóc y tế chủ động</h4>
+              <p className="text-sm text-gray-600 max-w-sm">
+                Quản lý lịch trình y học thông minh giúp nâng cao hiệu quả phòng ngừa bệnh tật.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Handbook (Blogs) */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between mb-8">
+            <div>
+              <h2 className="text-2xl md:text-3xl font-bold text-gray-900">Cẩm nang sức khỏe</h2>
+              <p className="text-gray-500 mt-1">Kiến thức y tế hữu ích được tham vấn chuyên môn từ đội ngũ chuyên khoa CarePlus</p>
+            </div>
+            <Link to="/cam-nang" className="flex items-center gap-1 text-sm text-cyan-600 hover:text-cyan-700 font-medium">
+              Xem tất cả <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
 
-          <div className="doctors-grid">
-            {loadingExpDoctors ? (
-              // Doctors Skeletons
-              Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="skeleton-doctor-card">
-                  <div className="skeleton-img skeleton-shimmer"></div>
-                  <div style={{ padding: '20px' }}>
-                    <div className="skeleton-title skeleton-shimmer" style={{ width: '40%' }}></div>
-                    <div className="skeleton-title skeleton-shimmer" style={{ marginTop: '10px' }}></div>
-                    <div className="skeleton-text-line skeleton-shimmer"></div>
-                    <div className="skeleton-text-line skeleton-shimmer short"></div>
-                  </div>
-                </div>
-              ))
-            ) : expDoctors.length === 0 ? (
-              <div className="error-fallback-container">
-                <h4>Chưa có hồ sơ bác sĩ nào hoạt động</h4>
-                <p>Danh sách bác sĩ đang được cập nhật, quý khách vui lòng quay lại sau.</p>
-              </div>
-            ) : (
-              expDoctors.map((doc) => (
-                <div key={doc.id} className="doctor-card">
-                  <div className="doctor-photo-placeholder">
-                    {/* Placeholder Circle Initials */}
-                    <div className="doctor-initials">
-                      {getInitials(doc.name)}
-                    </div>
-                    <span className="doctor-rating-badge">
-                      ⭐ {doc.rating ? doc.rating.toFixed(1) : '5.0'} ({doc.reviewCount || 0})
-                    </span>
-                  </div>
-                  <div className="doctor-info">
-                    <span className="doctor-specialty-tag">{doc.specialtyName}</span>
-                    <h3>{doc.title} {doc.name}</h3>
-                    <ul className="doctor-stats">
-                      <li>
-                        <span className="doctor-stats-icon">💼</span>
-                        <span>{doc.experience} năm kinh nghiệm</span>
-                      </li>
-                      <li>
-                        <span className="doctor-stats-icon">🛡️</span>
-                        <span>Bác sĩ chuyên khoa chính thức</span>
-                      </li>
-                    </ul>
-                    <div className="doctor-price-row">
-                      <span className="price-label">Giá khám tham khảo:</span>
-                      <span className="price-value">{formatPrice(doc.price)}</span>
-                    </div>
-                    <Link to={`/bac-si/${doc.id}`} className="btn btn-outline doctor-action-btn">Xem lịch khám</Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 5. FAVORITE DOCTORS */}
-      <section className="doctors-section section-padding" style={{ paddingTop: 0 }}>
-        <div className="container-center">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>Bác sĩ được yêu thích nhất</h2>
-              <p>Được đánh giá cao bởi sự tận tâm, chuyên môn và trải nghiệm dịch vụ chu đáo</p>
-            </div>
-            <Link to="/bac-si" className="view-all-link">
-              Xem tất cả <span>&rarr;</span>
-            </Link>
-          </div>
-
-          <div className="doctors-grid">
-            {loadingFavDoctors ? (
-              // Doctors Skeletons
-              Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="skeleton-doctor-card">
-                  <div className="skeleton-img skeleton-shimmer"></div>
-                  <div style={{ padding: '20px' }}>
-                    <div className="skeleton-title skeleton-shimmer" style={{ width: '40%' }}></div>
-                    <div className="skeleton-title skeleton-shimmer" style={{ marginTop: '10px' }}></div>
-                    <div className="skeleton-text-line skeleton-shimmer"></div>
-                    <div className="skeleton-text-line skeleton-shimmer short"></div>
-                  </div>
-                </div>
-              ))
-            ) : favDoctors.length === 0 ? (
-              <div className="error-fallback-container">
-                <h4>Chưa có hồ sơ bác sĩ nổi bật</h4>
-                <p>Danh sách đang được tổng hợp dựa trên phản hồi khám bệnh thực tế.</p>
-              </div>
-            ) : (
-              favDoctors.map((doc) => (
-                <div key={doc.id} className="doctor-card">
-                  <div className="doctor-photo-placeholder">
-                    {/* Placeholder Circle Initials */}
-                    <div className="doctor-initials" style={{ background: '#FFC10E', boxShadow: '0 4px 10px rgba(255, 193, 14, 0.3)' }}>
-                      {getInitials(doc.name)}
-                    </div>
-                    <span className="doctor-rating-badge">
-                      ⭐ {doc.rating ? doc.rating.toFixed(1) : '5.0'} ({doc.reviewCount || 0})
-                    </span>
-                  </div>
-                  <div className="doctor-info">
-                    <span className="doctor-specialty-tag">{doc.specialtyName}</span>
-                    <h3>{doc.title} {doc.name}</h3>
-                    <ul className="doctor-stats">
-                      <li>
-                        <span className="doctor-stats-icon">💼</span>
-                        <span>{doc.experience} năm kinh nghiệm</span>
-                      </li>
-                      <li>
-                        <span className="doctor-stats-icon">🛡️</span>
-                        <span>Đánh giá xuất sắc từ người khám</span>
-                      </li>
-                    </ul>
-                    <div className="doctor-price-row">
-                      <span className="price-label">Giá khám tham khảo:</span>
-                      <span className="price-value">{formatPrice(doc.price)}</span>
-                    </div>
-                    <Link to={`/bac-si/${doc.id}`} className="btn btn-outline doctor-action-btn">Xem lịch khám</Link>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* 6. BOOKING PROCESS */}
-      <section className="process-section section-padding">
-        <div className="container-center">
-          <div className="section-header" style={{ justifyContent: 'center', textAlign: 'center', marginBottom: '60px' }}>
-            <div className="section-header-left" style={{ margin: '0 auto' }}>
-              <h2 style={{ textAlign: 'center' }}>Quy trình đặt lịch khám trực tuyến</h2>
-              <p>Quy trình 3 bước nhanh chóng giúp bạn tiết kiệm thời gian chờ đợi tại phòng khám</p>
-            </div>
-          </div>
-
-          <div className="process-grid">
-            <div className="process-step">
-              <div className="process-number">1</div>
-              <h3>Chọn chuyên khoa & Bác sĩ</h3>
-              <p>Lựa chọn chuyên khoa phù hợp và bác sĩ bạn mong muốn, sau đó chọn ngày khám và khung giờ trống phù hợp.</p>
-            </div>
-
-            <div className="process-step">
-              <div className="process-number">2</div>
-              <h3>Nhập thông tin người khám</h3>
-              <p>Điền thông tin cá nhân của bạn hoặc chọn hồ sơ người thân đã lưu, kèm theo lý do khám chi tiết.</p>
-            </div>
-
-            <div className="process-step">
-              <div className="process-number">3</div>
-              <h3>Xác nhận lịch & Khám bệnh</h3>
-              <p>Kiểm tra lại toàn bộ thông tin và nhận mã đặt lịch khám qua email. Bạn chỉ việc đến phòng khám đúng giờ để check-in.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. BENEFITS */}
-      <section className="benefits-section section-padding">
-        <div className="container-center benefits-container">
-          <div className="benefits-content">
-            <h2>Lợi ích khi đăng ký đặt lịch trước</h2>
-            <p className="subtitle">Chúng tôi tối ưu hóa quy trình y tế để mang lại sự tiện lợi nhất cho gia đình bạn.</p>
-            
-            <div className="benefits-list">
-              <div className="benefit-item">
-                <div className="benefit-icon-wrapper">✓</div>
-                <div className="benefit-text">
-                  <h3>Tiết kiệm thời gian chờ đợi</h3>
-                  <p>Check-in nhanh tại quầy lễ tân riêng, giảm thiểu thời gian chờ xếp hàng bốc số.</p>
-                </div>
-              </div>
-
-              <div className="benefit-item">
-                <div className="benefit-icon-wrapper">✓</div>
-                <div className="benefit-text">
-                  <h3>Chủ động chọn bác sĩ yêu thích</h3>
-                  <p>Xem trước thông tin chuyên môn, lịch sử đánh giá của từng bác sĩ để đưa ra quyết định phù hợp nhất.</p>
-                </div>
-              </div>
-
-              <div className="benefit-item">
-                <div className="benefit-icon-wrapper">✓</div>
-                <div className="benefit-text">
-                  <h3>Quản lý lịch sử và hồ sơ y tế</h3>
-                  <p>Lưu trữ và tra cứu lịch sử các lần khám bệnh trước của bạn và người thân dễ dàng.</p>
-                </div>
-              </div>
-
-              <div className="benefit-item">
-                <div className="benefit-icon-wrapper">✓</div>
-                <div className="benefit-text">
-                  <h3>Tư vấn trực tuyến miễn phí</h3>
-                  <p>Trò chuyện trực tuyến với bác sĩ chuyên khoa hoặc nhận hỗ trợ từ lễ tân trước ngày khám.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="benefits-visual">
-            <div className="benefits-illustration-placeholder">
-              <span className="illustration-icon">📈</span>
-              <h4>Chăm sóc y tế chủ động</h4>
-              <p>Quản lý lịch trình y học thông minh giúp nâng cao hiệu quả phòng ngừa bệnh tật.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 8. HANDBOOK (BLOGS) */}
-      <section className="handbook-section section-padding">
-        <div className="container-center">
-          <div className="section-header">
-            <div className="section-header-left">
-              <h2>Cẩm nang sức khỏe</h2>
-              <p>Kiến thức y tế hữu ích được tham vấn chuyên môn từ đội ngũ chuyên gia CarePlus</p>
-            </div>
-            <Link to="/cam-nang" className="view-all-link">
-              Xem tất cả <span>&rarr;</span>
-            </Link>
-          </div>
-
-          <div className="handbook-grid">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
             {loadingBlogs ? (
-              // Blogs Skeletons
               Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="skeleton-card">
-                  <div className="skeleton-img skeleton-shimmer" style={{ height: '140px' }}></div>
-                  <div className="skeleton-title skeleton-shimmer"></div>
-                  <div className="skeleton-text-line skeleton-shimmer"></div>
+                <div key={idx} className="bg-white border border-gray-100 rounded-2xl p-4 shadow-sm animate-pulse">
+                  <div className="w-full h-40 bg-gray-200 rounded-xl mb-3" />
+                  <div className="h-4 bg-gray-200 rounded w-1/4 mb-2" />
+                  <div className="h-5 bg-gray-200 rounded w-full mb-2" />
+                  <div className="h-4 bg-gray-200 rounded w-2/3" />
                 </div>
               ))
             ) : blogs.length === 0 ? (
-              <div className="error-fallback-container">
-                <h4>Chưa có bài viết cẩm nang nào</h4>
-                <p>Các kiến thức thường thức y tế sẽ được cập nhật sớm nhất.</p>
+              <div className="col-span-full py-8 text-center text-gray-500 bg-white rounded-2xl border border-gray-100">
+                Chưa có bài viết cẩm nang nào.
               </div>
             ) : (
               blogs.map((blog) => (
-                <Link to={`/cam-nang/${blog.slug}`} key={blog.id} className="handbook-card">
-                  <div className="handbook-image-placeholder">
-                    {/* Placeholder Icon */}
-                    <span>{blog.icon || '📖'}</span>
+                <Link
+                  to={`/cam-nang/${blog.slug}`}
+                  key={blog.id}
+                  className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all hover:-translate-y-0.5 group flex flex-col"
+                >
+                  <div className="h-40 bg-cyan-50 flex items-center justify-center text-4xl group-hover:scale-105 transition-transform duration-300">
+                    {blog.icon || '📖'}
                   </div>
-                  <div className="handbook-info">
-                    <span className="handbook-tag">{blog.tag}</span>
-                    <h3>{blog.title}</h3>
-                    <div className="handbook-meta">
-                      <span>📅</span>
-                      <span>{blog.createdAt}</span>
+                  <div className="p-4 flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="inline-block px-2 py-0.5 bg-cyan-50 text-cyan-600 rounded text-[10px] font-semibold mb-2">
+                        {blog.tag}
+                      </span>
+                      <h3 className="font-bold text-gray-900 text-sm group-hover:text-cyan-600 transition-colors line-clamp-2 mb-2">
+                        {blog.title}
+                      </h3>
+                    </div>
+                    <div className="text-[11px] text-gray-400">
+                      📅 {blog.createdAt}
                     </div>
                   </div>
                 </Link>

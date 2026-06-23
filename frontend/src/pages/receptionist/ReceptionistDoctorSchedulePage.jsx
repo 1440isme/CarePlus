@@ -4,7 +4,7 @@ import { useSchedules } from '../../features/schedule/hooks/useSchedules.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './receptionist.css';
+import { ChevronLeft, ChevronRight, Search } from 'lucide-react';
 
 export default function ReceptionistDoctorSchedulePage() {
   const [baseDate, setBaseDate] = useState(new Date());
@@ -46,7 +46,7 @@ export default function ReceptionistDoctorSchedulePage() {
   const suggestionsList = useMemo(() => {
     if (!doctorSearchText.trim()) return [];
     const searchLower = doctorSearchText.toLowerCase();
-    return allDoctors.filter(d => 
+    return allDoctors.filter(d =>
       d.name.toLowerCase().includes(searchLower) ||
       (d.specialtyName && d.specialtyName.toLowerCase().includes(searchLower))
     );
@@ -61,21 +61,20 @@ export default function ReceptionistDoctorSchedulePage() {
 
   // Calculate Monday and Sunday for the baseDate week
   const { weekdaysDates, startDateStr, endDateStr, weekLabel } = useMemo(() => {
-    // Get Monday of current baseDate
     const d = new Date(baseDate);
     const day = d.getDay();
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1); // Adjust when day is Sunday (0) to get Monday
-    d.setDate(diff); // Now d is Monday
-    
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+    d.setDate(diff);
+
     const dates = [];
     const weekdaysNames = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'CN'];
-    
+
     for (let i = 0; i < 7; i++) {
       const dayDate = new Date(d);
       dayDate.setDate(d.getDate() + i);
       dates.push({
         date: dayDate,
-        dateStr: dayDate.toLocaleDateString('sv').slice(0, 10), // YYYY-MM-DD
+        dateStr: dayDate.toLocaleDateString('sv').slice(0, 10),
         dayName: weekdaysNames[i],
         dayNumStr: `${dayDate.getDate()}/${dayDate.getMonth() + 1}`,
         isToday: new Date().toLocaleDateString('sv').slice(0, 10) === dayDate.toLocaleDateString('sv').slice(0, 10)
@@ -84,16 +83,15 @@ export default function ReceptionistDoctorSchedulePage() {
 
     const mondayStr = dates[0].dateStr;
     const sundayStr = dates[6].dateStr;
-    
-    // Week label format: "8/6 - 14/6/2026"
+
     const startLabel = `${dates[0].date.getDate()}/${dates[0].date.getMonth() + 1}`;
     const endLabel = `${dates[6].date.getDate()}/${dates[6].date.getMonth() + 1}/${dates[6].date.getFullYear()}`;
-    
+
     return {
       weekdaysDates: dates,
       startDateStr: mondayStr,
       endDateStr: sundayStr,
-      weekLabel: `${startLabel} - ${endLabel}`
+      weekLabel: `${startLabel} – ${endLabel}`
     };
   }, [baseDate]);
 
@@ -131,16 +129,39 @@ export default function ReceptionistDoctorSchedulePage() {
   // Find schedule records for a specific date YYYY-MM-DD
   const getDaySchedules = (dateStr) => {
     return schedulesList.filter((s) => {
-      // Handle date format in DB: might be ISO string or YYYY-MM-DD
       const workingDateStr = s.workingDate ? s.workingDate.slice(0, 10) : '';
       return workingDateStr === dateStr;
     });
   };
 
+  // Summary counts
+  const workingDoctorIds = new Set(
+    schedulesList.filter(s => s.status === 'WORKING').map(s => s.doctor?.id).filter(Boolean)
+  );
+  const workingShiftCount = schedulesList.filter(s => s.status === 'WORKING').length;
+
+  const getShiftCardStyle = (status) => {
+    if (status === 'WORKING') {
+      return 'bg-blue-50 border border-[#49BCE2]/40 text-[#1e7fa3]';
+    }
+    if (status === 'APPROVED_OFF') {
+      return 'bg-red-50 border border-red-200 text-red-700';
+    }
+    if (status === 'PENDING') {
+      return 'bg-amber-50 border border-amber-200 text-amber-800';
+    }
+    if (status === 'CANCELLED') {
+      return 'bg-gray-50 border border-gray-200 text-gray-500';
+    }
+    if (status === 'REJECTED') {
+      return 'bg-rose-50 border border-rose-200 text-rose-700';
+    }
+    return 'bg-gray-50 border border-gray-200 text-gray-500';
+  };
+
   const renderShiftCell = (dayInfo, shiftType) => {
     const daySchedules = getDaySchedules(dayInfo.dateStr);
-    
-    // Filter down to schedules that match the specified shiftType
+
     const activeSchedulesForShift = daySchedules.filter((s) => {
       const shift = s.workingShift || s.shift;
       if (shiftType === 'MORNING') {
@@ -152,16 +173,18 @@ export default function ReceptionistDoctorSchedulePage() {
       return false;
     });
 
+    const cellBase = `p-1.5 min-h-[100px] border-r border-b border-gray-100 ${dayInfo.isToday ? 'bg-[#49BCE2]/5' : ''}`;
+
     if (activeSchedulesForShift.length === 0) {
       return (
-        <div className={`grid-cell ${dayInfo.isToday ? 'today-column-cell' : ''}`} key={dayInfo.dateStr} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div className="grid-empty-shift">Nghỉ</div>
+        <div key={`${dayInfo.dateStr}-${shiftType}-empty`} className={`${cellBase} flex items-center justify-center`}>
+          <span className="text-xs text-gray-300 italic">Nghỉ</span>
         </div>
       );
     }
 
     return (
-      <div className={`grid-cell ${dayInfo.isToday ? 'today-column-cell' : ''}`} key={dayInfo.dateStr} style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', minHeight: '100px', overflowY: 'auto' }}>
+      <div key={`${dayInfo.dateStr}-${shiftType}`} className={`${cellBase} flex flex-col gap-1.5 overflow-y-auto`}>
         {activeSchedulesForShift.map((s) => {
           const doctorName = s.doctor?.name || 'Bác sĩ';
           const specialtyName = s.doctor?.specialtyName || 'Chuyên khoa';
@@ -171,45 +194,14 @@ export default function ReceptionistDoctorSchedulePage() {
               ? s.timeSlots.filter((slot) => slot.status === 'BOOKED').length
               : 0);
 
-          const status = s.status;
-          let cardClass = 'grid-shift-card';
-
-          if (status === 'WORKING') {
-            cardClass += ' shift-working';
-          } else if (status === 'PENDING') {
-            cardClass += ' shift-pending-leave';
-          } else if (status === 'APPROVED_OFF') {
-            cardClass += ' shift-approved-leave';
-          } else if (status === 'CANCELLED') {
-            cardClass += ' shift-cancelled';
-          } else if (status === 'REJECTED') {
-            cardClass += ' shift-rejected-leave';
-          }
-
           return (
-            <div 
-              key={s.id} 
-              className={cardClass} 
-              style={{ 
-                padding: '6px 8px', 
-                borderRadius: '6px', 
-                fontSize: '0.78rem', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                gap: '2px', 
-                margin: 0,
-                height: 'auto'
-              }}
+            <div
+              key={s.id}
+              className={`rounded-md px-2 py-1.5 text-[0.72rem] flex flex-col gap-0.5 ${getShiftCardStyle(s.status)}`}
             >
-              <div style={{ fontWeight: 700, color: 'inherit', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {doctorName}
-              </div>
-              <div style={{ fontSize: '0.72rem', opacity: 0.85 }}>
-                {specialtyName}
-              </div>
-              <div style={{ fontSize: '0.72rem', fontWeight: 600, marginTop: '2px' }}>
-                Đã đặt: {bookedCount} slot
-              </div>
+              <div className="font-bold truncate">{doctorName}</div>
+              <div className="opacity-80 truncate">{specialtyName}</div>
+              <div className="font-semibold mt-0.5">Đặt: {bookedCount} slot</div>
             </div>
           );
         })}
@@ -220,104 +212,78 @@ export default function ReceptionistDoctorSchedulePage() {
   const selectedDoctor = allDoctors.find(d => d.id === selectedDoctorId);
 
   return (
-    <div className="content-grid receptionist-page">
-      {/* Title */}
+    <div className="flex flex-col gap-4">
+      {/* Page Header */}
       <div>
-        <h2 style={{ fontSize: '1.6rem', marginBottom: '4px', fontWeight: 700 }}>Lịch làm việc bác sĩ</h2>
-        <p className="helper-text">Theo dõi lịch trực và ca trực của các bác sĩ theo tuần</p>
+        <h1 className="text-2xl font-bold text-gray-800">Lịch làm việc bác sĩ</h1>
+        <p className="text-sm text-gray-400 mt-1">Theo dõi lịch trực và ca trực của các bác sĩ theo tuần</p>
       </div>
 
-      {/* Week and Doctor filter toolbar */}
-      <section className="surface-card toolbar-filters" style={{ padding: '16px 20px', borderRadius: '16px', display: 'flex', flexWrap: 'wrap', gap: '16px', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {/* Week Navigator */}
-          <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid var(--border)', borderRadius: '8px', overflow: 'hidden' }}>
+      {/* Filter Bar */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
+        {/* Left: Week Navigator */}
+        <div className="flex items-center gap-2">
+          <div className="inline-flex items-center border border-gray-200 rounded-lg overflow-hidden shadow-xs">
             <button
               type="button"
-              className="button-secondary"
               onClick={handlePrevWeek}
-              style={{ minHeight: 'auto', height: '36px', padding: '0 12px', border: 'none', borderRadius: 0, backgroundColor: '#ffffff' }}
+              className="h-9 px-2.5 bg-white hover:bg-gray-50 text-gray-600 transition border-r border-gray-200 flex items-center justify-center cursor-pointer"
             >
-              &larr;
+              <ChevronLeft className="w-4 h-4" />
             </button>
-            <span style={{ padding: '0 14px', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-h)' }}>
+            <span className="px-3.5 text-sm font-semibold text-gray-700 whitespace-nowrap">
               {weekLabel}
             </span>
             <button
               type="button"
-              className="button-secondary"
               onClick={handleNextWeek}
-              style={{ minHeight: 'auto', height: '36px', padding: '0 12px', border: 'none', borderRadius: 0, backgroundColor: '#ffffff' }}
+              className="h-9 px-2.5 bg-white hover:bg-gray-50 text-gray-600 transition border-l border-gray-200 flex items-center justify-center cursor-pointer"
             >
-              &larr;
+              <ChevronRight className="w-4 h-4" />
             </button>
           </div>
 
           <button
             type="button"
-            className="button-secondary"
             onClick={handleToday}
-            style={{ minHeight: 'auto', height: '36px', padding: '0 12px', fontSize: '0.88rem', borderRadius: '8px' }}
+            className="h-9 px-3 text-sm font-semibold bg-white border border-gray-200 rounded-lg hover:bg-gray-50 text-gray-600 transition shadow-xs cursor-pointer"
           >
             Tuần này
           </button>
         </div>
 
-        {/* Specialty and Doctor Selectors */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-          {/* Doctor Search Autocomplete Input */}
-          <div style={{ position: 'relative' }}>
+        {/* Right: Filters */}
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Doctor Search Autocomplete */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
             <input
-              id="doctorSearchInput"
               type="text"
-              placeholder="Tìm tên bác sĩ hoặc chuyên khoa..."
+              placeholder="Tìm bác sĩ hoặc chuyên khoa..."
               value={doctorSearchText}
               onChange={(e) => {
                 setDoctorSearchText(e.target.value);
                 setShowSuggestions(true);
               }}
               onFocus={() => setShowSuggestions(true)}
-              style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', width: '250px' }}
+              className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+              style={{ width: '240px' }}
             />
             {showSuggestions && suggestionsList.length > 0 && (
               <>
-                <div 
-                  style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, zIndex: 998 }} 
-                  onClick={() => setShowSuggestions(false)} 
+                <div
+                  className="fixed inset-0 z-[998]"
+                  onClick={() => setShowSuggestions(false)}
                 />
-                <div style={{
-                  position: 'absolute',
-                  top: '100%',
-                  left: 0,
-                  right: 0,
-                  marginTop: '4px',
-                  backgroundColor: '#ffffff',
-                  border: '1px solid var(--border)',
-                  borderRadius: '8px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                  zIndex: 999,
-                  maxHeight: '200px',
-                  overflowY: 'auto'
-                }}>
+                <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[999] max-h-52 overflow-y-auto">
                   {suggestionsList.map((d) => (
                     <div
                       key={d.id}
                       onClick={() => handleSelectSuggestion(d)}
-                      style={{
-                        padding: '8px 12px',
-                        cursor: 'pointer',
-                        fontSize: '0.88rem',
-                        borderBottom: '1px solid #f0f0f0',
-                        transition: 'background-color 0.2s',
-                        textAlign: 'left'
-                      }}
-                      onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f5f5f5'}
-                      onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                      className="px-3 py-2 text-sm cursor-pointer hover:bg-gray-50 border-b border-gray-50 last:border-0 transition"
                     >
-                      <div style={{ fontWeight: 600, color: 'var(--text-h)' }}>{d.name}</div>
-                      <div style={{ fontSize: '0.78rem', color: '#777' }}>
-                        {d.specialtyName || d.specialty?.name || 'N/A'}
-                      </div>
+                      <div className="font-semibold text-gray-800">{d.name}</div>
+                      <div className="text-xs text-gray-400">{d.specialtyName || d.specialty?.name || 'N/A'}</div>
                     </div>
                   ))}
                 </div>
@@ -326,16 +292,16 @@ export default function ReceptionistDoctorSchedulePage() {
           </div>
 
           {/* Specialty Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label htmlFor="specialtySelect" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Chuyên khoa:</label>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">Chuyên khoa:</label>
             {specialtiesQuery.isLoading ? (
-              <span className="helper-text" style={{ fontSize: '0.85rem' }}>Đang tải chuyên khoa...</span>
+              <span className="text-xs text-gray-400">Đang tải...</span>
             ) : (
               <select
-                id="specialtySelect"
                 value={selectedSpecialtyId}
                 onChange={handleSpecialtyChange}
-                style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', minWidth: '180px' }}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                style={{ minWidth: '160px' }}
               >
                 <option value="">-- Tất cả chuyên khoa --</option>
                 {specialtiesList.map((s) => (
@@ -346,16 +312,16 @@ export default function ReceptionistDoctorSchedulePage() {
           </div>
 
           {/* Doctor Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <label htmlFor="doctorSelect" style={{ fontWeight: 600, fontSize: '0.9rem' }}>Bác sĩ:</label>
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-semibold text-gray-600 whitespace-nowrap">Bác sĩ:</label>
             {doctorsQuery.isLoading ? (
-              <span className="helper-text" style={{ fontSize: '0.85rem' }}>Đang tải bác sĩ...</span>
+              <span className="text-xs text-gray-400">Đang tải...</span>
             ) : (
               <select
-                id="doctorSelect"
                 value={selectedDoctorId}
                 onChange={(e) => setSelectedDoctorId(e.target.value)}
-                style={{ padding: '8px 12px', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.9rem', minWidth: '200px' }}
+                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                style={{ minWidth: '180px' }}
               >
                 <option value="">-- Tất cả bác sĩ --</option>
                 {visibleDoctorsList.map((d) => (
@@ -365,78 +331,147 @@ export default function ReceptionistDoctorSchedulePage() {
             )}
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Legend Status Info */}
-      <section className="surface-card" style={{ padding: '12px 18px', borderRadius: '12px' }}>
-        <div className="schedule-legend">
-          <div className="legend-item">
-            <span className="legend-box legend-working" />
-            <span>Làm việc</span>
+      {/* Summary strip */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-2.5 flex flex-wrap items-center gap-4">
+        <span className="text-sm text-gray-600">
+          <span className="font-bold text-gray-800">{workingDoctorIds.size}</span> bác sĩ làm việc
+        </span>
+        <span className="text-gray-300">·</span>
+        <span className="text-sm text-gray-600">
+          <span className="font-bold text-gray-800">{workingShiftCount}</span> ca làm việc tuần này
+        </span>
+
+        {/* Legend */}
+        <div className="ml-auto flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-blue-100 border border-[#49BCE2]/40 inline-block" />
+            <span className="text-xs text-gray-500">Làm việc</span>
           </div>
-          <div className="legend-item">
-            <span className="legend-box legend-approved-leave" />
-            <span>Nghỉ phép đã duyệt</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-red-50 border border-red-200 inline-block" />
+            <span className="text-xs text-gray-500">Nghỉ phép đã duyệt</span>
           </div>
-          <div className="legend-item">
-            <span className="legend-box legend-pending-leave" />
-            <span>Chờ phê duyệt nghỉ</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-amber-50 border border-amber-200 inline-block" />
+            <span className="text-xs text-gray-500">Chờ phê duyệt</span>
           </div>
-          <div className="legend-item">
-            <span className="legend-box legend-rejected-leave" />
-            <span>Yêu cầu nghỉ bị từ chối</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-rose-50 border border-rose-200 inline-block" />
+            <span className="text-xs text-gray-500">Từ chối</span>
           </div>
-          <div className="legend-item">
-            <span className="legend-box legend-cancelled-shift" />
-            <span>Ca trực đã hủy</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-3 h-3 rounded-sm bg-gray-50 border border-gray-200 inline-block" />
+            <span className="text-xs text-gray-500">Đã hủy</span>
           </div>
         </div>
-      </section>
+      </div>
 
-      {/* Grid Weekly Calendar */}
-      <section className="surface-card" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* Schedule Grid */}
+      <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden">
         {schedulesQuery.isLoading ? (
-          <LoadingBlock label={selectedDoctorId ? `Đang tải lịch bác sĩ ${selectedDoctor?.name || ''}...` : 'Đang tải lịch trực bác sĩ...'} />
-        ) : schedulesQuery.error ? (
-          <StateBlock
-            variant="error"
-            title="Lỗi tải lịch trực"
-            description={schedulesQuery.error.message}
-          />
-        ) : (
-          <div className="doctor-schedule-grid">
-            {/* Header cell empty */}
-            <div className="grid-header-cell" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <strong>Ca trực</strong>
-            </div>
-
-            {/* Weekdays Headers */}
-            {weekdaysDates.map((dayInfo) => (
-              <div 
-                className={`grid-header-cell ${dayInfo.isToday ? 'today-cell' : ''}`} 
-                key={dayInfo.dateStr}
-              >
-                <strong>{dayInfo.dayName}</strong>
-                <div className="grid-header-cell-sub">
-                  {dayInfo.dayNumStr} {dayInfo.isToday && '(Hôm nay)'}
-                </div>
-              </div>
-            ))}
-
-            {/* MORNING SHIFT ROW */}
-            <div className="grid-row-header-cell">
-              <span>☀️ Sáng</span>
-            </div>
-            {weekdaysDates.map((dayInfo) => renderShiftCell(dayInfo, 'MORNING'))}
-
-            {/* AFTERNOON SHIFT ROW */}
-            <div className="grid-row-header-cell">
-              <span>🌤️ Chiều</span>
-            </div>
-            {weekdaysDates.map((dayInfo) => renderShiftCell(dayInfo, 'AFTERNOON'))}
+          <div className="p-8">
+            <LoadingBlock label={selectedDoctorId ? `Đang tải lịch bác sĩ ${selectedDoctor?.name || ''}...` : 'Đang tải lịch trực bác sĩ...'} />
           </div>
+        ) : schedulesQuery.error ? (
+          <div className="p-8">
+            <StateBlock
+              variant="error"
+              title="Lỗi tải lịch trực"
+              description={schedulesQuery.error.message}
+            />
+          </div>
+        ) : (
+          <>
+            {/* Desktop Grid */}
+            <div className="hidden md:block overflow-x-auto">
+              {/* Grid: 9 columns = [row-header] + [Mon..Sun] */}
+              <div
+                className="grid"
+                style={{ gridTemplateColumns: '90px repeat(7, minmax(0, 1fr))' }}
+              >
+                {/* Header row */}
+                <div className="bg-gray-50 px-3 py-2.5 border-b border-r border-gray-100 flex items-center justify-center">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Ca trực</span>
+                </div>
+                {weekdaysDates.map((dayInfo) => (
+                  <div
+                    key={dayInfo.dateStr}
+                    className={`px-2 py-2.5 border-b border-r border-gray-100 text-center ${
+                      dayInfo.isToday ? 'bg-[#49BCE2]/10' : 'bg-gray-50'
+                    }`}
+                  >
+                    <div className={`text-xs font-bold uppercase tracking-wide ${dayInfo.isToday ? 'text-[#49BCE2]' : 'text-gray-600'}`}>
+                      {dayInfo.dayName}
+                    </div>
+                    <div className={`text-xs mt-0.5 ${dayInfo.isToday ? 'font-semibold text-[#49BCE2]' : 'text-gray-400'}`}>
+                      {dayInfo.dayNumStr}{dayInfo.isToday && <span className="ml-1 text-[9px] font-bold">(Hôm nay)</span>}
+                    </div>
+                  </div>
+                ))}
+
+                {/* Morning shift row */}
+                <div className="border-r border-b border-gray-100 bg-orange-50/50 flex items-center justify-center px-2 py-3">
+                  <div className="text-center">
+                    <div className="text-base">☀️</div>
+                    <div className="text-xs font-semibold text-orange-700 mt-0.5">Ca sáng</div>
+                  </div>
+                </div>
+                {weekdaysDates.map((dayInfo) => renderShiftCell(dayInfo, 'MORNING'))}
+
+                {/* Afternoon shift row */}
+                <div className="border-r border-b border-gray-100 bg-blue-50/50 flex items-center justify-center px-2 py-3">
+                  <div className="text-center">
+                    <div className="text-base">🌤️</div>
+                    <div className="text-xs font-semibold text-sky-700 mt-0.5">Ca chiều</div>
+                  </div>
+                </div>
+                {weekdaysDates.map((dayInfo) => renderShiftCell(dayInfo, 'AFTERNOON'))}
+              </div>
+            </div>
+
+            {/* Mobile: vertical day-by-day list */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {weekdaysDates.map((dayInfo) => {
+                const daySchedules = getDaySchedules(dayInfo.dateStr);
+                return (
+                  <div key={dayInfo.dateStr} className={`p-4 ${dayInfo.isToday ? 'bg-[#49BCE2]/5' : ''}`}>
+                    <div className={`text-sm font-bold mb-2 ${dayInfo.isToday ? 'text-[#49BCE2]' : 'text-gray-700'}`}>
+                      {dayInfo.dayName} — {dayInfo.dayNumStr}
+                      {dayInfo.isToday && <span className="ml-2 text-xs font-semibold">(Hôm nay)</span>}
+                    </div>
+                    {daySchedules.length === 0 ? (
+                      <p className="text-xs text-gray-300 italic">Không có lịch</p>
+                    ) : (
+                      <div className="flex flex-col gap-1.5">
+                        {daySchedules.map((s) => {
+                          const shift = s.workingShift || s.shift;
+                          const shiftLabel = shift === 'MORNING' ? '☀️ Sáng' : shift === 'AFTERNOON' ? '🌤️ Chiều' : '🌞 Cả ngày';
+                          const bookedCount = typeof s.bookedSlots === 'number'
+                            ? s.bookedSlots
+                            : (Array.isArray(s.timeSlots) ? s.timeSlots.filter(sl => sl.status === 'BOOKED').length : 0);
+
+                          return (
+                            <div key={s.id} className={`rounded-lg px-3 py-2 text-xs flex flex-col gap-0.5 ${getShiftCardStyle(s.status)}`}>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-bold truncate">{s.doctor?.name || 'Bác sĩ'}</span>
+                                <span className="text-[10px] font-semibold opacity-70 flex-shrink-0">{shiftLabel}</span>
+                              </div>
+                              <div className="opacity-75">{s.doctor?.specialtyName || 'Chuyên khoa'}</div>
+                              <div className="font-semibold">Đặt: {bookedCount} slot</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </>
         )}
-      </section>
+      </div>
     </div>
   );
 }

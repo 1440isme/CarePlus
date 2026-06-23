@@ -5,6 +5,7 @@ const PatientProfileRepository = require('../patient-profile/patient-profile.rep
 const ClinicSettingsRepository = require('../clinic-settings/clinic-settings.repository');
 const { mailService } = require('../../infrastructure/mail/mail.service');
 const prisma = require('../../infrastructure/database/prisma.client');
+const redis = require('../../infrastructure/cache/redis.client');
 const { toAppointmentDto, toAppointmentListDto } = require('./appointment.dto');
 const { APPOINTMENT_ERROR_CODES, APPOINTMENT_PAGINATION } = require('./appointment.types');
 const { WORKING_SHIFTS } = require('../schedule/schedule.types');
@@ -166,6 +167,23 @@ class AppointmentService {
         note: null,
       });
 
+      if (bookingData.lockClientId) {
+        const lockKey = `lock:slot:${timeSlot.id}`;
+        await redis.del(lockKey).catch((err) => {
+          console.error(`Failed to delete Redis lock ${lockKey}:`, err.message);
+        });
+      }
+
+      // Socket realtime event emit
+      try {
+        const socketService = require('../../infrastructure/realtime/socket.service');
+        const appointmentDto = toAppointmentDto(appointment);
+        socketService.emitToUser(doctor.id, 'appointment:created', appointmentDto);
+        socketService.emitToRole('admin', 'appointment:created', appointmentDto);
+      } catch (socketErr) {
+        console.error('Failed to emit appointment:created socket event:', socketErr.message);
+      }
+
       // 7. Send success email asynchronously
       const emailRecipient = user.email;
       const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
@@ -226,8 +244,15 @@ class AppointmentService {
 
       if (!user) {
         // Create a new Patient User on-the-fly!
+        if (!bookingData.email) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
+            message: 'Email là bắt buộc để tạo tài khoản bệnh nhân.',
+            statusCode: 400,
+          });
+        }
         const defaultPasswordHash = await bcrypt.hash('CarePlus123!', 10);
-        const email = bookingData.email ? bookingData.email.trim() : `${bookingData.phone.trim()}@temp.careplus.vn`;
+        const email = bookingData.email.trim();
         user = await this.prisma.user.create({
           data: {
             name: bookingData.name.trim(),
@@ -238,7 +263,7 @@ class AppointmentService {
             address: bookingData.address ? bookingData.address.trim() : null,
             role: 'PATIENT',
             status: 'ACTIVE',
-            emailVerified: true, // Registered at counter by staff
+            emailVerified: false, // Create unactivated account
             passwordHash: defaultPasswordHash,
           }
         });
@@ -360,6 +385,23 @@ class AppointmentService {
         reason: bookingData.reason,
         note: bookingData.note,
       });
+
+      if (bookingData.lockClientId) {
+        const lockKey = `lock:slot:${timeSlot.id}`;
+        await redis.del(lockKey).catch((err) => {
+          console.error(`Failed to delete Redis lock ${lockKey}:`, err.message);
+        });
+      }
+
+      // Socket realtime event emit
+      try {
+        const socketService = require('../../infrastructure/realtime/socket.service');
+        const appointmentDto = toAppointmentDto(appointment);
+        socketService.emitToUser(doctor.id, 'appointment:created', appointmentDto);
+        socketService.emitToRole('admin', 'appointment:created', appointmentDto);
+      } catch (socketErr) {
+        console.error('Failed to emit appointment:created socket event:', socketErr.message);
+      }
 
       // 7. Send success email asynchronously
       const emailRecipient = user.email;
@@ -650,6 +692,18 @@ class AppointmentService {
         { reason: body.reason || 'Hủy bởi bệnh nhân' }
       );
 
+      // Socket realtime event emit
+      try {
+        const socketService = require('../../infrastructure/realtime/socket.service');
+        const appointmentDto = toAppointmentDto(updatedAppointment);
+        socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToUser(updatedAppointment.doctorId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
+        socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
+      } catch (socketErr) {
+        console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
+      }
+
       // Send email notification asynchronously
       const dateStr = appointment.appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
       this.mailService.sendBookingCancellationEmail({
@@ -767,6 +821,18 @@ class AppointmentService {
         }
       }
 
+      // Socket realtime event emit
+      try {
+        const socketService = require('../../infrastructure/realtime/socket.service');
+        const appointmentDto = toAppointmentDto(updatedAppointment);
+        socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToUser(updatedAppointment.doctorId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
+        socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
+      } catch (socketErr) {
+        console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
+      }
+
       return toAppointmentDto(updatedAppointment);
     } catch (error) {
       if (error instanceof AppointmentServiceError) {
@@ -867,6 +933,16 @@ class AppointmentService {
         code: APPOINTMENT_ERROR_CODES.SLOT_NOT_FOUND,
         message: 'Không tìm thấy khung giờ khám',
         statusCode: 404,
+      });
+    }
+
+    const lockKey = `lock:slot:${timeSlot.id}`;
+    const lockedBy = await redis.get(lockKey);
+    if (lockedBy && lockedBy !== bookingData.lockClientId) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.SLOT_NOT_AVAILABLE,
+        message: 'Khung giờ khám này đang được giữ bởi người khác',
+        statusCode: 400,
       });
     }
 

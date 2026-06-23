@@ -1,61 +1,61 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Plus, Search, Stethoscope } from 'lucide-react';
 import { useAuth } from '../../shared/hooks/useAuth.js';
 import { useAppointments, useUpdateAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './receptionist.css';
+
+function StatusBadge({ status }) {
+  const cfg = {
+    CONFIRMED: { label: 'Đã xác nhận', bg: '#EFF6FF', text: '#1D4ED8', dot: '#3B82F6' },
+    CHECKED_IN: { bg: '#F0FDF4', text: '#16A34A', label: 'Đã check-in', dot: '#22C55E' },
+    COMPLETED: { bg: '#F0FDF4', text: '#15803D', label: 'Hoàn thành', dot: '#16A34A' },
+    NO_SHOW: { bg: '#FEF2F2', text: '#EF4444', label: 'Vắng mặt', dot: '#EF4444' },
+    CANCELLED: { bg: '#F5F5F5', text: '#888', label: 'Đã hủy', dot: '#aaa' },
+  };
+  const c = cfg[status] || { label: status, bg: '#F5F5F5', text: '#888', dot: '#aaa' };
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+      style={{ background: c.bg, color: c.text }}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.dot }} />
+      {c.label}
+    </span>
+  );
+}
 
 export default function ReceptionistDashboardPage() {
   const { user } = useAuth();
   const todayStr = new Date().toLocaleDateString('sv').slice(0, 10);
-  
-  // Format current date for heading: e.g. "Ngày 20/6/2026 — Quầy lễ tân"
+
   const formattedDateHeading = new Date().toLocaleDateString('vi-VN', {
     day: 'numeric',
     month: 'numeric',
-    year: 'numeric'
+    year: 'numeric',
   });
 
   const appointmentsQuery = useAppointments({ date: todayStr, limit: 100 });
   const updateStatusMutation = useUpdateAppointmentStatus();
 
-  // Selected appointment for detail Drawer
   const [selectedAppointmentId, setSelectedAppointmentId] = useState(null);
-  // Control cancellation reason input state
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
 
   const todayAppointments = appointmentsQuery.data?.data || [];
-  
-  // Calculate KPI metrics
+
   const total = todayAppointments.length;
   const checkedIn = todayAppointments.filter((a) => a.status === 'CHECKED_IN').length;
   const waiting = todayAppointments.filter((a) => a.status === 'CONFIRMED').length;
   const completed = todayAppointments.filter((a) => a.status === 'COMPLETED').length;
   const noShow = todayAppointments.filter((a) => a.status === 'NO_SHOW').length;
 
-  const getStatusConfig = (status) => {
-    switch (status) {
-      case 'CONFIRMED':
-        return { label: 'Đã xác nhận', className: 'status-confirmed', dotClass: 'status-dot-confirmed' };
-      case 'CHECKED_IN':
-        return { label: 'Đã check-in', className: 'status-checked_in', dotClass: 'status-dot-checked_in' };
-      case 'COMPLETED':
-        return { label: 'Hoàn thành', className: 'status-completed', dotClass: 'status-dot-completed' };
-      case 'NO_SHOW':
-        return { label: 'Không đến', className: 'status-no_show', dotClass: 'status-dot-no_show' };
-      case 'CANCELLED':
-        return { label: 'Đã hủy', className: 'status-cancelled', dotClass: 'status-dot-cancelled' };
-      default:
-        return { label: status, className: '', dotClass: '' };
-    }
-  };
-
   const handleUpdateStatus = async (id, newStatus, reason = '') => {
     try {
       await updateStatusMutation.mutateAsync({
         id,
-        payload: { status: newStatus, reason, note: 'Cập nhật từ Lễ tân' }
+        payload: { status: newStatus, reason, note: 'Cập nhật từ Lễ tân' },
       });
       setIsCancelling(false);
       setCancelReason('');
@@ -64,303 +64,403 @@ export default function ReceptionistDashboardPage() {
     }
   };
 
-  const selectedAppointment = todayAppointments.find(a => a.id === selectedAppointmentId);
+  const selectedAppointment = todayAppointments.find((a) => a.id === selectedAppointmentId);
+
+  const kpiCards = [
+    { label: 'Lịch hẹn hôm nay', value: total, color: '#49BCE2' },
+    { label: 'Đã check-in', value: checkedIn, color: '#22C55E' },
+    { label: 'Chờ khám', value: waiting, color: '#F59E0B' },
+    { label: 'Đã hoàn thành', value: completed, color: '#6366F1' },
+    { label: 'Vắng mặt', value: noShow, color: '#EF4444' },
+  ];
 
   return (
-    <div className="content-grid receptionist-page">
-      {/* Greetings */}
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8 space-y-6">
+      {/* ── Header ── */}
       <div>
-        <h2 style={{ fontSize: '1.6rem', marginBottom: '4px', fontWeight: 700 }}>
-          Xin chào, {user?.name || 'Lê Thị Lệ Ngân'}! 👋
-        </h2>
-        <p className="helper-text" style={{ fontSize: '0.95rem' }}>
+        <h1 className="text-2xl font-bold text-gray-900">
+          Xin chào, {user?.name}! 👋
+        </h1>
+        <p className="mt-1 text-sm text-gray-500">
           Ngày {formattedDateHeading} — Quầy lễ tân
         </p>
       </div>
 
-      {/* KPI Cards Grid */}
-      <section className="metric-grid">
-        <div className="metric-card metric-card-kpi kpi-total">
-          <p>Lịch hẹn hôm nay</p>
-          <strong className="kpi-value-total">{total}</strong>
-        </div>
-        <div className="metric-card metric-card-kpi kpi-checked-in">
-          <p>Đã check-in</p>
-          <strong className="kpi-value-checked-in">{checkedIn}</strong>
-        </div>
-        <div className="metric-card metric-card-kpi kpi-waiting">
-          <p>Chờ khám</p>
-          <strong className="kpi-value-waiting">{waiting}</strong>
-        </div>
-        <div className="metric-card metric-card-kpi kpi-completed">
-          <p>Đã hoàn thành</p>
-          <strong className="kpi-value-completed">{completed}</strong>
-        </div>
-        <div className="metric-card metric-card-kpi kpi-noshow">
-          <p>Vắng mặt</p>
-          <strong className="kpi-value-noshow">{noShow}</strong>
-        </div>
+      {/* ── KPI Grid ── */}
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {kpiCards.map(({ label, value, color }) => (
+          <div
+            key={label}
+            className="bg-white border border-gray-200 rounded-xl shadow-xs p-4 flex flex-col gap-2"
+          >
+            <p className="text-xs text-gray-500 font-medium">{label}</p>
+            <strong className="text-3xl font-bold" style={{ color }}>
+              {value}
+            </strong>
+          </div>
+        ))}
       </section>
 
-      {/* Today's Appointments - Expanded */}
-      <section className="surface-card full-width-table-card">
-        <div className="table-header-flex">
-          <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Lịch hẹn hôm nay</h3>
-          {appointmentsQuery.isFetching && <span className="helper-text" style={{ fontSize: '0.8rem' }}>Đang đồng bộ...</span>}
+      {/* ── Today's Appointments Table ── */}
+      <section className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+          <h3 className="text-base font-bold text-gray-900">Lịch hẹn hôm nay</h3>
+          {appointmentsQuery.isFetching && (
+            <span className="text-xs text-gray-400 animate-pulse">Đang đồng bộ...</span>
+          )}
         </div>
 
         {appointmentsQuery.isLoading ? (
-          <LoadingBlock label="Đang tải lịch hẹn hôm nay..." />
+          <div className="p-6">
+            <LoadingBlock label="Đang tải lịch hẹn hôm nay..." />
+          </div>
         ) : appointmentsQuery.error ? (
-          <StateBlock
-            variant="error"
-            title="Không thể tải danh sách lịch hẹn"
-            description={appointmentsQuery.error.message}
-          />
+          <div className="p-6">
+            <StateBlock
+              variant="error"
+              title="Không thể tải danh sách lịch hẹn"
+              description={appointmentsQuery.error.message}
+            />
+          </div>
         ) : todayAppointments.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 0' }}>
-            <p className="helper-text">Chưa có lịch khám nào trong ngày hôm nay.</p>
+          <div className="py-16 text-center">
+            <p className="text-sm text-gray-400">Chưa có lịch khám nào trong ngày hôm nay.</p>
           </div>
         ) : (
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Mã lịch</th>
-                <th>Giờ</th>
-                <th>Bệnh nhân</th>
-                <th>Bác sĩ</th>
-                <th>Trạng thái</th>
-                <th style={{ textAlign: 'right' }}>Hành động</th>
-              </tr>
-            </thead>
-            <tbody>
-              {todayAppointments.map((appointment) => {
-                const patientName = appointment.patientName || 'Bệnh nhân';
-                
-                const doctorName = appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
-                const time = appointment.timeSlot?.startTime 
-                  ? appointment.timeSlot.startTime.slice(0, 5) 
-                  : '08:00';
-                
-                const statusCfg = getStatusConfig(appointment.status);
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left">
+                  <th className="px-5 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">
+                    Mã lịch
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">
+                    Giờ
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">
+                    Bệnh nhân
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">
+                    Bác sĩ
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wide">
+                    Trạng thái
+                  </th>
+                  <th className="px-5 py-3 font-semibold text-gray-500 text-xs uppercase tracking-wide text-right">
+                    Chi tiết
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {todayAppointments.map((appointment) => {
+                  const patientName = appointment.patientName || 'Bệnh nhân';
+                  const doctorName =
+                    appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
+                  const time = appointment.timeSlot?.startTime
+                    ? appointment.timeSlot.startTime.slice(0, 5)
+                    : '08:00';
 
-                return (
-                  <tr key={appointment.id}>
-                    <td>
-                      <code style={{ fontSize: '0.85rem', fontWeight: 600, color: '#555' }}>
-                        {appointment.code}
-                      </code>
-                    </td>
-                    <td style={{ fontWeight: 600, color: 'var(--text-h)' }}>{time}</td>
-                    <td>{patientName}</td>
-                    <td>{doctorName}</td>
-                    <td>
-                      <span className={`status-chip ${statusCfg.className}`}>
-                        <span className={`status-dot ${statusCfg.dotClass}`} />
-                        {statusCfg.label}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <button
-                        type="button"
-                        className="btn-detail-link"
-                        onClick={() => {
-                          setSelectedAppointmentId(appointment.id);
-                          setIsCancelling(false);
-                          setCancelReason('');
-                        }}
-                      >
-                        Chi tiết
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                  return (
+                    <tr
+                      key={appointment.id}
+                      className="hover:bg-gray-50 transition-colors"
+                    >
+                      <td className="px-5 py-3.5">
+                        <code className="text-xs font-semibold text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">
+                          {appointment.code}
+                        </code>
+                      </td>
+                      <td className="px-5 py-3.5 font-semibold text-gray-900">{time}</td>
+                      <td className="px-5 py-3.5 text-gray-700">{patientName}</td>
+                      <td className="px-5 py-3.5 text-gray-700">{doctorName}</td>
+                      <td className="px-5 py-3.5">
+                        <StatusBadge status={appointment.status} />
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <button
+                          type="button"
+                          className="text-xs font-semibold text-[#49BCE2] hover:text-[#3ca4c5] hover:underline transition-colors"
+                          onClick={() => {
+                            setSelectedAppointmentId(appointment.id);
+                            setIsCancelling(false);
+                            setCancelReason('');
+                          }}
+                        >
+                          Chi tiết →
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
-      {/* Appointment Detail Drawer */}
+      {/* ── Quick Action Links ── */}
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link
+          to="/receptionist/appointments/new"
+          className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-4 hover:border-[#49BCE2] hover:shadow-md transition-all group"
+        >
+          <span className="w-9 h-9 rounded-lg bg-[#EFF9FD] flex items-center justify-center group-hover:bg-[#49BCE2] transition-colors">
+            <Plus className="w-4 h-4 text-[#49BCE2] group-hover:text-white" />
+          </span>
+          <span className="text-sm font-semibold text-gray-700">Đặt lịch mới</span>
+        </Link>
+        <Link
+          to="/receptionist/appointments"
+          className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-4 hover:border-[#49BCE2] hover:shadow-md transition-all group"
+        >
+          <span className="w-9 h-9 rounded-lg bg-[#EFF9FD] flex items-center justify-center group-hover:bg-[#49BCE2] transition-colors">
+            <Search className="w-4 h-4 text-[#49BCE2] group-hover:text-white" />
+          </span>
+          <span className="text-sm font-semibold text-gray-700">Tra cứu lịch hẹn</span>
+        </Link>
+        <Link
+          to="/receptionist/doctors"
+          className="flex items-center gap-3 bg-white border border-gray-200 rounded-xl shadow-xs px-4 py-4 hover:border-[#49BCE2] hover:shadow-md transition-all group"
+        >
+          <span className="w-9 h-9 rounded-lg bg-[#EFF9FD] flex items-center justify-center group-hover:bg-[#49BCE2] transition-colors">
+            <Stethoscope className="w-4 h-4 text-[#49BCE2] group-hover:text-white" />
+          </span>
+          <span className="text-sm font-semibold text-gray-700">Danh sách bác sĩ</span>
+        </Link>
+      </section>
+
+      {/* ── Appointment Detail Drawer ── */}
       {selectedAppointmentId && selectedAppointment && (
-        <>
-          <div className="drawer-backdrop" onClick={() => setSelectedAppointmentId(null)} />
-          <div className="drawer-content">
-            <div className="drawer-header">
-              <h2>Chi tiết cuộc hẹn</h2>
-              <button 
-                type="button" 
-                className="drawer-close-btn"
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            zIndex: 50,
+            display: 'flex',
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedAppointmentId(null);
+          }}
+        >
+          <div
+            style={{
+              marginLeft: 'auto',
+              width: '100%',
+              maxWidth: 460,
+              background: '#fff',
+              height: '100%',
+              overflowY: 'auto',
+            }}
+          >
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
+              <div>
+                <h2 className="text-base font-bold text-gray-900">Chi tiết cuộc hẹn</h2>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Mã: <span className="font-mono font-semibold">{selectedAppointment.code}</span>
+                </p>
+              </div>
+              <button
+                type="button"
+                className="w-8 h-8 rounded-full flex items-center justify-center text-gray-400 hover:bg-gray-100 hover:text-gray-700 transition-colors text-lg"
                 onClick={() => setSelectedAppointmentId(null)}
               >
-                &times;
+                ×
               </button>
             </div>
 
-            <div className="drawer-body">
-              {/* Status Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontWeight: 700 }}>Trạng thái:</span>
-                <span className={`status-chip ${getStatusConfig(selectedAppointment.status).className}`}>
-                  <span className={`status-dot ${getStatusConfig(selectedAppointment.status).dotClass}`} />
-                  {getStatusConfig(selectedAppointment.status).label}
-                </span>
+            {/* Drawer Body */}
+            <div className="p-5 space-y-5">
+              {/* Status Row */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-semibold text-gray-700">Trạng thái</span>
+                <StatusBadge status={selectedAppointment.status} />
               </div>
 
-              {/* Doctor Section */}
+              {/* THÔNG TIN BÁC SĨ */}
               <div>
-                <h4 className="drawer-section-title">Thông tin Bác sĩ</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row">
-                    <span className="info-label">Bác sĩ</span>
-                    <span className="info-value">{selectedAppointment.doctor?.name || selectedAppointment.doctorName}</span>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Thông tin Bác sĩ
+                </h4>
+                <div className="bg-gray-50 rounded-xl divide-y divide-gray-100">
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Bác sĩ</span>
+                    <span className="text-sm font-semibold text-gray-800 text-right max-w-[60%]">
+                      {selectedAppointment.doctor?.name || selectedAppointment.doctorName}
+                    </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Chuyên khoa</span>
-                    <span className="info-value">{selectedAppointment.specialty?.name || 'Đang cập nhật'}</span>
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Chuyên khoa</span>
+                    <span className="text-sm font-semibold text-gray-800 text-right max-w-[60%]">
+                      {selectedAppointment.specialty?.name || 'Đang cập nhật'}
+                    </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Giá khám</span>
-                    <span className="info-value">
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Giá khám</span>
+                    <span className="text-sm font-semibold text-gray-800">
                       {(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} VNĐ
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Schedule Section */}
+              {/* THÔNG TIN LỊCH KHÁM */}
               <div>
-                <h4 className="drawer-section-title">Thông tin Lịch khám</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row">
-                    <span className="info-label">Ngày khám</span>
-                    <span className="info-value">
-                      {selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A'}
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Thông tin Lịch khám
+                </h4>
+                <div className="bg-gray-50 rounded-xl divide-y divide-gray-100">
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Ngày khám</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {selectedAppointment.appointmentDate
+                        ? selectedAppointment.appointmentDate.split('-').reverse().join('/')
+                        : 'N/A'}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Giờ khám</span>
-                    <span className="info-value">
-                      {selectedAppointment.timeSlot?.startTime?.slice(0, 5) || '08:00'} - {selectedAppointment.timeSlot?.endTime?.slice(0, 5) || '08:30'}
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Giờ khám</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {selectedAppointment.timeSlot?.startTime?.slice(0, 5) || '08:00'} -{' '}
+                      {selectedAppointment.timeSlot?.endTime?.slice(0, 5) || '08:30'}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Mã lịch</span>
-                    <span className="info-value" style={{ fontFamily: 'monospace' }}>
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Mã lịch</span>
+                    <span className="text-sm font-mono font-semibold text-gray-800">
                       {selectedAppointment.code}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Patient Section */}
+              {/* THÔNG TIN BỆNH NHÂN */}
               <div>
-                <h4 className="drawer-section-title">Thông tin Bệnh nhân</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row">
-                    <span className="info-label">Họ tên</span>
-                    <span className="info-value">
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Thông tin Bệnh nhân
+                </h4>
+                <div className="bg-gray-50 rounded-xl divide-y divide-gray-100">
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Họ tên</span>
+                    <span className="text-sm font-semibold text-gray-800 text-right max-w-[60%]">
                       {selectedAppointment.patientName}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Số điện thoại</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.phone || selectedAppointment.patient?.phone || 'N/A'}
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Số điện thoại</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {selectedAppointment.patientProfile?.phone ||
+                        selectedAppointment.patient?.phone ||
+                        'N/A'}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Email</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.email || selectedAppointment.patient?.email || selectedAppointment.patientEmail || 'N/A'}
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Email</span>
+                    <span className="text-sm font-semibold text-gray-800 text-right max-w-[60%] break-all">
+                      {selectedAppointment.patientProfile?.email ||
+                        selectedAppointment.patient?.email ||
+                        selectedAppointment.patientEmail ||
+                        'N/A'}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Giới tính</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.gender === 'MALE' ? 'Nam' : selectedAppointment.patientProfile?.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Giới tính</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {selectedAppointment.patientProfile?.gender === 'MALE'
+                        ? 'Nam'
+                        : selectedAppointment.patientProfile?.gender === 'FEMALE'
+                        ? 'Nữ'
+                        : 'Khác'}
                     </span>
                   </div>
-                  <div className="info-row">
-                    <span className="info-label">Ngày sinh</span>
-                    <span className="info-value">
-                      {selectedAppointment.patientProfile?.birthday 
-                        ? new Date(selectedAppointment.patientProfile.birthday).toLocaleDateString('vi-VN')
+                  <div className="flex justify-between items-start px-4 py-3">
+                    <span className="text-sm text-gray-500">Ngày sinh</span>
+                    <span className="text-sm font-semibold text-gray-800">
+                      {selectedAppointment.patientProfile?.birthday
+                        ? new Date(selectedAppointment.patientProfile.birthday).toLocaleDateString(
+                            'vi-VN'
+                          )
                         : 'N/A'}
                     </span>
                   </div>
                 </div>
               </div>
 
-              {/* Symptoms / Reason */}
+              {/* TRIỆU CHỨNG */}
               <div>
-                <h4 className="drawer-section-title">Triệu chứng & Lý do khám</h4>
-                <div className="drawer-info-group">
-                  <div className="info-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                    <span className="info-value" style={{ textAlign: 'left', maxWidth: '100%', whiteSpace: 'pre-wrap' }}>
-                      {selectedAppointment.reason || 'Không có triệu chứng ghi nhận.'}
-                    </span>
-                  </div>
+                <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                  Triệu chứng &amp; Lý do khám
+                </h4>
+                <div className="bg-gray-50 rounded-xl px-4 py-3">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {selectedAppointment.reason || 'Không có triệu chứng ghi nhận.'}
+                  </p>
                 </div>
               </div>
 
-              {/* Cancellation Reason if cancelled */}
-              {selectedAppointment.status === 'CANCELLED' && selectedAppointment.cancellationReason && (
-                <div>
-                  <h4 className="drawer-section-title">Lý do hủy lịch</h4>
-                  <div className="cancellation-reason-box">
-                    {selectedAppointment.cancellationReason}
+              {/* Cancellation reason if cancelled */}
+              {selectedAppointment.status === 'CANCELLED' &&
+                selectedAppointment.cancellationReason && (
+                  <div>
+                    <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                      Lý do hủy lịch
+                    </h4>
+                    <div className="bg-red-50 border border-red-100 rounded-xl px-4 py-3 text-sm text-red-700 leading-relaxed">
+                      {selectedAppointment.cancellationReason}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
-            {/* Actions Footer */}
-            <div className="drawer-footer">
+            {/* Drawer Footer — Actions */}
+            <div className="sticky bottom-0 bg-white border-t border-gray-100 px-5 py-4 space-y-3">
               {updateStatusMutation.isPending ? (
                 <LoadingBlock label="Đang cập nhật trạng thái..." />
               ) : (
                 <>
-                  {/* Status: CONFIRMED */}
+                  {/* CONFIRMED actions */}
                   {selectedAppointment.status === 'CONFIRMED' && !isCancelling && (
-                    <div className="drawer-actions-row">
+                    <div className="flex flex-col gap-2">
                       <button
                         type="button"
-                        className="button-primary"
+                        className="w-full bg-[#49BCE2] text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-[#3ca4c5] transition"
                         onClick={() => handleUpdateStatus(selectedAppointment.id, 'CHECKED_IN')}
                       >
-                        Check-in
+                        ✓ Check-in
                       </button>
-                      <button
-                        type="button"
-                        className="button-secondary"
-                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'NO_SHOW')}
-                      >
-                        Vắng mặt
-                      </button>
-                      <button
-                        type="button"
-                        className="button-danger"
-                        onClick={() => setIsCancelling(true)}
-                      >
-                        Hủy lịch
-                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          className="flex-1 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg py-2.5 text-sm font-semibold hover:bg-amber-100 transition"
+                          onClick={() => handleUpdateStatus(selectedAppointment.id, 'NO_SHOW')}
+                        >
+                          Vắng mặt
+                        </button>
+                        <button
+                          type="button"
+                          className="flex-1 bg-red-50 text-red-600 border border-red-200 rounded-lg py-2.5 text-sm font-semibold hover:bg-red-100 transition"
+                          onClick={() => setIsCancelling(true)}
+                        >
+                          Hủy lịch
+                        </button>
+                      </div>
                     </div>
                   )}
 
-                  {/* Status: CHECKED_IN */}
+                  {/* CHECKED_IN actions */}
                   {selectedAppointment.status === 'CHECKED_IN' && !isCancelling && (
-                    <div className="drawer-actions-row">
+                    <div className="flex gap-2">
                       <button
                         type="button"
-                        className="button-primary"
+                        className="flex-1 bg-[#49BCE2] text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-[#3ca4c5] transition"
                         onClick={() => handleUpdateStatus(selectedAppointment.id, 'COMPLETED')}
                       >
                         Hoàn thành khám
                       </button>
                       <button
                         type="button"
-                        className="button-danger"
+                        className="flex-1 bg-red-50 text-red-600 border border-red-200 rounded-lg py-2.5 text-sm font-semibold hover:bg-red-100 transition"
                         onClick={() => setIsCancelling(true)}
                       >
                         Hủy lịch
@@ -368,11 +468,14 @@ export default function ReceptionistDashboardPage() {
                     </div>
                   )}
 
-                  {/* Cancellation Reason input form */}
+                  {/* Cancel reason form */}
                   {isCancelling && (
-                    <div className="cancel-reason-form">
-                      <label htmlFor="cancelReasonInput" style={{ fontWeight: 600, fontSize: '0.9rem' }}>
-                        Lý do hủy lịch*
+                    <div className="space-y-3">
+                      <label
+                        htmlFor="cancelReasonInput"
+                        className="block text-sm font-semibold text-gray-700"
+                      >
+                        Lý do hủy lịch <span className="text-red-500">*</span>
                       </label>
                       <textarea
                         id="cancelReasonInput"
@@ -380,21 +483,22 @@ export default function ReceptionistDashboardPage() {
                         rows={3}
                         value={cancelReason}
                         onChange={(e) => setCancelReason(e.target.value)}
+                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white resize-none"
                       />
-                      <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          className="button-danger"
-                          style={{ flex: 1 }}
+                          className="flex-1 bg-red-500 text-white rounded-lg py-2.5 text-sm font-semibold hover:bg-red-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                           disabled={!cancelReason.trim()}
-                          onClick={() => handleUpdateStatus(selectedAppointment.id, 'CANCELLED', cancelReason)}
+                          onClick={() =>
+                            handleUpdateStatus(selectedAppointment.id, 'CANCELLED', cancelReason)
+                          }
                         >
                           Xác nhận hủy
                         </button>
                         <button
                           type="button"
-                          className="button-secondary"
-                          style={{ flex: 1 }}
+                          className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2.5 text-sm font-semibold hover:bg-gray-200 transition"
                           onClick={() => {
                             setIsCancelling(false);
                             setCancelReason('');
@@ -406,11 +510,11 @@ export default function ReceptionistDashboardPage() {
                     </div>
                   )}
 
-                  {/* Completed / Cancelled / No show -> Read-only warning */}
-                  {(selectedAppointment.status === 'COMPLETED' || 
-                    selectedAppointment.status === 'CANCELLED' || 
+                  {/* Terminal states */}
+                  {(selectedAppointment.status === 'COMPLETED' ||
+                    selectedAppointment.status === 'CANCELLED' ||
                     selectedAppointment.status === 'NO_SHOW') && (
-                    <p style={{ textAlign: 'center', fontSize: '0.88rem', margin: 0 }} className="helper-text">
+                    <p className="text-center text-xs text-gray-400 py-1">
                       Lịch hẹn này đã hoàn tất chu kỳ trạng thái.
                     </p>
                   )}
@@ -418,7 +522,7 @@ export default function ReceptionistDashboardPage() {
               )}
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );

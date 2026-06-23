@@ -2,10 +2,9 @@ import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
+import { Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema } from '../schemas/auth.schema.js';
 import { useForgotPassword } from '../hooks/useForgotPassword.js';
-
-const iconEmail = 'https://www.figma.com/api/mcp/asset/58852653-03da-4250-a797-5c02b47736c6';
 
 function getForgotPasswordErrorMessage(error) {
   switch (error?.code) {
@@ -39,39 +38,51 @@ export default function ForgotPasswordForm({ defaultValues = { email: '' }, onSu
   };
 
   return (
-    <form className="auth-register-form" onSubmit={handleSubmit(submitHandler)} noValidate>
-      <div className="auth-form-field auth-form-field-last">
-        <label className="auth-form-label" htmlFor="forgot-password-email">Email đăng ký</label>
-        <div className="auth-input-shell">
-          <img className="auth-input-icon" src={iconEmail} alt="" aria-hidden="true" />
-          <input
-            id="forgot-password-email"
-            className="auth-input"
-            type="email"
-            placeholder="email@example.com"
-            autoComplete="email"
-            {...register('email')}
-          />
-        </div>
-        {errors.email ? <p className="auth-field-error">{errors.email.message}</p> : null}
-      </div>
-
+    <form className="space-y-4" onSubmit={handleSubmit(submitHandler)} noValidate>
       {forgotPasswordMutation.error ? (
-        <p className="auth-submit-error">{forgotPasswordErrorMessage}</p>
+        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{forgotPasswordErrorMessage}</span>
+        </div>
       ) : null}
 
       {forgotPasswordMutation.isSuccess ? (
-        <p className="auth-submit-success">
-          Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi.
-        </p>
+        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg text-sm text-green-600">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          <span>Nếu email tồn tại trong hệ thống, hướng dẫn đặt lại mật khẩu đã được gửi.</span>
+        </div>
       ) : null}
 
-      <button className="auth-submit-button" type="submit" disabled={forgotPasswordMutation.isPending}>
+      <div>
+        <label className="block text-sm text-gray-600 mb-1.5 font-medium" htmlFor="forgot-password-email">
+          Email đăng ký
+        </label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            id="forgot-password-email"
+            type="email"
+            placeholder="email@example.com"
+            autoComplete="email"
+            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+              errors.email ? 'border-red-500' : 'border-gray-200'
+            }`}
+            {...register('email')}
+          />
+        </div>
+        {errors.email ? <p className="text-red-500 text-xs mt-1">{errors.email.message}</p> : null}
+      </div>
+
+      <button
+        className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+        type="submit"
+        disabled={forgotPasswordMutation.isPending}
+      >
         {forgotPasswordMutation.isPending ? 'Đang gửi yêu cầu...' : 'Gửi link đặt lại mật khẩu'}
       </button>
 
-      <p className="auth-register-footnote">
-        <Link to="/dang-nhap">Quay về đăng nhập</Link>
+      <p className="text-center text-sm text-gray-500 mt-4">
+        <Link to="/dang-nhap" className="text-cyan-600 font-medium hover:underline">Quay về đăng nhập</Link>
       </p>
     </form>
   );
