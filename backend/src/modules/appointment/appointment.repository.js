@@ -74,6 +74,41 @@ class AppointmentRepository extends BaseRepository {
     });
   }
 
+  async findDoctorByUserId(userId) {
+    return this.prisma.doctor.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        userId: true,
+      },
+    });
+  }
+
+  async findDoctorAppointments(filters) {
+    const { where, skip, take } = filters;
+
+    return this.prisma.appointment.findMany({
+      where,
+      include: {
+        doctor: true,
+        specialty: true,
+        patient: true,
+        patientProfile: true,
+        timeSlot: true,
+      },
+      orderBy: [
+        { appointmentDate: 'desc' },
+        { startTime: 'desc' },
+      ],
+      skip,
+      take,
+    });
+  }
+
+  async countDoctorAppointments(where) {
+    return this.prisma.appointment.count({ where });
+  }
+
   async findAppointmentByIdWithRelations(id) {
     return this.prisma.appointment.findUnique({
       where: { id },

@@ -12,8 +12,6 @@ import {
 import { useSearchPatients, useBookAppointmentByReceptionist } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './receptionist.css';
-import '../public/booking-wizard.css';
 
 export default function ReceptionistBookingPage() {
   const [step, setStep] = useState(1);
@@ -24,44 +22,15 @@ export default function ReceptionistBookingPage() {
   const [specialtySearch, setSpecialtySearch] = useState('');
   const [doctorSearch, setDoctorSearch] = useState('');
 
-  const ErrorBanner = () => {
-    if (!stepError) return null;
-    return (
-      <div style={{
-        backgroundColor: '#FEE2E2',
-        color: '#DC2626',
-        border: '1.5px solid #FCA5A5',
-        padding: '12px 16px',
-        borderRadius: '8px',
-        marginBottom: '20px',
-        fontSize: '0.9rem',
-        fontWeight: 600,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        animation: 'fadeIn 0.2s ease-out'
-      }}>
-        <span>⚠️ {stepError}</span>
-        <button 
-          type="button" 
-          onClick={() => setStepError(null)}
-          style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', padding: 0 }}
-        >
-          ✕
-        </button>
-      </div>
-    );
-  };
-
   // Core Booking State
   const [bookingData, setBookingData] = useState({
-    specialty: null,      // Selected specialty object
-    doctor: null,         // Selected doctor object
-    date: new Date().toLocaleDateString('sv').slice(0, 10), // Selected date YYYY-MM-DD
-    timeSlot: null,       // Selected timeslot object
-    patientUser: null,    // Selected patient user object
+    specialty: null,
+    doctor: null,
+    date: new Date().toLocaleDateString('sv').slice(0, 10),
+    timeSlot: null,
+    patientUser: null,
     forSelf: true,
-    patientProfileId: '', // Selected relative profile ID (if forSelf === false)
+    patientProfileId: '',
     name: '',
     phone: '',
     email: '',
@@ -106,13 +75,13 @@ export default function ReceptionistBookingPage() {
       d.setDate(d.getDate() + i);
       const dayNum = d.getDate();
       const dayLabel = i === 0 ? 'Hôm nay' : weekdays[d.getDay()];
-      const dateStr = d.toLocaleDateString('sv').slice(0, 10); // YYYY-MM-DD
+      const dateStr = d.toLocaleDateString('sv').slice(0, 10);
       dates.push({ dateStr, dayLabel, dayNum });
     }
     return dates;
   }, []);
 
-  // Specialty emojis mapping for rich design
+  // Specialty emojis mapping
   const getSpecialtyEmoji = (slug) => {
     const mapping = {
       'tim-mach': '🫀',
@@ -141,36 +110,14 @@ export default function ReceptionistBookingPage() {
     return price.toLocaleString('vi-VN') + 'đ';
   };
 
-  // Helper component for required asterisk in form labels
-  const Req = () => <span style={{ color: '#EF4444', marginLeft: 2 }}>*</span>;
-
-  // Patient-matching input styling constant
-  const inp = {
-    width: '100%',
-    padding: '8px 12px',
-    border: '1px solid #ddd',
-    borderRadius: 6,
-    fontSize: 13,
-    fontFamily: 'inherit',
-    outline: 'none',
-    backgroundColor: '#fff'
-  };
-
-  // Patient-matching label styling constant
-  const lbl = {
-    display: 'block',
-    fontSize: '12px',
-    color: '#555',
-    marginBottom: '4px',
-    fontWeight: 500,
-    fontFamily: 'inherit'
-  };
+  // Helper component for required asterisk
+  const Req = () => <span className="text-red-500 ml-0.5">*</span>;
 
   const handleSelectSpecialty = (specialty) => {
     setBookingData((prev) => ({
       ...prev,
       specialty,
-      doctor: null, // Reset doctor when specialty changes
+      doctor: null,
       timeSlot: null
     }));
     setStepError(null);
@@ -180,7 +127,7 @@ export default function ReceptionistBookingPage() {
     setBookingData((prev) => ({
       ...prev,
       doctor,
-      timeSlot: null // Reset slot when doctor changes
+      timeSlot: null
     }));
     setStepError(null);
   };
@@ -189,7 +136,7 @@ export default function ReceptionistBookingPage() {
     setBookingData((prev) => ({
       ...prev,
       date: dateStr,
-      timeSlot: null // Reset slot when date changes
+      timeSlot: null
     }));
     setStepError(null);
   };
@@ -217,8 +164,6 @@ export default function ReceptionistBookingPage() {
     }));
     setPatientSearch('');
   };
-
-
 
   const handleStepSubmit = async () => {
     setStepError(null);
@@ -269,7 +214,6 @@ export default function ReceptionistBookingPage() {
       setStep(4);
     } else if (step === 4) {
       if (bookMutation.isPending) return;
-      // Execute booking request
       try {
         const payload = {
           patientId: bookingData.patientUser?.id || undefined,
@@ -293,7 +237,6 @@ export default function ReceptionistBookingPage() {
 
         const response = await bookMutation.mutateAsync(payload);
 
-        // Save success data for step 5
         setSuccessBookingData({
           ...bookingData,
           code: response.data?.code || 'CP' + Math.floor(100000000 + Math.random() * 900000000),
@@ -354,23 +297,24 @@ export default function ReceptionistBookingPage() {
     );
   }, [doctorsQuery.data, doctorSearch]);
 
-  // Active timeslots list. Virtual slots come from system settings and are saved only when booked.
+  // Active timeslots list
   const slotData = timeSlotsQuery.data?.data || null;
   const slotGroups = useMemo(() => {
     const schedules = slotData?.schedules || [];
     if (schedules.length === 0) {
       return { morning: [], afternoon: [] };
     }
-
     return mergePersistedSlots(
       filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), schedules),
       slotData.slots || [],
     );
   }, [slotData, systemSettingsResponse?.data]);
+
   const slotsList = useMemo(() => [
     ...(slotGroups.morning || []),
     ...(slotGroups.afternoon || []),
   ], [slotGroups]);
+
   const morningSlots = slotGroups.morning || [];
   const afternoonSlots = slotGroups.afternoon || [];
 
@@ -380,767 +324,857 @@ export default function ReceptionistBookingPage() {
     return bookingData.patientUser.profiles.find(p => p.id === bookingData.patientProfileId);
   }, [bookingData.forSelf, bookingData.patientUser, bookingData.patientProfileId]);
 
-  // Automatically select the first doctor in Step 2 if none is selected
+  // Automatically select first doctor in Step 2
   useEffect(() => {
     if (step === 2 && doctorsList.length > 0 && !bookingData.doctor) {
       handleSelectDoctor(doctorsList[0]);
     }
   }, [step, doctorsList, bookingData.doctor]);
 
+  // ─── Shared input class ────────────────────────────────────────────────────
+  const inputCls = (hasError) =>
+    `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white font-inherit transition ${hasError
+      ? 'border-red-400 bg-red-50'
+      : 'border-gray-200'
+    }`;
+
+  // ─── Error Banner ──────────────────────────────────────────────────────────
+  const ErrorBanner = () => {
+    if (!stepError) return null;
+    return (
+      <div className="flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm font-semibold">
+        <div className="flex items-center gap-2">
+          <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <circle cx="12" cy="12" r="10" strokeWidth="2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
+          </svg>
+          <span>{stepError}</span>
+        </div>
+        <button
+          type="button"
+          onClick={() => setStepError(null)}
+          className="text-red-400 hover:text-red-600 transition shrink-0"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    );
+  };
+
+  // ─── Step indicator config ─────────────────────────────────────────────────
+  const STEPS = [
+    { num: 1, label: 'Chuyên khoa' },
+    { num: 2, label: 'Bác sĩ & Lịch' },
+    { num: 3, label: 'Bệnh nhân' },
+    { num: 4, label: 'Xác nhận' },
+  ];
+
   return (
-    <div className={`booking-wizard-container receptionist-page ${step === 5 ? 'step-5-layout' : ''}`}>
-      {/* Title Section (Hide in step 5) */}
-      {step < 5 && (
-        <div className="booking-title-section" style={{ marginBottom: 20 }}>
-          <h1>Đặt lịch khám</h1>
-          <p>Đăng ký lịch khám và đặt lịch khám hộ bệnh nhân tại quầy</p>
-        </div>
-      )}
+    <div className="min-h-screen bg-gray-50 px-4 py-6">
+      <div className="max-w-3xl mx-auto space-y-5">
 
-      {/* Stepper Progress bar (Hide in step 5) */}
-      {step < 5 && (
-        <div className="booking-stepper">
-          <div className={`step-item ${step === 1 ? 'active' : step > 1 ? 'completed' : ''}`}>
-            <div className="step-node">
-              <div className="step-circle">{step > 1 ? '✓' : '1'}</div>
-              <div className="step-label">Chuyên khoa</div>
-            </div>
+        {/* ── Page Title (hidden on step 5) ─────────────────────────────── */}
+        {step < 5 && (
+          <div>
+            <h1 className="text-xl font-bold text-gray-800">Đặt lịch khám</h1>
+            <p className="text-sm text-gray-500 mt-0.5">Đăng ký lịch khám và đặt lịch khám hộ bệnh nhân tại quầy</p>
           </div>
-          <div className="step-line"></div>
+        )}
 
-          <div className={`step-item ${step === 2 ? 'active' : step > 2 ? 'completed' : ''}`}>
-            <div className="step-node">
-              <div className="step-circle">{step > 2 ? '✓' : '2'}</div>
-              <div className="step-label">Bác sĩ & Lịch</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-
-          <div className={`step-item ${step === 3 ? 'active' : step > 3 ? 'completed' : ''}`}>
-            <div className="step-node">
-              <div className="step-circle">{step > 3 ? '✓' : '3'}</div>
-              <div className="step-label">Bệnh nhân</div>
-            </div>
-          </div>
-          <div className="step-line"></div>
-
-          <div className={`step-item ${step === 4 ? 'active' : step > 4 ? 'completed' : ''}`}>
-            <div className="step-node">
-              <div className="step-circle">{step > 4 ? '✓' : '4'}</div>
-              <div className="step-label">Xác nhận</div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 1: CHỌN CHUYÊN KHOA */}
-      {step === 1 && (
-        <div className="booking-card">
-          <h3>Chọn chuyên khoa</h3>
-          <ErrorBanner />
-
-          <div className="search-wrapper">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              className="booking-search-input"
-              placeholder="Tìm chuyên khoa..."
-              value={specialtySearch}
-              onChange={(e) => setSpecialtySearch(e.target.value)}
-            />
-          </div>
-
-          {specialtiesQuery.isLoading ? (
-            <LoadingBlock label="Đang tải danh sách chuyên khoa..." />
-          ) : specialtiesQuery.error ? (
-            <StateBlock
-              variant="error"
-              title="Lỗi tải chuyên khoa"
-              description={specialtiesQuery.error.message}
-            />
-          ) : specialtiesList.length === 0 ? (
-            <StateBlock
-              variant="empty"
-              title="Không tìm thấy chuyên khoa"
-              description="Không tìm thấy chuyên khoa nào phù hợp với từ khóa tìm kiếm."
-            />
-          ) : (
-            <div className="specialty-grid">
-              {specialtiesList.map((spec) => (
-                <button
-                  key={spec.id}
-                  type="button"
-                  className={`specialty-card-button ${bookingData.specialty?.id === spec.id ? 'selected' : ''}`}
-                  onClick={() => handleSelectSpecialty(spec)}
-                >
-                  <span className="specialty-emoji">{getSpecialtyEmoji(spec.slug)}</span>
-                  <span className="specialty-name">{spec.name}</span>
-                  <span className="specialty-count">
-                    {spec.doctorCount ? `${spec.doctorCount} bác sĩ` : ''}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* STEP 2: BÁC SĨ & LỊCH */}
-      {step === 2 && (
-        <div className="booking-card">
-          <h3>Xem lịch làm việc và chọn khung giờ</h3>
-          <ErrorBanner />
-
-          <div className="booking-title-section" style={{ marginBottom: 14 }}>
-            <p style={{ color: '#4A5565' }}>
-              Chuyên khoa: <strong style={{ color: '#101828' }}>{bookingData.specialty?.name}</strong>{' '}
-              <span 
-                onClick={() => setStep(1)} 
-                style={{ textDecoration: 'underline', color: '#888888', cursor: 'pointer', fontSize: '11px', marginLeft: '4px' }}
-              >
-                Đổi
-              </span>
-            </p>
-          </div>
-
-          {/* Date Slider Horizontal */}
-          <div className="date-selector-row">
-            {next7Days.map((item) => (
-              <button
-                key={item.dateStr}
-                type="button"
-                className={`date-card-button ${bookingData.date === item.dateStr ? 'selected' : ''}`}
-                onClick={() => handleSelectDate(item.dateStr)}
-              >
-                <span className="date-card-label">{item.dayLabel}</span>
-                <span className="date-card-num">{item.dayNum}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Search doctor */}
-          <div className="search-wrapper">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              className="booking-search-input"
-              placeholder="Tìm bác sĩ..."
-              value={doctorSearch}
-              onChange={(e) => setDoctorSearch(e.target.value)}
-            />
-          </div>
-
-          {/* Doctor listing */}
-          {doctorsQuery.isLoading ? (
-            <LoadingBlock description="Đang tải danh sách bác sĩ..." />
-          ) : doctorsQuery.error ? (
-            <StateBlock
-              variant="error"
-              title="Lỗi tải danh sách bác sĩ"
-              description={doctorsQuery.error.message}
-            />
-          ) : doctorsList.length === 0 ? (
-            <StateBlock
-              variant="empty"
-              title="Không có bác sĩ khả dụng"
-              description="Không tìm thấy bác sĩ nào thuộc chuyên khoa này phù hợp."
-            />
-          ) : (
-            <div className="doctor-list-container">
-              {doctorsList.map((doc) => {
-                const isSelected = bookingData.doctor?.id === doc.id;
-                
+        {/* ── Step Indicator (hidden on step 5) ─────────────────────────── */}
+        {step < 5 && (
+          <div className="bg-white border border-gray-200 rounded-xl px-6 py-4 shadow-xs">
+            <div className="flex items-center justify-between">
+              {STEPS.map((s, idx) => {
+                const isCompleted = step > s.num;
+                const isActive = step === s.num;
                 return (
-                  <div 
-                    key={doc.id} 
-                    className={`doctor-item-card ${isSelected ? 'selected-doctor' : ''}`}
-                  >
-                    <div className="doctor-main-info" onClick={() => handleSelectDoctor(doc)}>
-                      <div className="doctor-avatar-wrapper">
-                        <img 
-                          src={doc.avatar || '/placeholder-doctor.jpg'} 
-                          alt={doc.name}
-                          onError={(e) => { e.target.src = 'https://placehold.co/100x100?text=Dr'; }} 
-                        />
-                      </div>
-                      <div className="doctor-details-wrapper">
-                        <div className="doctor-name-text">{doc.name}</div>
-                        <div className="doctor-specialty-text">{bookingData.specialty?.name}</div>
-                        <div className="doctor-meta-row">
-                          <span className="doctor-rating">⭐ {doc.rating || '5.0'}</span>
-                          <span>•</span>
-                          <span>{doc.experience || '5'} năm KN</span>
-                          <span>•</span>
-                          <span className="doctor-price-tag">{formatPrice(doc.price)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Display timeslots inside the selected doctor card */}
-                    {isSelected && (
-                      <div className="timeslot-selection-area">
-                        <div className="timeslot-date-title">
-                          Chọn khung giờ — {formatDisplayDate(bookingData.date)}:
-                        </div>
-
-                        {timeSlotsQuery.isLoading ? (
-                          <div style={{ padding: '8px 0', fontSize: '11px', color: '#888888' }}>
-                            Đang tải khung giờ...
-                          </div>
-                        ) : slotsList.length === 0 ? (
-                          <div style={{ padding: '8px 0', fontSize: '11px', color: '#FF9800' }}>
-                            Bác sĩ không có lịch làm việc hoặc đã hết giờ trống trong ngày này.
-                          </div>
+                  <div key={s.num} className="flex items-center flex-1">
+                    {/* Step node */}
+                    <div className="flex flex-col items-center gap-1">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${isCompleted
+                          ? 'bg-[#49BCE2] text-white'
+                          : isActive
+                            ? 'bg-[#49BCE2] text-white ring-4 ring-[#49BCE2]/20'
+                            : 'bg-gray-100 text-gray-400'
+                        }`}>
+                        {isCompleted ? (
+                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+                          </svg>
                         ) : (
-                          <>
-                            {/* Ca sang */}
-                            {morningSlots.length > 0 && (
-                              <div className="timeslot-shift-group">
-                                <span className="timeslot-shift-label">☀️ Ca sáng</span>
-                                <div className="timeslots-button-grid">
-                                  {morningSlots.map((slot) => (
-                                    <button
-                                      key={slot.id}
-                                      type="button"
-                                      disabled={slot.status !== 'AVAILABLE'}
-                                      className={`timeslot-btn ${bookingData.timeSlot?.id === slot.id ? 'selected' : ''}`}
-                                      onClick={() => handleSelectTimeSlot(slot)}
-                                    >
-                                      {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Ca chieu */}
-                            {afternoonSlots.length > 0 && (
-                              <div className="timeslot-shift-group">
-                                <span className="timeslot-shift-label">🌤️ Ca chiều</span>
-                                <div className="timeslots-button-grid">
-                                  {afternoonSlots.map((slot) => (
-                                    <button
-                                      key={slot.id}
-                                      type="button"
-                                      disabled={slot.status !== 'AVAILABLE'}
-                                      className={`timeslot-btn ${bookingData.timeSlot?.id === slot.id ? 'selected' : ''}`}
-                                      onClick={() => handleSelectTimeSlot(slot)}
-                                    >
-                                      {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                                    </button>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-                          </>
+                          s.num
                         )}
                       </div>
+                      <span className={`text-xs font-medium whitespace-nowrap ${isActive ? 'text-[#49BCE2]' : isCompleted ? 'text-[#49BCE2]' : 'text-gray-400'
+                        }`}>
+                        {s.label}
+                      </span>
+                    </div>
+                    {/* Connector line */}
+                    {idx < STEPS.length - 1 && (
+                      <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${step > s.num ? 'bg-[#49BCE2]' : 'bg-gray-200'
+                        }`} />
                     )}
                   </div>
                 );
               })}
             </div>
-          )}
-        </div>
-      )}
+          </div>
+        )}
 
-      {/* STEP 3: THÔNG TIN BỆNH NHÂN */}
-      {step === 3 && (
-        <div className="booking-card">
-          <h3>Thông tin bệnh nhân</h3>
-          <ErrorBanner />
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {/* STEP 1: CHỌN CHUYÊN KHOA                                       */}
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {step === 1 && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-4">Chọn chuyên khoa</h2>
+            <ErrorBanner />
 
-          {/* Quick search input */}
-          <div className="patient-search-container">
-            <label htmlFor="patientSearchInput" style={lbl}>
-              Tra cứu nhanh bệnh nhân hoặc người nhà
-            </label>
-            
-            <div className="patient-search-input-wrapper">
-              <span className="search-icon">🔍</span>
-              {bookingData.patientUser ? (
-                <>
-                  <input
-                    type="text"
-                    disabled
-                    className="patient-search-input selected"
-                    value={
-                      bookingData.forSelf
-                        ? `${bookingData.patientUser.name} (Bệnh nhân chính)`
-                        : `${selectedProfile?.fullName || 'Người thân'} (Người thân của ${bookingData.patientUser.name})`
-                    }
-                    style={{
-                      ...inp,
-                      paddingLeft: '30px',
-                      paddingRight: '30px',
-                      backgroundColor: '#F9FAFB',
-                      cursor: 'not-allowed',
-                      color: '#555',
-                      fontWeight: 500
-                    }}
-                  />
-                  <button
-                    type="button"
-                    className="clear-search-btn"
-                    onClick={() => {
-                      setBookingData((prev) => ({
-                        ...prev,
-                        patientUser: null,
-                        forSelf: true,
-                        patientProfileId: '',
-                        name: '',
-                        phone: '',
-                        email: '',
-                        gender: 'MALE',
-                        dateOfBirth: '',
-                        address: '',
-                      }));
-                      setPatientSearch('');
-                    }}
-                  >
-                    ✕
-                  </button>
-                </>
-              ) : (
-                <input
-                  id="patientSearchInput"
-                  type="text"
-                  className="patient-search-input"
-                  placeholder="Nhập tên, số điện thoại hoặc email để tra cứu..."
-                  value={patientSearch}
-                  onChange={(e) => setPatientSearch(e.target.value)}
-                  style={{
-                    ...inp,
-                    paddingLeft: '30px'
-                  }}
-                />
-              )}
+            {/* Search */}
+            <div className="relative mb-5">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
+              <input
+                type="text"
+                className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                placeholder="Tìm chuyên khoa..."
+                value={specialtySearch}
+                onChange={(e) => setSpecialtySearch(e.target.value)}
+              />
             </div>
 
-            {/* Autocomplete dropdown suggestion */}
-            {!bookingData.patientUser && patientSearch.trim().length >= 2 && (
-              <div className="patient-autocomplete-dropdown">
-                {searchPatientsQuery.isLoading ? (
-                  <div style={{ padding: '12px', textAlign: 'center' }} className="helper-text">Đang tra cứu bệnh nhân...</div>
-                ) : searchPatientsQuery.error ? (
-                  <div style={{ padding: '12px', textAlign: 'center', color: 'var(--danger)', fontWeight: 600 }} className="helper-text">
-                    Lỗi tra cứu: {searchPatientsQuery.error.message}
-                  </div>
-                ) : patientMatches.length === 0 ? (
-                  <div style={{ padding: '12px', textAlign: 'center' }} className="helper-text">Không tìm thấy bệnh nhân nào khớp.</div>
-                ) : (
-                  patientMatches.flatMap((p) => {
-                    const items = [];
-                    // 1. Patient Option
-                    items.push(
-                      <div
-                        key={`user-${p.id}`}
-                        className="patient-autocomplete-item"
-                        onClick={() => handleSelectPatientUser(p)}
-                      >
-                        <div className="patient-item-name">👤 {p.name} (Bệnh nhân chính)</div>
-                        <div className="patient-item-meta">
-                          SĐT: {p.phone || 'N/A'} · Email: {p.email}
-                        </div>
-                      </div>
-                    );
-
-                    // 2. Relative Options
-                    p.profiles?.forEach((profile) => {
-                      items.push(
-                        <div
-                          key={`profile-${profile.id}`}
-                          className="patient-autocomplete-item patient-profile-item"
-                          style={{ paddingLeft: '28px', backgroundColor: '#FDFDFD' }}
-                          onClick={() => {
-                            setBookingData((prev) => ({
-                              ...prev,
-                              patientUser: p,
-                              forSelf: false,
-                              patientProfileId: profile.id,
-                              name: profile.fullName || '',
-                              phone: profile.phone || p.phone || '',
-                              email: profile.email || p.email || '',
-                              gender: profile.gender || 'MALE',
-                              dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '',
-                              address: profile.address || p.address || '',
-                            }));
-                            setPatientSearch('');
-                            setStepError(null);
-                            setValidationErrors({});
-                          }}
-                        >
-                          <div className="patient-item-name" style={{ fontSize: '0.85rem', color: '#555' }}>
-                            👥 {profile.fullName} (Người thân: {profile.relationship === 'PARENT' ? 'Bố/Mẹ' : profile.relationship === 'CHILD' ? 'Con' : profile.relationship === 'SPOUSE' ? 'Vợ/Chồng' : 'Khác'})
-                          </div>
-                          <div className="patient-item-meta" style={{ fontSize: '0.75rem' }}>
-                            SĐT: {profile.phone || p.phone || 'N/A'} · Email: {profile.email || p.email || 'N/A'}
-                          </div>
-                        </div>
-                      );
-                    });
-                    return items;
-                  })
-                )}
+            {/* Specialty Grid */}
+            {specialtiesQuery.isLoading ? (
+              <LoadingBlock label="Đang tải danh sách chuyên khoa..." />
+            ) : specialtiesQuery.error ? (
+              <StateBlock
+                variant="error"
+                title="Lỗi tải chuyên khoa"
+                description={specialtiesQuery.error.message}
+              />
+            ) : specialtiesList.length === 0 ? (
+              <StateBlock
+                variant="empty"
+                title="Không tìm thấy chuyên khoa"
+                description="Không tìm thấy chuyên khoa nào phù hợp với từ khóa tìm kiếm."
+              />
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {specialtiesList.map((spec) => {
+                  const isSelected = bookingData.specialty?.id === spec.id;
+                  return (
+                    <button
+                      key={spec.id}
+                      type="button"
+                      onClick={() => handleSelectSpecialty(spec)}
+                      className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 text-center transition-all cursor-pointer ${isSelected
+                          ? 'border-[#49BCE2] bg-[#49BCE2]/5 shadow-sm'
+                          : 'border-gray-200 hover:border-[#49BCE2]/50 hover:bg-gray-50'
+                        }`}
+                    >
+                      <span className="text-2xl">{getSpecialtyEmoji(spec.slug)}</span>
+                      <span className={`text-sm font-semibold leading-tight ${isSelected ? 'text-[#49BCE2]' : 'text-gray-700'}`}>
+                        {spec.name}
+                      </span>
+                      {spec.doctorCount ? (
+                        <span className="text-xs text-gray-400">{spec.doctorCount} bác sĩ</span>
+                      ) : null}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
+        )}
 
-          {/* Patient Form Fields (Always Visible & Editable) */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: '20px' }}>
-            
-            {/* Họ tên + SĐT */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label htmlFor="patientNameInput" style={lbl}>Họ tên bệnh nhân<Req /></label>
-                <input
-                  id="patientNameInput"
-                  type="text"
-                  placeholder="Nhập họ tên bệnh nhân..."
-                  value={bookingData.name}
-                  onChange={(e) => {
-                    setBookingData(prev => ({ ...prev, name: e.target.value }));
-                    setStepError(null);
-                    if (validationErrors.name) {
-                      setValidationErrors(prev => ({ ...prev, name: null }));
-                    }
-                  }}
-                  style={{
-                    ...inp,
-                    ...(validationErrors.name ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
-                  }}
-                />
-              </div>
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {/* STEP 2: BÁC SĨ & LỊCH                                         */}
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {step === 2 && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-1">Xem lịch làm việc và chọn khung giờ</h2>
+            <p className="text-sm text-gray-500 mb-4">
+              Chuyên khoa: <strong className="text-gray-800">{bookingData.specialty?.name}</strong>{' '}
+              <button
+                type="button"
+                onClick={() => setStep(1)}
+                className="text-xs text-gray-400 underline hover:text-[#49BCE2] ml-1 transition"
+              >
+                Đổi
+              </button>
+            </p>
+            <ErrorBanner />
 
-              <div>
-                <label htmlFor="patientPhoneInput" style={lbl}>Số điện thoại<Req /></label>
-                <input
-                  id="patientPhoneInput"
-                  type="text"
-                  placeholder="Nhập số điện thoại..."
-                  value={bookingData.phone}
-                  onChange={(e) => {
-                    setBookingData(prev => ({ ...prev, phone: e.target.value }));
-                    setStepError(null);
-                    if (validationErrors.phone) {
-                      setValidationErrors(prev => ({ ...prev, phone: null }));
-                    }
-                  }}
-                  style={{
-                    ...inp,
-                    ...(validationErrors.phone ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
-                  }}
-                />
-              </div>
+            {/* Date Picker */}
+            <div className="flex gap-2 overflow-x-auto pb-1 mb-5 scrollbar-hide">
+              {next7Days.map((item) => {
+                const isDateSel = bookingData.date === item.dateStr;
+                return (
+                  <button
+                    key={item.dateStr}
+                    type="button"
+                    onClick={() => handleSelectDate(item.dateStr)}
+                    className={`flex flex-col items-center justify-center min-w-[60px] px-3 py-2.5 rounded-xl border-2 transition-all shrink-0 ${isDateSel
+                        ? 'border-[#49BCE2] bg-[#49BCE2] text-white shadow-sm'
+                        : 'border-gray-200 hover:border-[#49BCE2]/50 text-gray-600 hover:bg-gray-50'
+                      }`}
+                  >
+                    <span className="text-[10px] font-semibold uppercase tracking-wide">{item.dayLabel}</span>
+                    <span className="text-lg font-bold leading-tight">{item.dayNum}</span>
+                  </button>
+                );
+              })}
             </div>
 
-            {/* Email */}
-            <div>
-              <label htmlFor="patientEmailInput" style={lbl}>Email tài khoản</label>
+            {/* Doctor Search */}
+            <div className="relative mb-4">
+              <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+              </svg>
               <input
-                id="patientEmailInput"
-                type="email"
-                placeholder="Nhập email tài khoản (không bắt buộc)..."
-                value={bookingData.email}
-                onChange={(e) => {
-                  setBookingData(prev => ({ ...prev, email: e.target.value }));
-                  setStepError(null);
-                  if (validationErrors.email) {
-                    setValidationErrors(prev => ({ ...prev, email: null }));
-                  }
-                }}
-                style={{
-                  ...inp,
-                  ...(validationErrors.email ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
-                }}
-              />
-            </div>
-
-            {/* Giới tính + Ngày sinh */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-              <div>
-                <label htmlFor="patientGenderSelect" style={lbl}>Giới tính<Req /></label>
-                <select
-                  id="patientGenderSelect"
-                  value={bookingData.gender}
-                  onChange={(e) => {
-                    setBookingData(prev => ({ ...prev, gender: e.target.value }));
-                    setStepError(null);
-                  }}
-                  style={inp}
-                >
-                  <option value="MALE">Nam</option>
-                  <option value="FEMALE">Nữ</option>
-                  <option value="OTHER">Khác</option>
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="patientDobInput" style={lbl}>Ngày sinh<Req /></label>
-                <input
-                  id="patientDobInput"
-                  type="date"
-                  value={bookingData.dateOfBirth}
-                  onChange={(e) => {
-                    setBookingData(prev => ({ ...prev, dateOfBirth: e.target.value }));
-                    setStepError(null);
-                    if (validationErrors.dateOfBirth) {
-                      setValidationErrors(prev => ({ ...prev, dateOfBirth: null }));
-                    }
-                  }}
-                  style={{
-                    ...inp,
-                    ...(validationErrors.dateOfBirth ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
-                  }}
-                />
-              </div>
-            </div>
-
-            {/* Địa chỉ */}
-            <div>
-              <label htmlFor="patientAddressInput" style={lbl}>Địa chỉ</label>
-              <input
-                id="patientAddressInput"
                 type="text"
-                placeholder="Nhập địa chỉ..."
-                value={bookingData.address}
-                onChange={(e) => {
-                  setBookingData(prev => ({ ...prev, address: e.target.value }));
-                  setStepError(null);
-                }}
-                style={inp}
+                className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                placeholder="Tìm bác sĩ..."
+                value={doctorSearch}
+                onChange={(e) => setDoctorSearch(e.target.value)}
               />
             </div>
 
-            {/* Lý do khám */}
-            <div>
-              <label htmlFor="reasonTextarea" style={lbl}>Triệu chứng & Lý do khám bệnh<Req /></label>
-              <textarea
-                id="reasonTextarea"
-                rows={3}
-                placeholder="Mô tả triệu chứng chính hoặc lý do đến khám..."
-                value={bookingData.reason}
-                onChange={(e) => {
-                  setBookingData((prev) => ({ ...prev, reason: e.target.value }));
-                  setStepError(null);
-                  if (validationErrors.reason) {
-                    setValidationErrors(prev => ({ ...prev, reason: null }));
-                  }
-                }}
-                style={{
-                  ...inp,
-                  resize: 'none',
-                  minHeight: '76px',
-                  ...(validationErrors.reason ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
-                }}
+            {/* Doctor List */}
+            {doctorsQuery.isLoading ? (
+              <LoadingBlock description="Đang tải danh sách bác sĩ..." />
+            ) : doctorsQuery.error ? (
+              <StateBlock
+                variant="error"
+                title="Lỗi tải danh sách bác sĩ"
+                description={doctorsQuery.error.message}
               />
+            ) : doctorsList.length === 0 ? (
+              <StateBlock
+                variant="empty"
+                title="Không có bác sĩ khả dụng"
+                description="Không tìm thấy bác sĩ nào thuộc chuyên khoa này phù hợp."
+              />
+            ) : (
+              <div className="space-y-3">
+                {doctorsList.map((doc) => {
+                  const isSelected = bookingData.doctor?.id === doc.id;
+                  return (
+                    <div
+                      key={doc.id}
+                      className={`border-2 rounded-xl transition-all overflow-hidden ${isSelected
+                          ? 'border-[#49BCE2] shadow-sm'
+                          : 'border-gray-200 hover:border-gray-300'
+                        }`}
+                    >
+                      {/* Doctor Info Row */}
+                      <div
+                        className="flex items-center gap-4 p-4 cursor-pointer"
+                        onClick={() => handleSelectDoctor(doc)}
+                      >
+                        <img
+                          src={doc.avatar || '/placeholder-doctor.jpg'}
+                          alt={doc.name}
+                          onError={(e) => { e.target.src = 'https://placehold.co/100x100?text=Dr'; }}
+                          className="w-14 h-14 rounded-full object-cover shrink-0 border-2 border-gray-100"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-bold text-gray-800 text-sm">{doc.name}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{bookingData.specialty?.name}</div>
+                          <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                            <span className="text-xs text-yellow-600 font-medium">⭐ {doc.rating || '5.0'}</span>
+                            <span className="text-gray-300">•</span>
+                            <span className="text-xs text-gray-500">{doc.experience || '5'} năm KN</span>
+                            <span className="text-gray-300">•</span>
+                            <span className="inline-block bg-[#49BCE2]/10 text-[#49BCE2] text-xs font-semibold px-2 py-0.5 rounded-full">
+                              {formatPrice(doc.price)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${isSelected ? 'border-[#49BCE2] bg-[#49BCE2]' : 'border-gray-300'
+                          }`}>
+                          {isSelected && (
+                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Timeslot Panel (only for selected doctor) */}
+                      {isSelected && (
+                        <div className="border-t border-gray-100 bg-gray-50/60 px-4 py-4">
+                          <div className="text-xs font-semibold text-gray-600 mb-3">
+                            📅 Chọn khung giờ — <span className="text-[#49BCE2]">{formatDisplayDate(bookingData.date)}</span>
+                          </div>
+
+                          {timeSlotsQuery.isLoading ? (
+                            <p className="text-xs text-gray-400 py-2">Đang tải khung giờ...</p>
+                          ) : slotsList.length === 0 ? (
+                            <p className="text-xs text-amber-600 font-medium py-2">
+                              Bác sĩ không có lịch làm việc hoặc đã hết giờ trống trong ngày này.
+                            </p>
+                          ) : (
+                            <div className="space-y-3">
+                              {/* Ca sáng */}
+                              {morningSlots.length > 0 && (
+                                <div>
+                                  <div className="text-xs font-semibold text-gray-500 mb-2">☀️ Ca sáng</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {morningSlots.map((slot) => {
+                                      const isSlotSel = bookingData.timeSlot?.id === slot.id;
+                                      const isAvailable = slot.status === 'AVAILABLE';
+                                      return (
+                                        <button
+                                          key={slot.id}
+                                          type="button"
+                                          disabled={!isAvailable}
+                                          onClick={() => handleSelectTimeSlot(slot)}
+                                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSlotSel
+                                              ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
+                                              : isAvailable
+                                                ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
+                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                            }`}
+                                        >
+                                          {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* Ca chiều */}
+                              {afternoonSlots.length > 0 && (
+                                <div>
+                                  <div className="text-xs font-semibold text-gray-500 mb-2">🌤️ Ca chiều</div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {afternoonSlots.map((slot) => {
+                                      const isSlotSel = bookingData.timeSlot?.id === slot.id;
+                                      const isAvailable = slot.status === 'AVAILABLE';
+                                      return (
+                                        <button
+                                          key={slot.id}
+                                          type="button"
+                                          disabled={!isAvailable}
+                                          onClick={() => handleSelectTimeSlot(slot)}
+                                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSlotSel
+                                              ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
+                                              : isAvailable
+                                                ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
+                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                            }`}
+                                        >
+                                          {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {/* STEP 3: THÔNG TIN BỆNH NHÂN                                    */}
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {step === 3 && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-4">Thông tin bệnh nhân</h2>
+            <ErrorBanner />
+
+            {/* Patient Quick Search */}
+            <div className="mb-5">
+              <label className="block text-xs font-medium text-gray-600 mb-1.5">
+                Tra cứu nhanh bệnh nhân hoặc người nhà
+              </label>
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+                </svg>
+
+                {bookingData.patientUser ? (
+                  <>
+                    <input
+                      type="text"
+                      disabled
+                      className="w-full border border-gray-200 rounded-lg pl-9 pr-9 py-2 text-sm bg-gray-50 text-gray-600 font-medium cursor-not-allowed"
+                      value={
+                        bookingData.forSelf
+                          ? `${bookingData.patientUser.name} (Bệnh nhân chính)`
+                          : `${selectedProfile?.fullName || 'Người thân'} (Người thân của ${bookingData.patientUser.name})`
+                      }
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setBookingData((prev) => ({
+                          ...prev,
+                          patientUser: null,
+                          forSelf: true,
+                          patientProfileId: '',
+                          name: '',
+                          phone: '',
+                          email: '',
+                          gender: 'MALE',
+                          dateOfBirth: '',
+                          address: '',
+                        }));
+                        setPatientSearch('');
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
+                    >
+                      <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <input
+                    id="patientSearchInput"
+                    type="text"
+                    className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                    placeholder="Nhập tên, số điện thoại hoặc email để tra cứu..."
+                    value={patientSearch}
+                    onChange={(e) => setPatientSearch(e.target.value)}
+                  />
+                )}
+
+                {/* Autocomplete Dropdown */}
+                {!bookingData.patientUser && patientSearch.trim().length >= 2 && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden max-h-64 overflow-y-auto">
+                    {searchPatientsQuery.isLoading ? (
+                      <div className="px-4 py-3 text-xs text-gray-400 text-center">Đang tra cứu bệnh nhân...</div>
+                    ) : searchPatientsQuery.error ? (
+                      <div className="px-4 py-3 text-xs text-red-500 font-semibold text-center">
+                        Lỗi tra cứu: {searchPatientsQuery.error.message}
+                      </div>
+                    ) : patientMatches.length === 0 ? (
+                      <div className="px-4 py-3 text-xs text-gray-400 text-center">Không tìm thấy bệnh nhân nào khớp.</div>
+                    ) : (
+                      patientMatches.flatMap((p) => {
+                        const items = [];
+                        items.push(
+                          <div
+                            key={`user-${p.id}`}
+                            className="flex flex-col px-4 py-2.5 cursor-pointer hover:bg-[#49BCE2]/5 border-b border-gray-100 last:border-0 transition"
+                            onClick={() => handleSelectPatientUser(p)}
+                          >
+                            <div className="text-sm font-semibold text-gray-700">👤 {p.name} <span className="font-normal text-gray-400 text-xs">(Bệnh nhân chính)</span></div>
+                            <div className="text-xs text-gray-400 mt-0.5">SĐT: {p.phone || 'N/A'} · Email: {p.email}</div>
+                          </div>
+                        );
+                        p.profiles?.forEach((profile) => {
+                          items.push(
+                            <div
+                              key={`profile-${profile.id}`}
+                              className="flex flex-col pl-8 pr-4 py-2.5 cursor-pointer hover:bg-[#49BCE2]/5 bg-gray-50/60 border-b border-gray-100 last:border-0 transition"
+                              onClick={() => {
+                                setBookingData((prev) => ({
+                                  ...prev,
+                                  patientUser: p,
+                                  forSelf: false,
+                                  patientProfileId: profile.id,
+                                  name: profile.fullName || '',
+                                  phone: profile.phone || p.phone || '',
+                                  email: profile.email || p.email || '',
+                                  gender: profile.gender || 'MALE',
+                                  dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '',
+                                  address: profile.address || p.address || '',
+                                }));
+                                setPatientSearch('');
+                                setStepError(null);
+                                setValidationErrors({});
+                              }}
+                            >
+                              <div className="text-xs font-semibold text-gray-600">
+                                👥 {profile.fullName} <span className="font-normal text-gray-400">(Người thân: {profile.relationship === 'PARENT' ? 'Bố/Mẹ' : profile.relationship === 'CHILD' ? 'Con' : profile.relationship === 'SPOUSE' ? 'Vợ/Chồng' : 'Khác'})</span>
+                              </div>
+                              <div className="text-xs text-gray-400 mt-0.5">SĐT: {profile.phone || p.phone || 'N/A'} · Email: {profile.email || p.email || 'N/A'}</div>
+                            </div>
+                          );
+                        });
+                        return items;
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Patient Form Fields */}
+            <div className="space-y-4">
+              {/* Họ tên + SĐT */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="patientNameInput" className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Họ tên bệnh nhân<Req />
+                  </label>
+                  <input
+                    id="patientNameInput"
+                    type="text"
+                    placeholder="Nhập họ tên bệnh nhân..."
+                    value={bookingData.name}
+                    onChange={(e) => {
+                      setBookingData(prev => ({ ...prev, name: e.target.value }));
+                      setStepError(null);
+                      if (validationErrors.name) setValidationErrors(prev => ({ ...prev, name: null }));
+                    }}
+                    className={inputCls(validationErrors.name)}
+                  />
+                  {validationErrors.name && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.name}</p>
+                  )}
+                </div>
+
+                <div>
+                  <label htmlFor="patientPhoneInput" className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Số điện thoại<Req />
+                  </label>
+                  <input
+                    id="patientPhoneInput"
+                    type="text"
+                    placeholder="Nhập số điện thoại..."
+                    value={bookingData.phone}
+                    onChange={(e) => {
+                      setBookingData(prev => ({ ...prev, phone: e.target.value }));
+                      setStepError(null);
+                      if (validationErrors.phone) setValidationErrors(prev => ({ ...prev, phone: null }));
+                    }}
+                    className={inputCls(validationErrors.phone)}
+                  />
+                  {validationErrors.phone && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.phone}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div>
+                <label htmlFor="patientEmailInput" style={lbl}>
+                  Email tài khoản{!bookingData.patientUser && <Req />}
+                </label>
+                <input
+                  id="patientEmailInput"
+                  type="email"
+                  placeholder={bookingData.patientUser ? "Email tài khoản..." : "Nhập email tài khoản..."}
+                  value={bookingData.email}
+                  onChange={(e) => {
+                    setBookingData(prev => ({ ...prev, email: e.target.value }));
+                    setStepError(null);
+                    if (validationErrors.email) {
+                      setValidationErrors(prev => ({ ...prev, email: null }));
+                    }
+                  }}
+                  style={{
+                    ...inp,
+                    ...(validationErrors.email ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
+                  }}
+                />
+              </div>
+
+              {/* Giới tính + Ngày sinh */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="patientGenderSelect" className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Giới tính<Req />
+                  </label>
+                  <select
+                    id="patientGenderSelect"
+                    value={bookingData.gender}
+                    onChange={(e) => {
+                      setBookingData(prev => ({ ...prev, gender: e.target.value }));
+                      setStepError(null);
+                    }}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                  >
+                    <option value="MALE">Nam</option>
+                    <option value="FEMALE">Nữ</option>
+                    <option value="OTHER">Khác</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="patientDobInput" className="block text-xs font-medium text-gray-600 mb-1.5">
+                    Ngày sinh<Req />
+                  </label>
+                  <input
+                    id="patientDobInput"
+                    type="date"
+                    value={bookingData.dateOfBirth}
+                    onChange={(e) => {
+                      setBookingData(prev => ({ ...prev, dateOfBirth: e.target.value }));
+                      setStepError(null);
+                      if (validationErrors.dateOfBirth) setValidationErrors(prev => ({ ...prev, dateOfBirth: null }));
+                    }}
+                    className={inputCls(validationErrors.dateOfBirth)}
+                  />
+                  {validationErrors.dateOfBirth && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.dateOfBirth}</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Địa chỉ */}
+              <div>
+                <label htmlFor="patientAddressInput" className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Địa chỉ
+                </label>
+                <input
+                  id="patientAddressInput"
+                  type="text"
+                  placeholder="Nhập địa chỉ..."
+                  value={bookingData.address}
+                  onChange={(e) => {
+                    setBookingData(prev => ({ ...prev, address: e.target.value }));
+                    setStepError(null);
+                  }}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                />
+              </div>
+
+              {/* Lý do khám */}
+              <div>
+                <label htmlFor="reasonTextarea" className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Triệu chứng &amp; Lý do khám bệnh<Req />
+                </label>
+                <textarea
+                  id="reasonTextarea"
+                  rows={3}
+                  placeholder="Mô tả triệu chứng chính hoặc lý do đến khám..."
+                  value={bookingData.reason}
+                  onChange={(e) => {
+                    setBookingData((prev) => ({ ...prev, reason: e.target.value }));
+                    setStepError(null);
+                    if (validationErrors.reason) setValidationErrors(prev => ({ ...prev, reason: null }));
+                  }}
+                  className={`${inputCls(validationErrors.reason)} resize-none`}
+                />
+                {validationErrors.reason && (
+                  <p className="text-xs text-red-500 mt-1">{validationErrors.reason}</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* STEP 4: XÁC NHẬN */}
-      {step === 4 && (
-        <div className="booking-card">
-          <h3>Xác nhận đặt lịch</h3>
-          <ErrorBanner />
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {/* STEP 4: XÁC NHẬN                                               */}
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {step === 4 && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs p-6">
+            <h2 className="text-base font-bold text-gray-800 mb-4">Xác nhận đặt lịch</h2>
+            <ErrorBanner />
 
-          {/* Doctor Info */}
-          <div className="confirm-section-title">THÔNG TIN BÁC SĨ</div>
-          <div className="confirm-details-box">
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Bác sĩ</span>
-              <span className="confirm-detail-val bold-text">{bookingData.doctor?.name}</span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Chuyên khoa</span>
-              <span className="confirm-detail-val bold-text">{bookingData.specialty?.name}</span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Giá khám tham khảo</span>
-              <span className="confirm-detail-val bold-text">{formatPrice(bookingData.doctor?.price)}</span>
+            <div className="space-y-4">
+              {/* Doctor Info */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Thông tin bác sĩ</div>
+                <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100">
+                  <ConfirmRow label="Bác sĩ" value={bookingData.doctor?.name} bold />
+                  <ConfirmRow label="Chuyên khoa" value={bookingData.specialty?.name} bold />
+                  <ConfirmRow label="Giá khám tham khảo" value={formatPrice(bookingData.doctor?.price)} bold />
+                </div>
+              </div>
+
+              {/* Schedule Info */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Thông tin lịch khám</div>
+                <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100">
+                  <ConfirmRow label="Ngày khám" value={formatDisplayDate(bookingData.date)} />
+                  <ConfirmRow
+                    label="Giờ khám"
+                    value={`${bookingData.timeSlot?.startTime.slice(0, 5)} - ${bookingData.timeSlot?.endTime.slice(0, 5)}`}
+                  />
+                </div>
+              </div>
+
+              {/* Patient Info */}
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-2">Thông tin bệnh nhân</div>
+                <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100">
+                  <ConfirmRow
+                    label="Người được khám"
+                    value={`${bookingData.name}${bookingData.patientUser ? (bookingData.forSelf ? ' (Bệnh nhân chính)' : ' (Người thân)') : ''}`}
+                  />
+                  <ConfirmRow label="Ngày sinh" value={bookingData.dateOfBirth ? formatDisplayDate(bookingData.dateOfBirth) : '—'} />
+                  <ConfirmRow label="Giới tính" value={bookingData.gender === 'MALE' ? 'Nam' : bookingData.gender === 'FEMALE' ? 'Nữ' : 'Khác'} />
+                  <ConfirmRow label="Số điện thoại" value={bookingData.phone} />
+                  <ConfirmRow label="Email" value={bookingData.email || '—'} />
+                  <ConfirmRow label="Địa chỉ" value={bookingData.address || '—'} />
+                  <ConfirmRow label="Lý do khám" value={bookingData.reason} multiline />
+                </div>
+              </div>
+
+              {/* Disclaimer */}
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-700">
+                <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+                </svg>
+                <span>Chi phí chỉ mang tính tham khảo. Bệnh nhân thanh toán trực tiếp tại quầy khi đến khám.</span>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* Date time Info */}
-          <div className="confirm-section-title">THÔNG TIN LỊCH KHÁM</div>
-          <div className="confirm-details-box">
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Ngày khám</span>
-              <span className="confirm-detail-val">{formatDisplayDate(bookingData.date)}</span>
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {/* STEP 5: THÀNH CÔNG                                             */}
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {step === 5 && successBookingData && (
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs p-8 text-center">
+            {/* Success icon */}
+            <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
+              </svg>
             </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Giờ khám</span>
-              <span className="confirm-detail-val">
-                {bookingData.timeSlot?.startTime.slice(0, 5)} - {bookingData.timeSlot?.endTime.slice(0, 5)}
-              </span>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Đặt lịch thành công!</h2>
+            <span className="inline-block bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full mb-6 tracking-wide uppercase">
+              Đã xác nhận
+            </span>
+
+            {/* Receipt */}
+            <div className="bg-gray-50 rounded-xl border border-gray-100 divide-y divide-gray-100 text-left mb-5">
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs text-gray-500">Mã lịch hẹn</span>
+                <span className="text-sm font-bold text-[#49BCE2] tracking-wider">{successBookingData.code}</span>
+              </div>
+              <ConfirmRow
+                label="Người được khám"
+                value={`${successBookingData.name}${successBookingData.patientUser ? (successBookingData.forSelf ? ' (Bản thân)' : ' (Người thân)') : ''}`}
+              />
+              <ConfirmRow label="Ngày sinh" value={successBookingData.dateOfBirth ? formatDisplayDate(successBookingData.dateOfBirth) : '—'} />
+              <ConfirmRow label="Giới tính" value={successBookingData.gender === 'MALE' ? 'Nam' : successBookingData.gender === 'FEMALE' ? 'Nữ' : 'Khác'} />
+              <ConfirmRow label="Số điện thoại" value={successBookingData.phone} />
+              <ConfirmRow label="Bác sĩ" value={successBookingData.doctor?.name} />
+              <ConfirmRow label="Chuyên khoa" value={successBookingData.specialty?.name} />
+              <ConfirmRow
+                label="Ngày giờ khám"
+                value={`${formatDisplayDate(successBookingData.date)} — ${successBookingData.timeSlot?.startTime.slice(0, 5)} - ${successBookingData.timeSlot?.endTime.slice(0, 5)}`}
+              />
+              <div className="flex items-center justify-between px-4 py-3">
+                <span className="text-xs text-gray-500">Trạng thái</span>
+                <span className="text-sm font-semibold text-green-600">✓ Đã xác nhận</span>
+              </div>
+            </div>
+
+            {successBookingData.email && (
+              <p className="text-xs text-gray-400 mb-6">
+                📧 Email xác nhận đã được gửi đến <span className="font-medium text-gray-600">{successBookingData.email}</span>.
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                type="button"
+                onClick={handleResetBooking}
+                className="bg-[#49BCE2] text-white rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-[#3ca4c5] transition"
+              >
+                Đặt lịch mới
+              </button>
+              <Link
+                to="/portal/le-tan/lich-hen"
+                className="border border-[#49BCE2] text-[#49BCE2] rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-[#49BCE2]/5 transition"
+              >
+                Quản lý lịch hẹn
+              </Link>
+              <Link
+                to="/portal/le-tan"
+                className="border border-gray-200 text-gray-500 rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-gray-50 transition"
+              >
+                Quay về Tổng quan
+              </Link>
             </div>
           </div>
+        )}
 
-          {/* Patient Info */}
-          <div className="confirm-section-title">THÔNG TIN BỆNH NHÂN</div>
-          <div className="confirm-details-box">
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Người được khám</span>
-              <span className="confirm-detail-val">
-                {bookingData.name} {bookingData.patientUser ? (bookingData.forSelf ? '(Bệnh nhân chính)' : '(Người thân)') : ''}
-              </span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Ngày sinh</span>
-              <span className="confirm-detail-val">
-                {bookingData.dateOfBirth ? formatDisplayDate(bookingData.dateOfBirth) : '—'}
-              </span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Giới tính</span>
-              <span className="confirm-detail-val">
-                {bookingData.gender === 'MALE' ? 'Nam' : bookingData.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
-              </span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Số điện thoại</span>
-              <span className="confirm-detail-val">{bookingData.phone}</span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Email</span>
-              <span className="confirm-detail-val">{bookingData.email || '—'}</span>
-            </div>
-            <div className="confirm-detail-row">
-              <span className="confirm-detail-label">Địa chỉ</span>
-              <span className="confirm-detail-val">{bookingData.address || '—'}</span>
-            </div>
-            <div className="confirm-detail-row" style={{ alignItems: 'flex-start' }}>
-              <span className="confirm-detail-label" style={{ paddingTop: '2px' }}>Lý do khám</span>
-              <span className="confirm-detail-val" style={{ maxWidth: '70%', wordBreak: 'break-word' }}>
-                {bookingData.reason}
-              </span>
-            </div>
-          </div>
-
-          {/* Yellow Disclaimer Banner */}
-          <div className="warning-banner">
-            Chi phí chỉ mang tính tham khảo. Bệnh nhân thanh toán trực tiếp tại quầy khi đến khám.
-          </div>
-        </div>
-      )}
-
-      {/* STEP 5: ĐẶT LỊCH THÀNH CÔNG */}
-      {step === 5 && successBookingData && (
-        <div className="booking-card success-card-content">
-          <div className="success-icon-circle">✓</div>
-          <h2 className="success-title">Đặt lịch thành công</h2>
-          <div className="success-badge">ĐÃ XÁC NHẬN</div>
-
-          <div className="success-receipt-box">
-            <div className="receipt-row">
-              <span className="receipt-label">Mã lịch hẹn</span>
-              <span className="receipt-value highlight-code">
-                {successBookingData.code}
-              </span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Người được khám</span>
-              <span className="receipt-value">
-                {successBookingData.name} {successBookingData.patientUser ? (successBookingData.forSelf ? '(Bản thân)' : '(Người thân)') : ''}
-              </span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Ngày sinh</span>
-              <span className="receipt-value">
-                {successBookingData.dateOfBirth ? formatDisplayDate(successBookingData.dateOfBirth) : '—'}
-              </span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Giới tính</span>
-              <span className="receipt-value">
-                {successBookingData.gender === 'MALE' ? 'Nam' : successBookingData.gender === 'FEMALE' ? 'Nữ' : 'Khác'}
-              </span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Số điện thoại</span>
-              <span className="receipt-value">{successBookingData.phone}</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Bác sĩ</span>
-              <span className="receipt-value">{successBookingData.doctor?.name}</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Chuyên khoa</span>
-              <span className="receipt-value">{successBookingData.specialty?.name}</span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Ngày giờ khám</span>
-              <span className="receipt-value">
-                {formatDisplayDate(successBookingData.date)} — {successBookingData.timeSlot?.startTime.slice(0, 5)} - {successBookingData.timeSlot?.endTime.slice(0, 5)}
-              </span>
-            </div>
-            <div className="receipt-row">
-              <span className="receipt-label">Trạng thái</span>
-              <span className="receipt-value green-text">Đã xác nhận</span>
-            </div>
-          </div>
-
-          {successBookingData.email && (
-            <div className="success-email-notice">
-              📧 Email xác nhận đã được gửi đến {successBookingData.email}.
-            </div>
-          )}
-
-          <div className="success-actions">
-            <button 
-              type="button" 
-              className="btn-primary-action"
-              onClick={handleResetBooking}
-            >
-              Đặt lịch mới
-            </button>
-            <Link to="/portal/le-tan/lich-hen" className="btn-outline-action">
-              Quản lý lịch hẹn
-            </Link>
-            <Link to="/portal/le-tan" className="btn-grey-action">
-              Quay về Tổng quan
-            </Link>
-          </div>
-        </div>
-      )}
-
-      {/* Stepper Footer actions */}
-      {step < 5 && (
-        <div className="wizard-footer-actions">
-          <button
-            type="button"
-            className="btn-wizard-back"
-            disabled={step === 1 || bookMutation.isPending}
-            onClick={() => {
-              setStepError(null);
-              setValidationErrors({});
-              setStep(s => s - 1);
-            }}
-          >
-            <span>←</span> Quay lại
-          </button>
-
-          {step === 4 ? (
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {/* WIZARD FOOTER ACTIONS                                          */}
+        {/* ════════════════════════════════════════════════════════════════ */}
+        {step < 5 && (
+          <div className="flex items-center justify-between gap-3 pt-1">
             <button
               type="button"
-              className="btn-confirm-booking"
-              disabled={bookMutation.isPending}
-              onClick={handleStepSubmit}
+              disabled={step === 1 || bookMutation.isPending}
+              onClick={() => {
+                setStepError(null);
+                setValidationErrors({});
+                setStep(s => s - 1);
+              }}
+              className="flex items-center gap-1.5 border border-gray-200 text-gray-500 rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
-              {bookMutation.isPending ? 'Đang đặt lịch...' : 'Xác nhận đặt lịch'}
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Quay lại
             </button>
-          ) : (
-            <button
-              type="button"
-              className="btn-wizard-next"
-              onClick={handleStepSubmit}
-            >
-              Tiếp theo <span>→</span>
-            </button>
-          )}
-        </div>
-      )}
+
+            {step === 4 ? (
+              <button
+                type="button"
+                disabled={bookMutation.isPending}
+                onClick={handleStepSubmit}
+                className="flex items-center gap-1.5 bg-[#49BCE2] text-white rounded-lg px-6 py-2.5 text-sm font-semibold hover:bg-[#3ca4c5] transition disabled:opacity-60 disabled:cursor-not-allowed shadow-sm"
+              >
+                {bookMutation.isPending ? (
+                  <>
+                    <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                    Đang đặt lịch...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    Xác nhận đặt lịch
+                  </>
+                )}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleStepSubmit}
+                className="flex items-center gap-1.5 bg-[#49BCE2] text-white rounded-lg px-6 py-2.5 text-sm font-semibold hover:bg-[#3ca4c5] transition shadow-sm"
+              >
+                Tiếp theo
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Helper: Confirmation Row ─────────────────────────────────────────────────
+function ConfirmRow({ label, value, bold, multiline }) {
+  return (
+    <div className={`flex ${multiline ? 'items-start' : 'items-center'} justify-between gap-4 px-4 py-3`}>
+      <span className="text-xs text-gray-500 shrink-0">{label}</span>
+      <span className={`text-sm text-right ${bold ? 'font-semibold text-gray-800' : 'text-gray-700'} ${multiline ? 'max-w-[65%] break-words' : ''}`}>
+        {value}
+      </span>
     </div>
   );
 }

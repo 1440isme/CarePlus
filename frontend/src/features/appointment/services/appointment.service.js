@@ -15,6 +15,16 @@ export async function updateAppointmentStatus(id, payload) {
   return response.data;
 }
 
+export async function getDoctorAppointments(params) {
+  const response = await axiosInstance.get('/appointments/doctor/me', { params });
+  return response.data;
+}
+
+export async function updateDoctorAppointmentStatus(id, payload) {
+  const response = await axiosInstance.patch(`/appointments/doctor/me/${id}/status`, payload);
+  return response.data;
+}
+
 export async function searchPatients(params) {
   const response = await axiosInstance.get('/appointments/receptionist/patients', { params });
   return response.data;
@@ -45,3 +55,7 @@ export async function cancelMyAppointment(id, payload) {
   return response.data;
 }
 
+export async function getAdminStats() {
+  const response = await axiosInstance.get('/appointments/stats');
+  return response.data;
+}

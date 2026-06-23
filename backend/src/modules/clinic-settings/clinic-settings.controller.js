@@ -1,4 +1,5 @@
 const ClinicSettingsService = require('./clinic-settings.service');
+const prisma = require('../../infrastructure/database/prisma.client');
 
 class ClinicSettingsController {
   async getPublicClinicInfo(req, res, next) {
@@ -67,6 +68,31 @@ class ClinicSettingsController {
       return res.status(200).json({
         success: true,
         data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
+
+  async getPublicStats(req, res, next) {
+    try {
+      const patientCount = await prisma.user.count({
+        where: { role: 'PATIENT' }
+      });
+      const doctorCount = await prisma.doctor.count({
+        where: { active: true }
+      });
+      const specialtyCount = await prisma.specialty.count({
+        where: { active: true }
+      });
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          patientCount,
+          doctorCount,
+          specialtyCount
+        }
       });
     } catch (error) {
       return next(error);

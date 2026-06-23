@@ -1,15 +1,17 @@
 import { Outlet } from 'react-router-dom';
-import Header from './Header';
-import Footer from './Footer';
+import { PublicHeader } from './PublicHeader';
+import { PublicFooter } from './PublicFooter';
+import ChatWidget from '../ui/ChatWidget.jsx';
 
 export default function PublicLayout() {
   return (
-    <div className="app-layout">
-      <Header />
-      <main className="main-content">
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <PublicHeader />
+      <main className="flex-1">
         <Outlet />
       </main>
-      <Footer />
+      <PublicFooter />
+      <ChatWidget />
     </div>
   );
 }

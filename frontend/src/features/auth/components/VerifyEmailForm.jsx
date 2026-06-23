@@ -2,12 +2,10 @@ import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
+import { Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { verifyEmailSchema } from '../schemas/auth.schema.js';
 import { useVerifyEmail } from '../hooks/useVerifyEmail.js';
 import { useResendVerificationOtp } from '../hooks/useResendVerificationOtp.js';
-
-const iconEmail = 'https://www.figma.com/api/mcp/asset/58852653-03da-4250-a797-5c02b47736c6';
-const iconOtp = 'https://www.figma.com/api/mcp/asset/68cfcdab-3dc5-4e97-8d07-a59eabbbef36';
 
 function getVerifyErrorMessage(error) {
   switch (error?.code) {
@@ -91,69 +89,92 @@ export default function VerifyEmailForm({ defaultValues = { email: '', otp: '' }
   };
 
   return (
-    <form className="auth-register-form" onSubmit={handleSubmit(submitHandler)} noValidate>
-      <div className="auth-form-field">
-        <label className="auth-form-label" htmlFor="verify-email">Email đăng ký</label>
-        <div className="auth-input-shell">
-          <img className="auth-input-icon" src={iconEmail} alt="" aria-hidden="true" />
+    <form className="space-y-4" onSubmit={handleSubmit(submitHandler)} noValidate>
+      {verifyEmailMutation.error ? (
+        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{verifyErrorMessage}</span>
+        </div>
+      ) : null}
+
+      {resendVerificationOtpMutation.error ? (
+        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{resendErrorMessage}</span>
+        </div>
+      ) : null}
+
+      {resendSuccessMessage ? (
+        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg text-sm text-green-600">
+          <CheckCircle className="w-4 h-4 flex-shrink-0" />
+          <span>{resendSuccessMessage}</span>
+        </div>
+      ) : null}
+
+      <div>
+        <label className="block text-sm text-gray-600 mb-1.5 font-medium" htmlFor="verify-email">
+          Email đăng ký
+        </label>
+        <div className="relative">
+          <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             id="verify-email"
-            className="auth-input"
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
+            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+              errors.email ? 'border-red-500' : 'border-gray-200'
+            }`}
             {...register('email')}
           />
         </div>
-        {errors.email ? <p className="auth-field-error">{errors.email.message}</p> : null}
+        {errors.email ? <p className="text-red-500 text-xs mt-1">{errors.email.message}</p> : null}
       </div>
 
-      <div className="auth-form-field auth-form-field-last">
-        <label className="auth-form-label" htmlFor="verify-otp">Mã OTP</label>
-        <div className="auth-input-shell">
-          <img className="auth-input-icon" src={iconOtp} alt="" aria-hidden="true" />
+      <div>
+        <label className="block text-sm text-gray-600 mb-1.5 font-medium" htmlFor="verify-otp">
+          Mã OTP
+        </label>
+        <div className="relative">
+          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             id="verify-otp"
-            className="auth-input"
             type="text"
             placeholder="Nhập 6 chữ số"
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
+            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+              errors.otp ? 'border-red-500' : 'border-gray-200'
+            }`}
             {...register('otp')}
           />
         </div>
-        {errors.otp ? <p className="auth-field-error">{errors.otp.message}</p> : null}
+        {errors.otp ? <p className="text-red-500 text-xs mt-1">{errors.otp.message}</p> : null}
       </div>
 
-      {verifyEmailMutation.error ? (
-        <p className="auth-submit-error">{verifyErrorMessage}</p>
-      ) : null}
+      <div className="pt-2 space-y-2">
+        <button
+          className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          type="submit"
+          disabled={verifyEmailMutation.isPending}
+        >
+          {verifyEmailMutation.isPending ? 'Đang xác minh...' : 'Xác minh email'}
+        </button>
 
-      {resendVerificationOtpMutation.error ? (
-        <p className="auth-submit-error">{resendErrorMessage}</p>
-      ) : null}
+        <button
+          className="w-full py-3 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          type="button"
+          onClick={resendHandler}
+          disabled={resendVerificationOtpMutation.isPending}
+        >
+          {resendVerificationOtpMutation.isPending ? 'Đang gửi lại...' : 'Gửi lại mã OTP'}
+        </button>
+      </div>
 
-      {resendSuccessMessage ? (
-        <p className="auth-submit-success">{resendSuccessMessage}</p>
-      ) : null}
-
-      <button className="auth-submit-button" type="submit" disabled={verifyEmailMutation.isPending}>
-        {verifyEmailMutation.isPending ? 'Đang xác minh...' : 'Xác minh email'}
-      </button>
-
-      <button
-        className="auth-secondary-button"
-        type="button"
-        onClick={resendHandler}
-        disabled={resendVerificationOtpMutation.isPending}
-      >
-        {resendVerificationOtpMutation.isPending ? 'Đang gửi lại...' : 'Gửi lại mã OTP'}
-      </button>
-
-      <p className="auth-register-footnote">
+      <p className="text-center text-sm text-gray-500 mt-4">
         Đã có tài khoản?{' '}
-        <Link to="/dang-nhap">Đăng nhập</Link>
+        <Link to="/dang-nhap" className="text-cyan-600 font-medium hover:underline">Đăng nhập</Link>
       </p>
     </form>
   );

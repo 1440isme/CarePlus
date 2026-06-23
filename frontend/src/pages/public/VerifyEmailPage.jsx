@@ -1,38 +1,31 @@
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Stethoscope } from 'lucide-react';
 import VerifyEmailForm from '../../features/auth/components/VerifyEmailForm.jsx';
-import './register-page.css';
-
-const logoIcon = 'https://www.figma.com/api/mcp/asset/852fd75b-9694-4a78-a12f-1557cef742d4';
 
 export default function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const email = searchParams.get('email') || '';
 
   return (
-    <div className="auth-page auth-page-register">
-      <div className="auth-page-card auth-page-card-compact">
-        <header className="auth-page-header">
-          <div className="auth-page-brand" aria-label="CarePlus">
-            <div className="auth-page-brand-icon">
-              <img src={logoIcon} alt="" aria-hidden="true" />
+    <div className="min-h-screen bg-gradient-to-br from-cyan-50 to-teal-50 flex items-center justify-center px-4 py-12">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <Link to="/" className="inline-flex items-center gap-2 mb-6">
+            <div className="w-9 h-9 bg-cyan-600 rounded-xl flex items-center justify-center">
+              <Stethoscope className="w-5 h-5 text-white" />
             </div>
-            <div className="auth-page-brand-text">
-              <span>Care</span>
-              <span>Plus</span>
-            </div>
-          </div>
-
-          <h1 className="auth-page-title">Xác minh email</h1>
-          <p className="auth-page-subtitle">
+            <span className="text-xl font-bold text-gray-900">Care<span className="text-cyan-600">Plus</span></span>
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900">Xác minh email</h1>
+          <p className="text-gray-500 mt-1 text-sm">
             {email
               ? `Tài khoản ${email} đã được tạo. Vui lòng nhập mã OTP để hoàn tất xác minh email`
               : 'Nhập email và mã OTP để hoàn tất xác minh tài khoản'}
           </p>
-        </header>
-
-        <section className="auth-page-form-card auth-page-form-card-compact">
+        </div>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <VerifyEmailForm defaultValues={{ email, otp: '' }} />
-        </section>
+        </div>
       </div>
     </div>
   );

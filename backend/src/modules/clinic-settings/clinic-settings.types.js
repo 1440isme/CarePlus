@@ -3,6 +3,7 @@ const CLINIC_SETTINGS_ROUTE_PATHS = {
   SYSTEM: '/system',
   BOOKING_RULES: '/booking-rules',
   PUBLIC_SYSTEM: '/system/public',
+  PUBLIC_STATS: '/stats/public',
 };
 
 const CLINIC_SETTINGS_ERROR_CODES = {

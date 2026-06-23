@@ -9,7 +9,28 @@ async function startServer() {
     await prisma.$connect();
     console.log('Successfully connected to MySQL database');
 
-    const server = app.listen(PORT, () => {
+    const http = require('http');
+    const { Server } = require('socket.io');
+    const socketService = require('./infrastructure/realtime/socket.service');
+    const { socketAuthMiddleware, handleSocketConnection } = require('./infrastructure/realtime/socket.handler');
+
+    const server = http.createServer(app);
+    const io = new Server(server, {
+      cors: {
+        origin: '*', // For local dev, simplify or mirror app CORS
+        credentials: true,
+        methods: ['GET', 'POST']
+      }
+    });
+
+    // Initialize socket service
+    socketService.setIo(io);
+
+    // Apply socket middlewares & connection handler
+    io.use(socketAuthMiddleware);
+    io.on('connection', (socket) => handleSocketConnection(io, socket));
+
+    server.listen(PORT, () => {
       console.log(`CarePlus Backend Server running on port ${PORT}`);
       console.log(`Health check URL: http://localhost:${PORT}/health`);
     });

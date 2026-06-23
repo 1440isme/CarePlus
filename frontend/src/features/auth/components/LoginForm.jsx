@@ -2,13 +2,9 @@ import { useMemo, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link } from 'react-router-dom';
+import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import { loginSchema } from '../schemas/auth.schema.js';
 import { useLogin } from '../hooks/useLogin.js';
-
-const iconEmail = 'https://www.figma.com/api/mcp/asset/ac3aad8e-1aed-4517-8a03-82ee6d283840';
-const iconLock = 'https://www.figma.com/api/mcp/asset/87629d8e-93a6-4126-b006-03d335d084b4';
-const iconEye = 'https://www.figma.com/api/mcp/asset/5de5873e-ef3b-4444-b863-5ddce1e4c23e';
-const iconArrow = 'https://www.figma.com/api/mcp/asset/f2e1994a-7ecc-4efc-945f-7ff8bc6951bc';
 
 function getLoginErrorMessage(error) {
   switch (error?.code) {
@@ -37,6 +33,7 @@ export default function LoginForm({
     control,
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
@@ -47,6 +44,7 @@ export default function LoginForm({
     control,
     name: 'email',
   });
+  
   const loginErrorMessage = useMemo(
     () => getLoginErrorMessage(loginMutation.error),
     [loginMutation.error],
@@ -57,86 +55,106 @@ export default function LoginForm({
   };
 
   return (
-    <form className="auth-register-form auth-login-form" onSubmit={handleSubmit(submitHandler)} noValidate>
-      <div className="auth-form-field auth-form-field-login-first">
-        <label className="auth-form-label" htmlFor="login-email">Email</label>
-        <div className="auth-input-shell">
-          <img className="auth-input-icon" src={iconEmail} alt="" aria-hidden="true" />
-          <input
-            id="login-email"
-            className="auth-input"
-            type="email"
-            placeholder="email@example.com"
-            autoComplete="email"
-            {...register('email')}
-          />
-        </div>
-        {errors.email ? <p className="auth-field-error">{errors.email.message}</p> : null}
-      </div>
+    <div className="space-y-6">
+      <form className="space-y-4" onSubmit={handleSubmit(submitHandler)} noValidate>
+        {loginMutation.error ? (
+          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg text-sm text-red-600">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <div className="flex-1">
+              <span>{loginErrorMessage}</span>
+              {loginMutation.error.code === 'EMAIL_NOT_VERIFIED' && currentEmail && (
+                <Link
+                  className="underline ml-2 font-medium"
+                  to={`/xac-minh-email?email=${encodeURIComponent(currentEmail.trim())}`}
+                >
+                  Xác minh ngay
+                </Link>
+              )}
+            </div>
+          </div>
+        ) : null}
 
-      <div className="auth-form-field auth-form-field-last">
-        <div className="auth-form-label-row">
-          <label className="auth-form-label auth-form-label-inline" htmlFor="login-password">Mật khẩu</label>
-          <Link className="auth-inline-link" to="/quen-mat-khau">
-            Quên mật khẩu?
-          </Link>
+        <div>
+          <label className="block text-sm text-gray-600 mb-1.5 font-medium" htmlFor="login-email">
+            Email
+          </label>
+          <div className="relative">
+            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              id="login-email"
+              type="email"
+              placeholder="email@example.com"
+              autoComplete="email"
+              className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                errors.email ? 'border-red-500' : 'border-gray-200'
+              }`}
+              {...register('register_email', { value: '' })} // bypass autocomplete issues if needed or standard register
+              {...register('email')}
+            />
+          </div>
+          {errors.email ? <p className="text-red-500 text-xs mt-1">{errors.email.message}</p> : null}
         </div>
-        <div className="auth-input-shell auth-input-shell-with-action">
-          <img className="auth-input-icon" src={iconLock} alt="" aria-hidden="true" />
-          <input
-            id="login-password"
-            className="auth-input"
-            type={isPasswordVisible ? 'text' : 'password'}
-            placeholder="Nhập mật khẩu"
-            autoComplete="current-password"
-            {...register('password')}
-          />
-          <button
-            className={`auth-input-action ${isPasswordVisible ? '' : 'auth-input-action--hidden'}`.trim()}
-            type="button"
-            onClick={() => setIsPasswordVisible((currentValue) => !currentValue)}
-            aria-label={isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
-          >
-            <img src={iconEye} alt="" />
-          </button>
-        </div>
-        {errors.password ? <p className="auth-field-error">{errors.password.message}</p> : null}
-      </div>
 
-      <div className="auth-remember-row">
-        <label className="auth-remember-checkbox" htmlFor="login-remember-me">
-          <input
-            id="login-remember-me"
-            type="checkbox"
-            {...register('rememberMe')}
-          />
-          <span>Ghi nhớ đăng nhập</span>
-        </label>
-      </div>
-
-      {loginMutation.error ? (
-        <div className="auth-submit-feedback">
-          <p className="auth-submit-error">{loginErrorMessage}</p>
-          {loginMutation.error.code === 'EMAIL_NOT_VERIFIED' && currentEmail ? (
-            <Link
-              className="auth-inline-link auth-inline-link-feedback"
-              to={`/xac-minh-email?email=${encodeURIComponent(currentEmail.trim())}`}
-            >
-              Xác minh email ngay
+        <div>
+          <div className="flex justify-between items-center mb-1.5">
+            <label className="text-sm text-gray-600 font-medium" htmlFor="login-password">
+              Mật khẩu
+            </label>
+            <Link className="text-xs text-cyan-600 hover:underline" to="/quen-mat-khau">
+              Quên mật khẩu?
             </Link>
-          ) : null}
+          </div>
+          <div className="relative">
+            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              id="login-password"
+              type={isPasswordVisible ? 'text' : 'password'}
+              placeholder="Nhập mật khẩu"
+              autoComplete="current-password"
+              className={`w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                errors.password ? 'border-red-500' : 'border-gray-200'
+              }`}
+              {...register('password')}
+            />
+            <button
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+              type="button"
+              onClick={() => setIsPasswordVisible((v) => !v)}
+              aria-label={isPasswordVisible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'}
+            >
+              {isPasswordVisible ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {errors.password ? <p className="text-red-500 text-xs mt-1">{errors.password.message}</p> : null}
         </div>
-      ) : null}
 
-      <button className="auth-submit-button auth-submit-button-with-icon" type="submit" disabled={loginMutation.isPending}>
-        <span>{loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
-        {!loginMutation.isPending ? <img src={iconArrow} alt="" aria-hidden="true" /> : null}
-      </button>
+        <div className="flex items-center">
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer" htmlFor="login-remember-me">
+            <input
+              id="login-remember-me"
+              type="checkbox"
+              className="w-4 h-4 rounded border-gray-300 text-cyan-600 focus:ring-cyan-500"
+              {...register('rememberMe')}
+            />
+            <span>Ghi nhớ đăng nhập</span>
+          </label>
+        </div>
 
-      <p className="auth-register-footnote">
+        <button
+          className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+          type="submit"
+          disabled={loginMutation.isPending}
+        >
+          <span>{loginMutation.isPending ? 'Đang đăng nhập...' : 'Đăng nhập'}</span>
+          {!loginMutation.isPending && <ArrowRight className="w-4 h-4" />}
+        </button>
+      </form>
+      <p className="text-center text-sm text-gray-500 mt-4">
         Chưa có tài khoản?{' '}
-        <Link to="/dang-ky">Đăng ký ngay</Link>
+        <Link className="text-cyan-600 font-semibold hover:underline" to="/dang-ky">
+          Đăng ký ngay
+        </Link>
       </p>
-    </form>
+    </div>
   );
 }

@@ -3,12 +3,15 @@ import {
   getAppointments,
   getAppointmentById,
   updateAppointmentStatus,
+  getDoctorAppointments,
+  updateDoctorAppointmentStatus,
   searchPatients,
   bookAppointmentByReceptionist,
   bookAppointment,
   getMyAppointments,
   getMyAppointmentDetail,
-  cancelMyAppointment
+  cancelMyAppointment,
+  getAdminStats
 } from '../services/appointment.service.js';
 import { QUERY_KEYS } from '../../../shared/constants/query-keys.js';
 
@@ -34,6 +37,26 @@ export function useUpdateAppointmentStatus() {
     mutationFn: ({ id, payload }) => updateAppointmentStatus(id, payload),
     onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointment-detail', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ['doctor-dashboard'] });
+    },
+  });
+}
+
+export function useDoctorAppointments(params) {
+  return useQuery({
+    queryKey: QUERY_KEYS.doctorAppointments(params),
+    queryFn: () => getDoctorAppointments(params),
+  });
+}
+
+export function useUpdateDoctorAppointmentStatus() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, payload }) => updateDoctorAppointmentStatus(id, payload),
+    onSuccess: (data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
       queryClient.invalidateQueries({ queryKey: ['appointment-detail', variables.id] });
       queryClient.invalidateQueries({ queryKey: ['doctor-dashboard'] });
     },
@@ -100,3 +123,10 @@ export function useCancelMyAppointment() {
   });
 }
 
+export function useAdminStats() {
+  return useQuery({
+    queryKey: ['admin-stats'],
+    queryFn: getAdminStats,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}

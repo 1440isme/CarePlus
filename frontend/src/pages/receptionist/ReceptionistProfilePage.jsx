@@ -2,11 +2,12 @@ import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { Edit2, Save, Lock, CheckCircle } from 'lucide-react';
 import { useMe } from '../../features/user/hooks/useMe.js';
 import { useUpdateMe } from '../../features/user/hooks/useUpdateMe.js';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './receptionist.css';
 
+// ── Zod schema ──────────────────────────────────────────────────────────────
 const localUpdateSchema = z.object({
   name: z.string().trim().min(1, 'Họ tên không được để trống').max(100, 'Họ tên tối đa 100 ký tự'),
   phone: z.string().trim().regex(/^(0|\+84)(3|5|7|8|9)\d{8}$/, 'Số điện thoại không hợp lệ'),
@@ -15,6 +16,7 @@ const localUpdateSchema = z.object({
   address: z.string().trim().min(1, 'Địa chỉ không được để trống').max(255, 'Địa chỉ tối đa 255 ký tự'),
 });
 
+// ── Utility functions ────────────────────────────────────────────────────────
 function formatDateForDisplay(dateStr) {
   if (!dateStr) return '';
   if (/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) return dateStr;
@@ -30,7 +32,7 @@ function convertDmYToYmd(dateStr) {
   if (!dateStr) return '';
   const parts = dateStr.split('/');
   if (parts.length === 3) {
-    return `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+    return `${parts[2]}-${parts[1]}-${parts[0]}`;
   }
   return dateStr;
 }
@@ -39,7 +41,7 @@ function convertYmdToDmY(dateStr) {
   if (!dateStr) return '';
   const parts = dateStr.split('-');
   if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`; // DD/MM/YYYY
+    return `${parts[2]}/${parts[1]}/${parts[0]}`;
   }
   return dateStr;
 }
@@ -47,9 +49,35 @@ function convertYmdToDmY(dateStr) {
 function getInitials(name) {
   if (!name) return 'LT';
   const words = name.trim().split(/\s+/).filter(Boolean);
-  return words.slice(0, 2).map(w => w[0]?.toUpperCase()).join('') || 'LT';
+  return words.slice(0, 2).map((w) => w[0]?.toUpperCase()).join('') || 'LT';
 }
 
+// ── Reusable sub-components ──────────────────────────────────────────────────
+function ReadRow({ label, value, icon }) {
+  return (
+    <div className="flex items-start justify-between py-4 gap-4">
+      <span className="text-sm text-gray-500 shrink-0 w-32">{label}</span>
+      <span className="text-sm font-medium text-gray-900 text-right flex items-center gap-1.5">
+        {icon && icon}
+        {value || '--'}
+      </span>
+    </div>
+  );
+}
+
+function EditField({ label, error, children }) {
+  return (
+    <div className="py-3">
+      <label className="block text-xs font-semibold text-gray-500 mb-1.5 uppercase tracking-wide">
+        {label}
+      </label>
+      {children}
+      {error && <p className="mt-1 text-xs text-red-500">{error}</p>}
+    </div>
+  );
+}
+
+// ── Main Page ────────────────────────────────────────────────────────────────
 export default function ReceptionistProfilePage() {
   const [isEditMode, setIsEditMode] = useState(false);
   const [statusBanner, setStatusBanner] = useState(null);
@@ -66,16 +94,17 @@ export default function ReceptionistProfilePage() {
     onError: (err) => {
       setStatusBanner({
         type: 'error',
-        message: err?.response?.data?.error?.message || err?.message || 'Có lỗi xảy ra khi lưu thông tin.'
+        message:
+          err?.response?.data?.error?.message || err?.message || 'Có lỗi xảy ra khi lưu thông tin.',
       });
-    }
+    },
   });
 
   const {
     register,
     handleSubmit,
     reset,
-    formState: { errors, isDirty }
+    formState: { errors, isDirty },
   } = useForm({
     resolver: zodResolver(localUpdateSchema),
     defaultValues: {
@@ -83,8 +112,8 @@ export default function ReceptionistProfilePage() {
       phone: '',
       gender: '',
       dateOfBirth: '',
-      address: ''
-    }
+      address: '',
+    },
   });
 
   useEffect(() => {
@@ -94,37 +123,27 @@ export default function ReceptionistProfilePage() {
         phone: user.phone || '',
         gender: user.gender || '',
         dateOfBirth: convertDmYToYmd(user.dateOfBirth),
-        address: user.address || ''
+        address: user.address || '',
       });
     }
   }, [user, reset]);
 
+  // ── Loading state ──────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="receptionist-page" style={{ padding: '40px', textAlign: 'center' }}>
-        <div style={{
-          width: '32px',
-          height: '32px',
-          margin: '0 auto 16px',
-          borderRadius: '50%',
-          border: '3px solid #d8f0f7',
-          borderTopColor: '#0092b8',
-          animation: 'spin 1s linear infinite'
-        }} />
-        <p>Đang tải thông tin cá nhân...</p>
-        <style>{`
-          @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-          }
-        `}</style>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 mx-auto border-[3px] border-gray-200 border-t-[#49BCE2] rounded-full animate-spin" />
+          <p className="text-sm text-gray-500">Đang tải thông tin cá nhân...</p>
+        </div>
       </div>
     );
   }
 
+  // ── Error state ────────────────────────────────────────────────────────────
   if (isError || !user) {
     return (
-      <div className="receptionist-page" style={{ padding: '24px' }}>
+      <div className="min-h-screen bg-gray-50 p-6">
         <StateBlock
           variant="danger"
           title="Không thể tải thông tin cá nhân"
@@ -147,7 +166,7 @@ export default function ReceptionistProfilePage() {
       phone: user.phone || '',
       gender: user.gender || '',
       dateOfBirth: convertDmYToYmd(user.dateOfBirth),
-      address: user.address || ''
+      address: user.address || '',
     });
   };
 
@@ -168,174 +187,177 @@ export default function ReceptionistProfilePage() {
     updateMeMutation.mutate(payload);
   };
 
+  const inputCls =
+    'w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white';
+
   return (
-    <div className="receptionist-page profile-page-wrapper">
-      <div className="profile-page-header">
-        <h1>Thông tin cá nhân</h1>
-        <p>Quản lý thông tin tài khoản của bạn</p>
-      </div>
-
-      {statusBanner && (
-        <div className={`profile-submit-status-banner ${statusBanner.type}`}>
-          {statusBanner.message}
+    <div className="min-h-screen bg-gray-50 p-4 md:p-6 lg:p-8">
+      <div className="max-w-2xl mx-auto space-y-5">
+        {/* ── Page Title ── */}
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Thông tin cá nhân</h1>
+          <p className="mt-1 text-sm text-gray-500">Quản lý thông tin tài khoản của bạn</p>
         </div>
-      )}
 
-      <form onSubmit={handleSubmit(onSubmit)}>
-        {/* Card 1: Summary Card */}
-        <div className="profile-summary-card">
-          <div className="profile-card-accent-bar" />
-          <div className="profile-summary-content">
-            <div className="profile-avatar-circle">
-              {getInitials(user.name)}
-            </div>
-            <div className="profile-summary-info">
-              <h2>{user.name}</h2>
-              <p className="profile-role">Lễ tân</p>
-              <span className="status-badge-active">
-                <span className="status-dot status-dot-completed" style={{ margin: '0 4px 0 0', width: '6px', height: '6px' }} />
-                Hoạt động
-              </span>
-            </div>
-
-            {!isEditMode && (
-              <button
-                type="button"
-                className="profile-edit-action-btn"
-                onClick={handleEditClick}
-              >
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '4px' }}>
-                  <path d="M12 20h9"></path>
-                  <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"></path>
-                </svg>
-                Chỉnh sửa
-              </button>
-            )}
+        {/* ── Status Banner ── */}
+        {statusBanner && (
+          <div
+            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-sm font-medium border ${
+              statusBanner.type === 'success'
+                ? 'bg-green-50 border-green-200 text-green-700'
+                : 'bg-red-50 border-red-200 text-red-700'
+            }`}
+          >
+            <CheckCircle className="w-4 h-4 shrink-0" />
+            {statusBanner.message}
           </div>
-        </div>
+        )}
 
-        {/* Card 2: Details Card */}
-        <div className="profile-details-card">
-          <div className="profile-details-list">
-            {/* Họ và tên */}
-            <div className="profile-detail-item">
-              <span className="profile-detail-label">Họ và tên</span>
-              {isEditMode ? (
-                <div className="profile-edit-field">
-                  <input
-                    type="text"
-                    className="profile-edit-input"
-                    {...register('name')}
-                  />
-                  {errors.name && <span className="profile-edit-error-msg">{errors.name.message}</span>}
-                </div>
-              ) : (
-                <span className="profile-detail-value">{user.name}</span>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* ── Card 1: Profile Summary ── */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden">
+            {/* Cyan accent bar */}
+            <div className="h-1.5 bg-[#49BCE2]" />
+
+            <div className="flex items-center gap-4 p-5">
+              {/* Avatar */}
+              <div className="w-16 h-16 rounded-full bg-[#49BCE2] flex items-center justify-center text-white text-xl font-bold shrink-0 select-none">
+                {getInitials(user.name)}
+              </div>
+
+              {/* Info */}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-gray-900 truncate">{user.name}</h2>
+                <p className="text-sm font-semibold text-[#49BCE2]">Lễ tân</p>
+                <span className="inline-flex items-center gap-1.5 mt-1 px-2 py-0.5 bg-green-50 text-green-700 text-xs font-semibold rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                  Hoạt động
+                </span>
+              </div>
+
+              {/* Edit button */}
+              {!isEditMode && (
+                <button
+                  type="button"
+                  className="shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-[#49BCE2] text-[#49BCE2] text-sm font-semibold hover:bg-[#EFF9FD] transition"
+                  onClick={handleEditClick}
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                  Chỉnh sửa
+                </button>
               )}
             </div>
+          </div>
 
-            {/* Email */}
-            <div className="profile-detail-item">
-              <span className="profile-detail-label">Email</span>
-              <span className="profile-detail-value email-value">{user.email}</span>
+          {/* ── Card 2: Details / Edit Form ── */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-xs">
+            <div className="px-5 py-4 border-b border-gray-100">
+              <h3 className="text-sm font-bold text-gray-700">
+                {isEditMode ? 'Chỉnh sửa thông tin' : 'Thông tin chi tiết'}
+              </h3>
             </div>
 
-            {/* Số điện thoại */}
-            <div className="profile-detail-item">
-              <span className="profile-detail-label">Số điện thoại</span>
-              {isEditMode ? (
-                <div className="profile-edit-field">
-                  <input
-                    type="text"
-                    className="profile-edit-input"
-                    {...register('phone')}
-                  />
-                  {errors.phone && <span className="profile-edit-error-msg">{errors.phone.message}</span>}
-                </div>
-              ) : (
-                <span className="profile-detail-value">{user.phone || '--'}</span>
-              )}
-            </div>
+            {isEditMode ? (
+              /* ── Edit mode ── */
+              <div className="px-5 divide-y divide-gray-100">
+                <EditField label="Họ và tên" error={errors.name?.message}>
+                  <input type="text" className={inputCls} {...register('name')} />
+                </EditField>
 
-            {/* Giới tính */}
-            <div className="profile-detail-item">
-              <span className="profile-detail-label">Giới tính</span>
-              {isEditMode ? (
-                <div className="profile-edit-field">
-                  <select
-                    className="profile-edit-input"
-                    {...register('gender')}
-                  >
+                <EditField label="Email">
+                  <div className="relative">
+                    <input
+                      type="email"
+                      className={`${inputCls} pr-9 bg-gray-50 text-gray-400 cursor-not-allowed`}
+                      value={user.email}
+                      readOnly
+                    />
+                    <Lock className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-400">Email không thể thay đổi.</p>
+                </EditField>
+
+                <EditField label="Số điện thoại" error={errors.phone?.message}>
+                  <input type="text" className={inputCls} {...register('phone')} />
+                </EditField>
+
+                <EditField label="Giới tính" error={errors.gender?.message}>
+                  <select className={inputCls} {...register('gender')}>
                     <option value="">Chọn giới tính</option>
                     <option value="MALE">Nam</option>
                     <option value="FEMALE">Nữ</option>
                     <option value="OTHER">Khác</option>
                   </select>
-                  {errors.gender && <span className="profile-edit-error-msg">{errors.gender.message}</span>}
-                </div>
-              ) : (
-                <span className="profile-detail-value">
-                  {user.gender === 'MALE' ? 'Nam' : user.gender === 'FEMALE' ? 'Nữ' : user.gender === 'OTHER' ? 'Khác' : '--'}
-                </span>
-              )}
-            </div>
+                </EditField>
 
-            {/* Ngày sinh */}
-            <div className="profile-detail-item">
-              <span className="profile-detail-label">Ngày sinh</span>
-              {isEditMode ? (
-                <div className="profile-edit-field">
-                  <input
-                    type="date"
-                    className="profile-edit-input"
-                    {...register('dateOfBirth')}
-                  />
-                  {errors.dateOfBirth && <span className="profile-edit-error-msg">{errors.dateOfBirth.message}</span>}
-                </div>
-              ) : (
-                <span className="profile-detail-value">{formatDateForDisplay(user.dateOfBirth) || '--'}</span>
-              )}
-            </div>
+                <EditField label="Ngày sinh" error={errors.dateOfBirth?.message}>
+                  <input type="date" className={inputCls} {...register('dateOfBirth')} />
+                </EditField>
 
-            {/* Địa chỉ */}
-            <div className="profile-detail-item">
-              <span className="profile-detail-label">Địa chỉ</span>
-              {isEditMode ? (
-                <div className="profile-edit-field">
-                  <input
-                    type="text"
-                    className="profile-edit-input"
-                    {...register('address')}
-                  />
-                  {errors.address && <span className="profile-edit-error-msg">{errors.address.message}</span>}
-                </div>
-              ) : (
-                <span className="profile-detail-value">{user.address || '--'}</span>
-              )}
-            </div>
+                <EditField label="Địa chỉ" error={errors.address?.message}>
+                  <input type="text" className={inputCls} {...register('address')} />
+                </EditField>
+              </div>
+            ) : (
+              /* ── Read-only mode ── */
+              <div className="px-5 divide-y divide-gray-100">
+                <ReadRow label="Họ và tên" value={user.name} />
+                <ReadRow
+                  label="Email"
+                  value={user.email}
+                  icon={<Lock className="w-3 h-3 text-gray-400" />}
+                />
+                <ReadRow label="Số điện thoại" value={user.phone} />
+                <ReadRow
+                  label="Giới tính"
+                  value={
+                    user.gender === 'MALE'
+                      ? 'Nam'
+                      : user.gender === 'FEMALE'
+                      ? 'Nữ'
+                      : user.gender === 'OTHER'
+                      ? 'Khác'
+                      : '--'
+                  }
+                />
+                <ReadRow label="Ngày sinh" value={formatDateForDisplay(user.dateOfBirth)} />
+                <ReadRow label="Địa chỉ" value={user.address} />
+              </div>
+            )}
+
+            {/* ── Save / Cancel buttons ── */}
+            {isEditMode && (
+              <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
+                <button
+                  type="button"
+                  className="flex-1 py-2.5 rounded-lg border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition disabled:opacity-50"
+                  onClick={handleCancelClick}
+                  disabled={updateMeMutation.isPending}
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-lg bg-[#49BCE2] text-white text-sm font-semibold hover:bg-[#3ca4c5] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={updateMeMutation.isPending || !isDirty}
+                >
+                  {updateMeMutation.isPending ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Đang lưu...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Lưu thay đổi
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
-
-          {isEditMode && (
-            <div className="profile-form-actions">
-              <button
-                type="button"
-                className="profile-btn-cancel"
-                onClick={handleCancelClick}
-                disabled={updateMeMutation.isPending}
-              >
-                Hủy
-              </button>
-              <button
-                type="submit"
-                className="profile-btn-save"
-                disabled={updateMeMutation.isPending || !isDirty}
-              >
-                {updateMeMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
-              </button>
-            </div>
-          )}
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 }

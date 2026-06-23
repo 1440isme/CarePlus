@@ -6,7 +6,7 @@ import { useMyAppointments } from '../../features/appointment/hooks/useAppointme
 import { usePatientProfiles } from '../../features/patient-profile/index.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './patient-portal.css';
+import { Calendar, Stethoscope, Users, ChevronRight, Clock, X } from 'lucide-react';
 
 export default function PatientDashboard() {
   const accessToken = useSelector((state) => state.auth.accessToken);
@@ -20,7 +20,7 @@ export default function PatientDashboard() {
     { enabled: Boolean(accessToken) }
   );
 
-  const user = meQuery.data?.data?.user;
+  const user = meQuery.data?.data?.user || meQuery.data?.data;
   const appointmentsList = appointmentsQuery.data?.data || [];
   const relativeProfiles = patientProfilesQuery.data?.data || [];
 
@@ -29,24 +29,23 @@ export default function PatientDashboard() {
   const getStatusConfig = (status) => {
     switch (status) {
       case 'CONFIRMED':
-        return { label: 'Đã xác nhận', className: 'status-confirmed', dotClass: 'status-dot-confirmed' };
+        return { label: 'Đã xác nhận', bg: 'bg-[#EBF7FD] text-[#49BCE2] border-[#49BCE2]/20' };
       case 'CHECKED_IN':
-        return { label: 'Đã check-in', className: 'status-checked_in', dotClass: 'status-dot-checked_in' };
+        return { label: 'Đã check-in', bg: 'bg-[#F0FDF4] text-[#16A34A] border-[#16A34A]/20' };
       case 'COMPLETED':
-        return { label: 'Hoàn thành', className: 'status-completed', dotClass: 'status-dot-completed' };
+        return { label: 'Hoàn thành', bg: 'bg-[#F0FDF4] text-[#16A34A] border-[#16A34A]/20' };
       case 'NO_SHOW':
-        return { label: 'Không đến', className: 'status-no_show', dotClass: 'status-dot-no_show' };
+        return { label: 'Không đến', bg: 'bg-red-50 text-red-600 border-red-200' };
       case 'CANCELLED':
-        return { label: 'Đã hủy', className: 'status-cancelled', dotClass: 'status-dot-cancelled' };
+        return { label: 'Đã hủy', bg: 'bg-gray-100 text-gray-500 border-gray-200' };
       default:
-        return { label: status, className: '', dotClass: '' };
+        return { label: status, bg: 'bg-gray-50 text-gray-700 border-gray-200' };
     }
   };
 
-  // 1. Tên bệnh nhân
   const patientName = user?.name || 'Bệnh nhân';
 
-  // 2. Lọc danh sách Lịch hẹn sắp tới (Chỉ trạng thái CONFIRMED hoặc CHECKED_IN và ngày khám >= hôm nay)
+  // Lọc danh sách Lịch hẹn sắp tới (Chỉ trạng thái CONFIRMED hoặc CHECKED_IN và ngày khám >= hôm nay)
   const upcomingAppointments = useMemo(() => {
     const todayStr = new Date().toLocaleDateString('sv').slice(0, 10);
     return appointmentsList
@@ -64,7 +63,7 @@ export default function PatientDashboard() {
       .slice(0, 4); // Lấy tối đa 4 lịch hẹn sắp tới
   }, [appointmentsList]);
 
-  // 3. Số lượng Stats Cards
+  // Số lượng Stats Cards
   const upcomingCount = useMemo(() => {
     const todayStr = new Date().toLocaleDateString('sv').slice(0, 10);
     return appointmentsList.filter(
@@ -80,7 +79,7 @@ export default function PatientDashboard() {
     return relativeProfiles.filter((p) => p.isActive).length;
   }, [relativeProfiles]);
 
-  // 4. Sinh danh sách dữ liệu lượt khám theo tháng (T1 -> T6 của năm hiện tại)
+  // Sinh danh sách dữ liệu lượt khám theo tháng (T1 -> T6 của năm hiện tại)
   const monthlyData = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const months = [0, 1, 2, 3, 4, 5]; // T1 -> T6
@@ -116,14 +115,14 @@ export default function PatientDashboard() {
     });
   }, [appointmentsList]);
 
-  // 5. Sinh danh sách dữ liệu lượt khám theo chuyên khoa
+  // Sinh danh sách dữ liệu lượt khám theo chuyên khoa
   const specialtyData = useMemo(() => {
     const validAppts = appointmentsList.filter(appt => appt.status !== 'CANCELLED');
     
     // Fallback về mock data của Figma gốc nếu DB trống
     if (validAppts.length === 0) {
       return [
-        { name: 'Nội tổng quát', count: 3, percentage: 50, color: '#14a7e2' },
+        { name: 'Nội tổng quát', count: 3, percentage: 50, color: '#49BCE2' },
         { name: 'Tim mạch', count: 1, percentage: 17, color: '#FFC10E' },
         { name: 'Da liễu', count: 1, percentage: 17, color: '#A78BFA' },
         { name: 'Nhi khoa', count: 1, percentage: 17, color: '#34D399' }
@@ -137,7 +136,7 @@ export default function PatientDashboard() {
     });
 
     const total = validAppts.length;
-    const colors = ['#14a7e2', '#FFC10E', '#A78BFA', '#34D399', '#EC4899'];
+    const colors = ['#49BCE2', '#FFC10E', '#A78BFA', '#34D399', '#EC4899'];
     
     return Object.keys(map).map((name, index) => {
       const count = map[name];
@@ -164,12 +163,17 @@ export default function PatientDashboard() {
   const isLoading = meQuery.isLoading || appointmentsQuery.isLoading || patientProfilesQuery.isLoading;
   const isError = meQuery.error || appointmentsQuery.error || patientProfilesQuery.error;
 
+  const stats = [
+    { label: 'Lịch hẹn sắp tới', value: upcomingCount, icon: <Calendar className="w-[18px] h-[18px] text-[#49BCE2]" />, bg: 'bg-[#EBF7FD]' },
+    { label: 'Đã hoàn thành', value: completedCount, icon: <Stethoscope className="w-[18px] h-[18px] text-[#16A34A]" />, bg: 'bg-[#F0FDF4]' },
+    { label: 'Hồ sơ người thân', value: relativesCount, icon: <Users className="w-[18px] h-[18px] text-[#7C3AED]" />, bg: 'bg-[#F3E8FF]' },
+  ];
+
   return (
-    <div className="patient-db-container">
-      {/* Welcome Title */}
-      <div className="patient-db-header">
-        <h2 className="patient-db-title">Xin chào, {patientName}!</h2>
-        <p className="patient-db-subtitle">Quản lý lịch khám và thông tin sức khỏe của bạn</p>
+    <div className="font-sans">
+      <div className="mb-5">
+        <h1 className="text-xl md:text-2xl font-bold text-gray-800">Xin chào, {patientName}!</h1>
+        <p className="text-xs md:text-sm text-gray-500 mt-1">Quản lý lịch khám và thông tin sức khỏe của bạn</p>
       </div>
 
       {isLoading ? (
@@ -186,308 +190,169 @@ export default function PatientDashboard() {
         />
       ) : (
         <>
-          {/* Stats Grid */}
-          <div className="patient-db-stats-grid">
-            {/* Card 1: Upcoming appointments */}
-            <div className="patient-db-stat-card">
-              <div className="patient-db-stat-icon-wrapper blue">
-                <svg viewBox="0 0 24 24">
-                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                  <line x1="16" y1="2" x2="16" y2="6" />
-                  <line x1="8" y1="2" x2="8" y2="6" />
-                  <line x1="3" y1="10" x2="21" y2="10" />
-                </svg>
+          {/* Stats grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+            {stats.map(s => (
+              <div key={s.label} className="bg-white border border-gray-200 rounded-lg p-3.5 md:p-4 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                <div className={`w-10 h-10 ${s.bg} rounded-lg flex items-center justify-center shrink-0`}>
+                  {s.icon}
+                </div>
+                <div>
+                  <div className="text-2xl font-bold text-gray-800">{s.value}</div>
+                  <div className="text-xs text-gray-500">{s.label}</div>
+                </div>
               </div>
-              <div className="patient-db-stat-info">
-                <span className="patient-db-stat-value">{upcomingCount}</span>
-                <span className="patient-db-stat-label">Lịch hẹn sắp tới</span>
-              </div>
-            </div>
-
-            {/* Card 2: Completed visits */}
-            <div className="patient-db-stat-card">
-              <div className="patient-db-stat-icon-wrapper green">
-                <svg viewBox="0 0 24 24">
-                  <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                  <polyline points="22 4 12 14.01 9 11.01" />
-                </svg>
-              </div>
-              <div className="patient-db-stat-info">
-                <span className="patient-db-stat-value">{completedCount}</span>
-                <span className="patient-db-stat-label">Đã hoàn thành</span>
-              </div>
-            </div>
-
-            {/* Card 3: Relatives Profiles */}
-            <div className="patient-db-stat-card">
-              <div className="patient-db-stat-icon-wrapper purple">
-                <svg viewBox="0 0 24 24">
-                  <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-                  <circle cx="9" cy="7" r="4" />
-                  <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-                  <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-                </svg>
-              </div>
-              <div className="patient-db-stat-info">
-                <span className="patient-db-stat-value">{relativesCount}</span>
-                <span className="patient-db-stat-label">Hồ sơ người thân</span>
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Section 1: Upcoming Appointments */}
-          <div className="patient-db-section-card">
-            <h3 className="patient-db-section-title">Lịch hẹn sắp tới</h3>
+          {/* Upcoming appointments */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 mb-5 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-800 mb-3.5">Lịch hẹn sắp tới</h2>
             {upcomingAppointments.length === 0 ? (
-              <div className="patient-db-no-appts">
-                <p className="patient-db-no-appts-text">Bạn hiện tại không có lịch khám sắp tới nào.</p>
-                <Link to="/dat-lich" className="patient-db-no-appts-btn">
+              <div className="text-center py-8">
+                <Calendar className="w-9 h-9 mx-auto mb-2 text-gray-300" />
+                <div className="text-sm font-semibold text-gray-600 mb-1">Chưa có lịch hẹn sắp tới</div>
+                <p className="text-xs text-gray-400 mb-3">Các lịch hẹn đã xác nhận sẽ được hiển thị tại đây.</p>
+                <Link to="/dat-lich" className="inline-block px-4 py-2 bg-[#49BCE2] text-white text-xs font-semibold rounded-lg hover:bg-[#3ca4c7] transition-colors">
                   Đặt lịch khám ngay
                 </Link>
               </div>
             ) : (
-              <div className="patient-db-appointments-list">
-                {upcomingAppointments.map((appt) => {
-                  const formattedTime = appt.startTime ? appt.startTime.slice(0, 5) : '08:00';
-
-                  return (
-                    <div
-                      key={appt.id}
-                      onClick={() => setSelectedAppointmentId(appt.id)}
-                      className="patient-db-appointment-card"
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <div className="patient-db-appointment-info">
-                        <span className="patient-db-appointment-doctor">
-                          {appt.doctor?.title || 'ThS.BS'} {appt.doctor?.name || appt.doctorName || 'Bác sĩ'}
-                        </span>
-                        <div className="patient-db-appointment-meta">
-                          <div className="patient-db-appointment-meta-item">
-                            <svg viewBox="0 0 24 24">
-                              <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-                              <line x1="16" y1="2" x2="16" y2="6" />
-                              <line x1="8" y1="2" x2="8" y2="6" />
-                              <line x1="3" y1="10" x2="21" y2="10" />
-                            </svg>
-                            <span>{appt.appointmentDate}</span>
-                          </div>
-                          <div className="patient-db-appointment-meta-item">
-                            <svg viewBox="0 0 24 24">
-                              <circle cx="12" cy="12" r="10" />
-                              <polyline points="12 6 12 12 16 14" />
-                            </svg>
-                            <span>{formattedTime}</span>
-                          </div>
-                          <div className="patient-db-appointment-meta-item specialty">
-                            {appt.specialty?.name || 'N/A'}
-                          </div>
-                          <span className="patient-db-appointment-code">Mã: {appt.code}</span>
-                        </div>
+              <div className="flex flex-col gap-2">
+                {upcomingAppointments.map(a => (
+                  <div
+                    key={a.id}
+                    onClick={() => setSelectedAppointmentId(a.id)}
+                    className="flex items-center gap-3.5 p-3 bg-gray-50 rounded-lg border border-gray-200 cursor-pointer hover:border-[#49BCE2] transition-colors"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-bold text-gray-800 mb-0.5">
+                        {a.doctor?.title || 'ThS.BS'} {a.doctor?.name || a.doctorName || 'Bác sĩ'}
                       </div>
-
-                      <div className="patient-db-appointment-patient">
-                        <span className="patient-db-appointment-patient-name">{appt.patientName}</span>
-                        <span className="patient-db-appointment-patient-relation">
-                          Quan hệ: {appt.forSelf ? 'Bản thân' : (appt.patientProfile?.relationship || 'Người thân')}
+                      <div className="text-xs text-gray-500 flex flex-wrap gap-x-4 gap-y-1">
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3.5 h-3.5" />
+                          {a.appointmentDate ? a.appointmentDate.split('-').reverse().join('/') : 'N/A'}
                         </span>
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3.5 h-3.5" />
+                          {a.startTime?.slice(0, 5) || '08:00'}
+                        </span>
+                        <span className="text-[#49BCE2] font-medium">{a.specialty?.name || 'N/A'}</span>
                       </div>
-
-                      <div className="patient-db-appointment-arrow">
-                        <svg viewBox="0 0 24 24">
-                          <polyline points="9 18 15 12 9 6" />
-                        </svg>
+                      <div className="text-[10px] text-gray-400 mt-0.5">Mã: {a.code}</div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-sm font-semibold text-gray-800">{a.patientName}</div>
+                      <div className="text-xs text-gray-500">
+                        Quan hệ: {a.forSelf ? 'Bản thân' : (a.patientProfile?.relationship || 'Người thân')}
                       </div>
                     </div>
-                  );
-                })}
+                    <ChevronRight className="w-4 h-4 text-gray-300 shrink-0" />
+                  </div>
+                ))}
               </div>
             )}
           </div>
 
-          {/* Section 2: Frequency Charts (Split into 2 Columns) */}
-          <div className="patient-db-sections-2col">
-            {/* Column Left: Visits count by month */}
-            <div className="patient-db-section-card">
-              <h3 className="patient-db-section-title">Số lượt khám theo tháng</h3>
-              <div className="patient-db-vcharts-container">
-                {monthlyData.map((m, index) => (
-                  <div key={index} className="patient-db-vchart-item">
-                    <div className="patient-db-vchart-bar-wrapper">
-                      {m.count > 0 && (
-                        <span className="patient-db-vchart-value">{m.count}</span>
-                      )}
+          {/* Charts */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 shadow-sm">
+            <h2 className="text-sm font-bold text-gray-800 mb-4">Tần suất khám</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <div className="text-xs text-gray-500 mb-3">Số lượt khám theo tháng</div>
+                <div className="flex items-end gap-1.5 h-[100px] pt-4">
+                  {monthlyData.map((d, idx) => (
+                    <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
+                      <div className="text-[10px] text-gray-400">{d.count > 0 ? d.count : ''}</div>
                       <div
-                        className={`patient-db-vchart-bar ${m.count > 0 ? 'active' : 'inactive'}`}
-                        style={{ height: `${m.heightPercent}%` }}
+                        className={`w-full ${d.count > 0 ? 'bg-[#49BCE2]' : 'bg-gray-200'} rounded-t transition-all duration-300`}
+                        style={{ height: `${d.heightPercent}%`, minHeight: '4px' }}
                       />
+                      <div className="text-[10px] text-gray-400">{d.label}</div>
                     </div>
-                    <span className="patient-db-vchart-label">{m.label}</span>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-
-            {/* Column Right: Visits count by specialty */}
-            <div className="patient-db-section-card">
-              <h3 className="patient-db-section-title">Lịch hẹn theo chuyên khoa</h3>
-              <div className="patient-db-hcharts-list">
-                {specialtyData.map((s, index) => (
-                  <div key={index} className="patient-db-hchart-item">
-                    <div className="patient-db-hchart-header">
-                      <span className="patient-db-hchart-name">{s.name}</span>
-                      <span className="patient-db-hchart-value">
-                        {s.count} lượt ({s.percentage}%)
-                      </span>
+              <div>
+                <div className="text-xs text-gray-500 mb-2">Lịch hẹn theo chuyên khoa</div>
+                <div className="flex flex-col gap-2.5 pt-1">
+                  {specialtyData.map((s, idx) => (
+                    <div key={idx}>
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span>{s.name}</span>
+                        <span className="text-gray-400">{s.count} lượt ({s.percentage}%)</span>
+                      </div>
+                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                        <div
+                          className="h-full rounded-full transition-all duration-300"
+                          style={{ width: `${s.percentage}%`, backgroundColor: s.color }}
+                        />
+                      </div>
                     </div>
-                    <div className="patient-db-hchart-bar-bg">
-                      <div
-                        className="patient-db-hchart-bar-fill"
-                        style={{
-                          width: `${s.percentage}%`,
-                          backgroundColor: s.color,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </>
       )}
 
-      {/* Appointment Detail Drawer */}
-      {selectedAppointmentId && selectedAppointment && (
-        <>
-          <div className="patient-appt-drawer-backdrop" onClick={() => setSelectedAppointmentId(null)} />
-          <div className="patient-appt-drawer-content">
-            <div className="patient-appt-drawer-header">
-              <h2>Chi tiết cuộc hẹn</h2>
-              <button
-                type="button"
-                className="patient-appt-drawer-close"
-                onClick={() => setSelectedAppointmentId(null)}
-              >
-                &times;
+      {/* Appointment Detail Modal */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4" onClick={() => setSelectedAppointmentId(null)}>
+          <div className="bg-white rounded-lg p-5 md:p-6 max-w-[440px] w-full shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3.5">
+              <h3 className="text-base font-bold text-gray-800">Chi tiết lịch hẹn</h3>
+              <button onClick={() => setSelectedAppointmentId(null)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
-
-            <div className="patient-appt-drawer-body">
-              {/* Status Section */}
-              <div className="patient-appt-drawer-status-row">
-                <span className="patient-appt-drawer-label" style={{ fontWeight: 700 }}>Trạng thái:</span>
-                <span className={`patient-appt-status-badge ${getStatusConfig(selectedAppointment.status).className}`}>
-                  <span className={`patient-appt-status-dot ${getStatusConfig(selectedAppointment.status).dotClass}`} />
-                  {getStatusConfig(selectedAppointment.status).label}
-                </span>
-              </div>
-
-              {/* Doctor Section */}
-              <div className="patient-appt-drawer-section">
-                <h4 className="patient-appt-drawer-section-title">Thông tin Bác sĩ</h4>
-                <div className="patient-appt-drawer-info-group">
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Bác sĩ</span>
-                    <span className="patient-appt-drawer-info-value">{selectedAppointment.doctor?.name || selectedAppointment.doctorName}</span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Chuyên khoa</span>
-                    <span className="patient-appt-drawer-info-value">{selectedAppointment.specialty?.name || 'Đang cập nhật'}</span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Giá khám tham khảo</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} VNĐ
-                    </span>
-                  </div>
+            
+            <div className="flex flex-col gap-2">
+              {[
+                { label: 'Mã lịch', value: <code className="font-mono text-xs bg-gray-50 px-1.5 py-0.5 rounded border border-gray-150">{selectedAppointment.code}</code> },
+                { label: 'Bác sĩ', value: `${selectedAppointment.doctor?.title || 'ThS.BS'} ${selectedAppointment.doctor?.name || selectedAppointment.doctorName || 'Bác sĩ'}` },
+                { label: 'Chuyên khoa', value: selectedAppointment.specialty?.name || 'N/A' },
+                { label: 'Ngày khám', value: selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A' },
+                { label: 'Giờ khám', value: `${selectedAppointment.startTime?.slice(0, 5) || '08:00'} - ${selectedAppointment.endTime?.slice(0, 5) || '08:30'}` },
+                { label: 'Người khám', value: selectedAppointment.patientName },
+                { label: 'Quan hệ', value: selectedAppointment.forSelf ? 'Bản thân' : (selectedAppointment.patientProfile?.relationship || 'Người thân') },
+                { label: 'Giá khám tham khảo', value: `${(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} đ` },
+                { label: 'Trạng thái', value: (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedAppointment.status).bg}`}>
+                    {getStatusConfig(selectedAppointment.status).label}
+                  </span>
+                )},
+              ].map(row => (
+                <div key={row.label} className="flex justify-between items-center py-2 border-b border-gray-50 text-sm">
+                  <span className="text-gray-500">{row.label}</span>
+                  <span className="font-medium text-gray-800">{row.value}</span>
                 </div>
-              </div>
-
-              {/* Schedule Section */}
-              <div className="patient-appt-drawer-section">
-                <h4 className="patient-appt-drawer-section-title">Thông tin Lịch khám</h4>
-                <div className="patient-appt-drawer-info-group">
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Ngày khám</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Giờ khám</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {selectedAppointment.startTime?.slice(0, 5) || '08:00'} - {selectedAppointment.endTime?.slice(0, 5) || '08:30'}
-                    </span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Mã lịch</span>
-                    <span className="patient-appt-drawer-info-value" style={{ fontFamily: 'monospace' }}>
-                      {selectedAppointment.code}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Patient Section */}
-              <div className="patient-appt-drawer-section">
-                <h4 className="patient-appt-drawer-section-title">Thông tin Bệnh nhân</h4>
-                <div className="patient-appt-drawer-info-group">
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Họ tên người khám</span>
-                    <span className="patient-appt-drawer-info-value">{selectedAppointment.patientName}</span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Quan hệ</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {selectedAppointment.forSelf ? 'Bản thân' : (selectedAppointment.patientProfile?.relationship || 'Người thân')}
-                    </span>
-                  </div>
-                  {selectedAppointment.patientDob && (
-                    <div className="patient-appt-drawer-info-row">
-                      <span className="patient-appt-drawer-info-label">Ngày sinh</span>
-                      <span className="patient-appt-drawer-info-value">{selectedAppointment.patientDob}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Reason Section */}
-              {selectedAppointment.reason && (
-                <div className="patient-appt-drawer-section">
-                  <h4 className="patient-appt-drawer-section-title">Triệu chứng & Lý do khám</h4>
-                  <div className="patient-appt-drawer-info-group">
-                    <div className="patient-appt-drawer-info-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                      <span className="patient-appt-drawer-info-value" style={{ textAlign: 'left', maxWidth: '100%', whiteSpace: 'pre-wrap' }}>
-                        {selectedAppointment.reason}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Cancellation Reason Section */}
-              {selectedAppointment.status === 'CANCELLED' && selectedAppointment.note && (
-                <div className="patient-appt-drawer-section">
-                  <h4 className="patient-appt-drawer-section-title" style={{ color: '#EF4444' }}>Lý do hủy lịch</h4>
-                  <div className="patient-appt-drawer-cancellation-box">
-                    {selectedAppointment.note || 'Không có lý do chi tiết.'}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
 
-            <div className="patient-appt-drawer-footer">
-              <button
-                type="button"
-                className="patient-appt-drawer-btn-close"
-                onClick={() => setSelectedAppointmentId(null)}
-              >
-                Đóng
-              </button>
-            </div>
+            {selectedAppointment.reason && (
+              <div className="mt-3.5 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
+                <div className="font-semibold text-gray-700 mb-1">Lý do khám / Triệu chứng:</div>
+                <div className="whitespace-pre-wrap">{selectedAppointment.reason}</div>
+              </div>
+            )}
+
+            {selectedAppointment.status === 'CANCELLED' && selectedAppointment.note && (
+              <div className="mt-3.5 p-3 bg-red-50 text-red-700 rounded-lg text-xs">
+                <div className="font-semibold mb-1">Lý do hủy:</div>
+                <div>{selectedAppointment.note}</div>
+              </div>
+            )}
+
+            <button onClick={() => setSelectedAppointmentId(null)} className="mt-5 w-full py-2.5 bg-[#49BCE2] text-white rounded-lg text-sm font-semibold hover:bg-[#3ca4c7] transition-colors shadow-sm">
+              Đóng
+            </button>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
 }
+

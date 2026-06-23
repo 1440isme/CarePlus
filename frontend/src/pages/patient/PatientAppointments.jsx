@@ -4,7 +4,8 @@ import { useMyAppointments, useCancelMyAppointment } from '../../features/appoin
 import { usePatientProfiles } from '../../features/patient-profile/index.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
-import './patient-portal.css';
+import ReviewModal from '../../features/review/components/ReviewModal.jsx';
+import { Search, Filter, Calendar, Clock, X, AlertCircle } from 'lucide-react';
 
 export default function PatientAppointments() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -19,6 +20,8 @@ export default function PatientAppointments() {
   const [selectedMemberId, setSelectedMemberId] = useState('');
   const [filterStartDate, setFilterStartDate] = useState('');
   const [filterEndDate, setFilterEndDate] = useState('');
+  const [isReviewModalOpen, setIsReviewModalOpen] = useState(false);
+  const [appointmentToReview, setAppointmentToReview] = useState(null);
 
   // Sync URL parameter to selected appointment ID and reset status to All
   useEffect(() => {
@@ -98,17 +101,17 @@ export default function PatientAppointments() {
   const getStatusConfig = (status) => {
     switch (status) {
       case 'CONFIRMED':
-        return { label: 'Đã xác nhận', className: 'status-confirmed', dotClass: 'status-dot-confirmed' };
+        return { label: 'Đã xác nhận', bg: 'bg-[#EBF7FD] text-[#49BCE2] border-[#49BCE2]/20' };
       case 'CHECKED_IN':
-        return { label: 'Đã check-in', className: 'status-checked_in', dotClass: 'status-dot-checked_in' };
+        return { label: 'Đã check-in', bg: 'bg-[#F0FDF4] text-[#16A34A] border-[#16A34A]/20' };
       case 'COMPLETED':
-        return { label: 'Hoàn thành', className: 'status-completed', dotClass: 'status-dot-completed' };
+        return { label: 'Hoàn thành', bg: 'bg-[#F0FDF4] text-[#16A34A] border-[#16A34A]/20' };
       case 'NO_SHOW':
-        return { label: 'Không đến', className: 'status-no_show', dotClass: 'status-dot-no_show' };
+        return { label: 'Không đến', bg: 'bg-red-50 text-red-600 border-red-200' };
       case 'CANCELLED':
-        return { label: 'Đã hủy', className: 'status-cancelled', dotClass: 'status-dot-cancelled' };
+        return { label: 'Đã hủy', bg: 'bg-gray-100 text-gray-500 border-gray-200' };
       default:
-        return { label: status, className: '', dotClass: '' };
+        return { label: status, bg: 'bg-gray-50 text-gray-700 border-gray-200' };
     }
   };
 
@@ -128,11 +131,9 @@ export default function PatientAppointments() {
     }
   };
 
-  const handleReviewClick = (appointmentId) => {
-    setReviewedAppointments(prev => ({
-      ...prev,
-      [appointmentId]: true
-    }));
+  const handleReviewClick = (appointment) => {
+    setAppointmentToReview(appointment);
+    setIsReviewModalOpen(true);
   };
 
   const tabs = [
@@ -145,48 +146,42 @@ export default function PatientAppointments() {
   ];
 
   return (
-    <div className="patient-appt-page">
+    <div className="font-sans">
       {/* Header */}
-      <div className="patient-appt-header-container">
-        <h2 className="patient-appt-title">Lịch hẹn của tôi</h2>
+      <div className="mb-4">
+        <h1 className="text-xl font-bold text-gray-800">Lịch hẹn của tôi</h1>
       </div>
 
       {/* Search & Filter bar */}
-      <div className="patient-appt-search-filter-container">
-        <div className="patient-appt-search-wrapper">
-          <svg className="patient-appt-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <circle cx="11" cy="11" r="8"></circle>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-          </svg>
+      <div className="flex gap-2.5 mb-3.5">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            className="patient-appt-search-input"
+            className="w-full border border-gray-200 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
             placeholder="Tìm theo mã lịch, tên bác sĩ, chuyên khoa, người khám..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <button
-          className={`patient-appt-filter-button ${showFilterPanel ? 'active' : ''}`}
+          className={`flex items-center gap-1.5 px-3.5 py-2 border rounded-lg text-sm bg-white cursor-pointer transition-colors ${showFilterPanel ? 'border-[#49BCE2] text-[#49BCE2]' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
           onClick={() => setShowFilterPanel(!showFilterPanel)}
         >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ width: '14px', height: '14px', marginRight: '6px' }}>
-            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-          </svg>
+          <Filter className="w-3.5 h-3.5" />
           Lọc
         </button>
       </div>
 
       {/* Optional Filter Panel */}
       {showFilterPanel && (
-        <div className="patient-appt-filter-panel" style={{ flexWrap: 'wrap', gap: '16px' }}>
-          <div className="patient-appt-filter-group">
-            <label className="patient-appt-filter-label">Người khám:</label>
+        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3.5 md:p-4 mb-3.5 flex flex-wrap gap-4 items-end">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500 font-medium">Người khám</label>
             <select
-              className="patient-appt-filter-input"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white min-w-[180px]"
               value={selectedMemberId}
               onChange={(e) => setSelectedMemberId(e.target.value)}
-              style={{ minWidth: '180px', height: '32px', padding: '0 8px', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '13px' }}
             >
               <option value="">Tất cả người khám</option>
               <option value="self">Bản thân</option>
@@ -196,21 +191,21 @@ export default function PatientAppointments() {
             </select>
           </div>
           
-          <div className="patient-appt-filter-group">
-            <label className="patient-appt-filter-label">Từ ngày:</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500 font-medium">Từ ngày</label>
             <input
               type="date"
-              className="patient-appt-filter-input"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
               value={filterStartDate}
               onChange={(e) => setFilterStartDate(e.target.value)}
             />
           </div>
 
-          <div className="patient-appt-filter-group">
-            <label className="patient-appt-filter-label">Đến ngày:</label>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-xs text-gray-500 font-medium">Đến ngày</label>
             <input
               type="date"
-              className="patient-appt-filter-input"
+              className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
               value={filterEndDate}
               onChange={(e) => setFilterEndDate(e.target.value)}
             />
@@ -218,7 +213,7 @@ export default function PatientAppointments() {
 
           {(selectedMemberId || filterStartDate || filterEndDate) && (
             <button
-              className="patient-appt-clear-filter-btn"
+              className="px-3.5 py-1.5 border border-gray-250 rounded-lg text-sm text-gray-500 bg-white hover:bg-gray-50 cursor-pointer"
               onClick={() => {
                 setSelectedMemberId('');
                 setFilterStartDate('');
@@ -231,12 +226,12 @@ export default function PatientAppointments() {
         </div>
       )}
 
-      {/* Tabs */}
-      <div className="patient-appt-tabs">
+      {/* Status tabs */}
+      <div className="flex gap-0 border-b border-gray-200 mb-3.5 overflow-x-auto scrollbar-none">
         {tabs.map((tab) => (
           <button
             key={tab.value}
-            className={`patient-appt-tab ${selectedStatus === tab.value ? 'active' : ''}`}
+            className={`py-2 px-3.5 text-xs md:text-sm font-semibold whitespace-nowrap bg-transparent border-none border-b-2 cursor-pointer transition-all ${selectedStatus === tab.value ? 'border-[#49BCE2] text-[#49BCE2]' : 'border-transparent text-gray-400 hover:text-gray-600'}`}
             onClick={() => setSelectedStatus(tab.value)}
           >
             {tab.label}
@@ -244,8 +239,8 @@ export default function PatientAppointments() {
         ))}
       </div>
 
-      {/* Table Data */}
-      <div className="patient-appt-table-container">
+      {/* Appointment lists */}
+      <div>
         {appointmentsQuery.isLoading ? (
           <LoadingBlock label="Đang tải lịch hẹn..." />
         ) : appointmentsQuery.error ? (
@@ -261,286 +256,269 @@ export default function PatientAppointments() {
             description="Bạn không có cuộc hẹn khám bệnh nào khớp với bộ lọc hiện tại."
           />
         ) : (
-          <table className="patient-appt-table">
-            <thead>
-              <tr>
-                <th>Mã lịch</th>
-                <th>Ngày giờ</th>
-                <th>Bác sĩ</th>
-                <th>Chuyên khoa</th>
-                <th>Người khám</th>
-                <th>Giá tham khảo</th>
-                <th>Trạng thái</th>
-                <th style={{ textAlign: 'right' }}>Thao tác</th>
-              </tr>
-            </thead>
-            <tbody>
+          <>
+            {/* Desktop table */}
+            <div className="hidden md:block bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse text-left text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      {['Mã lịch', 'Ngày giờ', 'Bác sĩ', 'Chuyên khoa', 'Người khám', 'Giá tham khảo', 'Trạng thái', 'Thao tác'].map(h => (
+                        <th key={h} className="p-3 text-xs font-bold text-gray-500 uppercase tracking-wider">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-100">
+                    {filteredAppointments.map((appt) => {
+                      const statusCfg = getStatusConfig(appt.status);
+                      const isReviewed = reviewedAppointments[appt.id] || appt.isReviewed;
+                      const formattedDate = appt.appointmentDate
+                        ? appt.appointmentDate.split('-').reverse().join('/')
+                        : 'N/A';
+                      const formattedTime = appt.startTime ? appt.startTime.slice(0, 5) : '08:00';
+
+                      return (
+                        <tr key={appt.id} className="hover:bg-gray-50 transition-colors">
+                          <td className="p-3">
+                            <code className="font-mono text-xs text-gray-600 bg-gray-50 px-1.5 py-0.5 rounded border border-gray-150">{appt.code}</code>
+                          </td>
+                          <td className="p-3 whitespace-nowrap">
+                            <div className="font-semibold text-gray-800">{formattedDate}</div>
+                            <div className="text-xs text-gray-400">{formattedTime}</div>
+                          </td>
+                          <td className="p-3 font-medium text-gray-800">
+                            {appt.doctor?.title || 'ThS.BS'} {appt.doctor?.name || appt.doctorName || 'Bác sĩ'}
+                          </td>
+                          <td className="p-3 text-[#49BCE2] font-semibold">
+                            {appt.specialty?.name || 'N/A'}
+                          </td>
+                          <td className="p-3">
+                            <div className="font-semibold text-gray-800">{appt.patientName}</div>
+                            <div className="text-xs text-gray-400">
+                              Quan hệ: {appt.forSelf ? 'Bản thân' : (appt.patientProfile?.relationship || 'Người thân')}
+                            </div>
+                          </td>
+                          <td className="p-3 text-gray-600 font-medium">
+                            {(appt.consultationFee || 0).toLocaleString('vi-VN')} đ
+                          </td>
+                          <td className="p-3">
+                            <span className={`inline-flex items-center px-2.5 py-0.5 text-xs font-semibold rounded-full border ${statusCfg.bg}`}>
+                              {statusCfg.label}
+                            </span>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex gap-2 justify-end">
+                              <button
+                                type="button"
+                                className="px-2.5 py-1 text-xs border border-[#49BCE2] text-[#49BCE2] rounded bg-white font-semibold hover:bg-blue-50 transition-colors cursor-pointer"
+                                onClick={() => setSelectedAppointmentId(appt.id)}
+                              >
+                                Chi tiết
+                              </button>
+
+                              {appt.status === 'CONFIRMED' && (
+                                <button
+                                  type="button"
+                                  className="px-2.5 py-1 text-xs border border-red-500 text-red-500 rounded bg-white font-semibold hover:bg-red-50 transition-colors cursor-pointer"
+                                  onClick={() => {
+                                    setCancellingAppointmentId(appt.id);
+                                    setCancelReason('');
+                                  }}
+                                >
+                                  Hủy
+                                </button>
+                              )}
+
+                              {appt.status === 'COMPLETED' && (
+                                isReviewed ? (
+                                  <span className="px-2.5 py-1 text-xs text-green-600 bg-green-50 rounded font-semibold border border-green-200">
+                                    Đã đánh giá
+                                  </span>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    className="px-2.5 py-1 text-xs border border-yellow-500 text-yellow-600 rounded bg-white font-semibold hover:bg-yellow-50 transition-colors cursor-pointer"
+                                    onClick={() => handleReviewClick(appt)}
+                                  >
+                                    Đánh giá
+                                  </button>
+                                )
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Mobile list */}
+            <div className="flex flex-col gap-2.5 md:hidden">
               {filteredAppointments.map((appt) => {
                 const statusCfg = getStatusConfig(appt.status);
                 const isReviewed = reviewedAppointments[appt.id] || appt.isReviewed;
-
                 const formattedDate = appt.appointmentDate
                   ? appt.appointmentDate.split('-').reverse().join('/')
                   : 'N/A';
-
-                const formattedTime = appt.startTime
-                  ? appt.startTime.slice(0, 5)
-                  : '08:00';
+                const formattedTime = appt.startTime ? appt.startTime.slice(0, 5) : '08:00';
 
                 return (
-                  <tr key={appt.id}>
-                    <td>
-                      <code className="patient-appt-code">{appt.code}</code>
-                    </td>
-                    <td>
-                      <div className="patient-appt-datetime">
-                        <span className="patient-appt-date">{formattedDate}</span>
-                        <span className="patient-appt-time">{formattedTime}</span>
-                      </div>
-                    </td>
-                    <td className="patient-appt-doctor">
-                      {appt.doctor?.name || appt.doctorName || 'Bác sĩ'}
-                    </td>
-                    <td className="patient-appt-specialty">
-                      {appt.specialty?.name || 'Chuyên khoa'}
-                    </td>
-                    <td>
-                      <div className="patient-appt-patient">
-                        <span className="patient-appt-patient-name">{appt.patientName}</span>
-                        <span className="patient-appt-patient-relationship">
-                          Quan hệ: {appt.forSelf ? 'Bản thân' : (appt.patientProfile?.relationship || 'Người thân')}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="patient-appt-price">
-                      {(appt.consultationFee || 0).toLocaleString('vi-VN')} đ
-                    </td>
-                    <td>
-                      <span className={`patient-appt-status-badge ${statusCfg.className}`}>
-                        <span className={`patient-appt-status-dot ${statusCfg.dotClass}`} />
+                  <div key={appt.id} className="bg-white border border-gray-200 rounded-lg p-3.5 shadow-sm">
+                    <div className="flex justify-between items-center mb-2">
+                      <code className="font-mono text-xs text-gray-500">{appt.code}</code>
+                      <span className={`inline-flex items-center px-2 py-0.5 text-[10px] font-semibold rounded-full border ${statusCfg.bg}`}>
                         {statusCfg.label}
                       </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div className="patient-appt-actions-cell">
+                    </div>
+                    <div className="text-sm font-bold text-gray-800 mb-0.5">
+                      {appt.doctor?.title || 'ThS.BS'} {appt.doctor?.name || appt.doctorName || 'Bác sĩ'}
+                    </div>
+                    <div className="text-xs text-[#49BCE2] font-semibold mb-1.5">
+                      {appt.specialty?.name || 'N/A'}
+                    </div>
+                    <div className="text-xs text-gray-500 flex gap-4 mb-1.5">
+                      <span>{formattedDate}</span>
+                      <span>{formattedTime}</span>
+                    </div>
+                    <div className="text-xs text-gray-600 mb-3.5">
+                      Người khám: <span className="font-semibold text-gray-700">{appt.patientName}</span>
+                      <span className="text-gray-400 mx-1.5">|</span>
+                      Giá tham khảo: <span className="font-semibold text-gray-700">{(appt.consultationFee || 0).toLocaleString('vi-VN')} đ</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        className="flex-1 py-1.5 text-xs border border-[#49BCE2] text-[#49BCE2] rounded-lg bg-white font-semibold hover:bg-blue-50 transition-colors cursor-pointer"
+                        onClick={() => setSelectedAppointmentId(appt.id)}
+                      >
+                        Chi tiết
+                      </button>
+                      {appt.status === 'CONFIRMED' && (
                         <button
                           type="button"
-                          className="patient-appt-action-btn btn-detail"
-                          onClick={() => setSelectedAppointmentId(appt.id)}
+                          className="flex-1 py-1.5 text-xs border border-red-500 text-red-500 rounded-lg bg-white font-semibold hover:bg-red-50 transition-colors cursor-pointer"
+                          onClick={() => {
+                            setCancellingAppointmentId(appt.id);
+                            setCancelReason('');
+                          }}
                         >
-                          Chi tiết
+                          Hủy lịch
                         </button>
-
-                        {appt.status === 'CONFIRMED' && (
+                      )}
+                      {appt.status === 'COMPLETED' && (
+                        isReviewed ? (
+                          <span className="flex-1 py-1.5 text-xs text-center text-green-600 bg-green-50 rounded-lg font-semibold border border-green-200">
+                            ✓ Đã đánh giá
+                          </span>
+                        ) : (
                           <button
                             type="button"
-                            className="patient-appt-action-btn btn-cancel"
-                            onClick={() => {
-                              setCancellingAppointmentId(appt.id);
-                              setCancelReason('');
-                            }}
+                            className="flex-1 py-1.5 text-xs border border-yellow-500 text-yellow-600 rounded-lg bg-white font-semibold hover:bg-yellow-50 transition-colors cursor-pointer"
+                            onClick={() => handleReviewClick(appt)}
                           >
-                            Hủy
+                            Đánh giá
                           </button>
-                        )}
-
-                        {appt.status === 'COMPLETED' && (
-                          isReviewed ? (
-                            <span className="patient-appt-action-btn btn-reviewed">
-                              Đã đánh giá
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              className="patient-appt-action-btn btn-review"
-                              onClick={() => handleReviewClick(appt.id)}
-                            >
-                              Đánh giá
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </td>
-                  </tr>
+                        )
+                      )}
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-          </table>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Appointment Detail Drawer */}
-      {selectedAppointmentId && selectedAppointment && (
-        <>
-          <div className="patient-appt-drawer-backdrop" onClick={handleCloseDrawer} />
-          <div className="patient-appt-drawer-content">
-            <div className="patient-appt-drawer-header">
-              <h2>Chi tiết cuộc hẹn</h2>
-              <button
-                type="button"
-                className="patient-appt-drawer-close"
-                onClick={handleCloseDrawer}
-              >
-                &times;
+      {/* Appointment Detail Modal */}
+      {selectedAppointment && (
+        <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4" onClick={handleCloseDrawer}>
+          <div className="bg-white rounded-lg p-5 md:p-6 max-w-[440px] w-full shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
+            <div className="flex justify-between items-center mb-3.5">
+              <h3 className="text-base font-bold text-gray-800">Chi tiết lịch hẹn</h3>
+              <button onClick={handleCloseDrawer} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
-
-            <div className="patient-appt-drawer-body">
-              {/* Status Section */}
-              <div className="patient-appt-drawer-status-row">
-                <span className="patient-appt-drawer-label" style={{ fontWeight: 700 }}>Trạng thái:</span>
-                <span className={`patient-appt-status-badge ${getStatusConfig(selectedAppointment.status).className}`}>
-                  <span className={`patient-appt-status-dot ${getStatusConfig(selectedAppointment.status).dotClass}`} />
-                  {getStatusConfig(selectedAppointment.status).label}
-                </span>
-              </div>
-
-              {/* Doctor Section */}
-              <div className="patient-appt-drawer-section">
-                <h4 className="patient-appt-drawer-section-title">Thông tin Bác sĩ</h4>
-                <div className="patient-appt-drawer-info-group">
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Bác sĩ</span>
-                    <span className="patient-appt-drawer-info-value">{selectedAppointment.doctor?.name || selectedAppointment.doctorName}</span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Chuyên khoa</span>
-                    <span className="patient-appt-drawer-info-value">{selectedAppointment.specialty?.name || 'Đang cập nhật'}</span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Giá khám tham khảo</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} VNĐ
-                    </span>
-                  </div>
+            
+            <div className="flex flex-col gap-2">
+              {[
+                { label: 'Mã lịch', value: <code className="font-mono text-xs bg-gray-50 px-1.5 py-0.5 rounded border border-gray-150">{selectedAppointment.code}</code> },
+                { label: 'Bác sĩ', value: `${selectedAppointment.doctor?.title || 'ThS.BS'} ${selectedAppointment.doctor?.name || selectedAppointment.doctorName || 'Bác sĩ'}` },
+                { label: 'Chuyên khoa', value: selectedAppointment.specialty?.name || 'N/A' },
+                { label: 'Ngày khám', value: selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A' },
+                { label: 'Giờ khám', value: `${selectedAppointment.startTime?.slice(0, 5) || '08:00'} - ${selectedAppointment.endTime?.slice(0, 5) || '08:30'}` },
+                { label: 'Người khám', value: selectedAppointment.patientName },
+                { label: 'Quan hệ', value: selectedAppointment.forSelf ? 'Bản thân' : (selectedAppointment.patientProfile?.relationship || 'Người thân') },
+                { label: 'Giá khám tham khảo', value: `${(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} đ` },
+                { label: 'Trạng thái', value: (
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedAppointment.status).bg}`}>
+                    {getStatusConfig(selectedAppointment.status).label}
+                  </span>
+                )},
+              ].map(row => (
+                <div key={row.label} className="flex justify-between items-center py-2 border-b border-gray-50 text-sm">
+                  <span className="text-gray-500">{row.label}</span>
+                  <span className="font-medium text-gray-800">{row.value}</span>
                 </div>
-              </div>
-
-              {/* Schedule Section */}
-              <div className="patient-appt-drawer-section">
-                <h4 className="patient-appt-drawer-section-title">Thông tin Lịch khám</h4>
-                <div className="patient-appt-drawer-info-group">
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Ngày khám</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A'}
-                    </span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Giờ khám</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {selectedAppointment.startTime?.slice(0, 5) || '08:00'} - {selectedAppointment.endTime?.slice(0, 5) || '08:30'}
-                    </span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Mã lịch</span>
-                    <span className="patient-appt-drawer-info-value" style={{ fontFamily: 'monospace' }}>
-                      {selectedAppointment.code}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Patient Section */}
-              <div className="patient-appt-drawer-section">
-                <h4 className="patient-appt-drawer-section-title">Thông tin Bệnh nhân</h4>
-                <div className="patient-appt-drawer-info-group">
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Họ tên người khám</span>
-                    <span className="patient-appt-drawer-info-value">{selectedAppointment.patientName}</span>
-                  </div>
-                  <div className="patient-appt-drawer-info-row">
-                    <span className="patient-appt-drawer-info-label">Quan hệ</span>
-                    <span className="patient-appt-drawer-info-value">
-                      {selectedAppointment.forSelf ? 'Bản thân' : (selectedAppointment.patientProfile?.relationship || 'Người thân')}
-                    </span>
-                  </div>
-                  {selectedAppointment.patientDob && (
-                    <div className="patient-appt-drawer-info-row">
-                      <span className="patient-appt-drawer-info-label">Ngày sinh</span>
-                      <span className="patient-appt-drawer-info-value">{selectedAppointment.patientDob}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Reason Section */}
-              {selectedAppointment.reason && (
-                <div className="patient-appt-drawer-section">
-                  <h4 className="patient-appt-drawer-section-title">Triệu chứng & Lý do khám</h4>
-                  <div className="patient-appt-drawer-info-group">
-                    <div className="patient-appt-drawer-info-row" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-                      <span className="patient-appt-drawer-info-value" style={{ textAlign: 'left', maxWidth: '100%', whiteSpace: 'pre-wrap' }}>
-                        {selectedAppointment.reason}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Cancellation Reason Section */}
-              {selectedAppointment.status === 'CANCELLED' && selectedAppointment.note && (
-                <div className="patient-appt-drawer-section">
-                  <h4 className="patient-appt-drawer-section-title" style={{ color: '#EF4444' }}>Lý do hủy lịch</h4>
-                  <div className="patient-appt-drawer-cancellation-box">
-                    {selectedAppointment.note || 'Không có lý do chi tiết.'}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
 
-            <div className="patient-appt-drawer-footer">
-              <button
-                type="button"
-                className="patient-appt-drawer-btn-close"
-                onClick={handleCloseDrawer}
-              >
-                Đóng
-              </button>
-            </div>
+            {selectedAppointment.reason && (
+              <div className="mt-3.5 p-3 bg-gray-50 rounded-lg text-xs text-gray-600">
+                <div className="font-semibold text-gray-700 mb-1">Lý do khám / Triệu chứng:</div>
+                <div className="whitespace-pre-wrap">{selectedAppointment.reason}</div>
+              </div>
+            )}
+
+            {selectedAppointment.status === 'CANCELLED' && selectedAppointment.note && (
+              <div className="mt-3.5 p-3 bg-red-50 text-red-700 rounded-lg text-xs">
+                <div className="font-semibold mb-1">Lý do hủy:</div>
+                <div>{selectedAppointment.note}</div>
+              </div>
+            )}
+
+            <button onClick={handleCloseDrawer} className="mt-5 w-full py-2.5 bg-[#49BCE2] text-white rounded-lg text-sm font-semibold hover:bg-[#3ca4c7] transition-colors shadow-sm">
+              Đóng
+            </button>
           </div>
-        </>
+        </div>
       )}
 
       {/* Cancel Confirmation Modal */}
       {cancellingAppointmentId && (
-        <>
-          <div className="patient-appt-modal-backdrop" onClick={() => setCancellingAppointmentId(null)} />
-          <div className="patient-appt-modal">
-            <div className="patient-appt-modal-header">
-              <h3 className="patient-appt-modal-title">Hủy lịch hẹn khám</h3>
-              <button
-                type="button"
-                className="patient-appt-modal-close"
-                onClick={() => setCancellingAppointmentId(null)}
-              >
-                &times;
-              </button>
+        <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4" onClick={() => setCancellingAppointmentId(null)}>
+          <div className="bg-white rounded-lg p-5 md:p-6 max-w-[420px] w-full shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
+            <div className="flex gap-3 mb-4">
+              <div className="w-10 h-10 bg-red-50 rounded-full flex items-center justify-center shrink-0">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-gray-800">Xác nhận hủy lịch hẹn</h3>
+                <p className="text-xs md:text-sm text-gray-500 mt-1">
+                  Bạn có chắc chắn muốn hủy lịch hẹn này không? Sau khi hủy, khung giờ khám sẽ được mở lại cho người khác.
+                </p>
+              </div>
             </div>
             <form onSubmit={handleCancelSubmit}>
-              <div className="patient-appt-modal-body">
-                <p className="patient-appt-modal-desc">
-                  Bạn có chắc chắn muốn hủy lịch hẹn khám này không? Thao tác này không thể hoàn tác.
-                </p>
-                <div className="patient-appt-form-group">
-                  <label className="patient-appt-modal-label" htmlFor="cancelReason">
-                    Lý do hủy lịch <span style={{ color: '#EF4444' }}>*</span>
-                  </label>
-                  <textarea
-                    id="cancelReason"
-                    className="patient-appt-textarea"
-                    placeholder="Vui lòng nhập lý do hủy lịch của bạn (bắt buộc)..."
-                    rows={4}
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    required
-                  />
-                </div>
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-gray-600 mb-1">
+                  Lý do hủy lịch <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] resize-none"
+                  placeholder="Vui lòng nhập lý do hủy lịch của bạn (bắt buộc)..."
+                  rows={3}
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                  required
+                />
               </div>
-              <div className="patient-appt-modal-footer">
+              <div className="flex gap-2.5">
                 <button
                   type="button"
-                  className="patient-appt-modal-btn btn-secondary"
+                  className="flex-1 py-2 border border-gray-250 rounded-lg text-sm text-gray-600 font-semibold hover:bg-gray-50 cursor-pointer"
                   onClick={() => setCancellingAppointmentId(null)}
                   disabled={cancelMutation.isPending}
                 >
@@ -548,16 +526,32 @@ export default function PatientAppointments() {
                 </button>
                 <button
                   type="submit"
-                  className="patient-appt-modal-btn btn-danger"
+                  className="flex-1 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 cursor-pointer"
                   disabled={!cancelReason.trim() || cancelMutation.isPending}
                 >
-                  {cancelMutation.isPending ? 'Đang hủy...' : 'Xác nhận hủy'}
+                  {cancelMutation.isPending ? 'Đang hủy...' : 'Hủy lịch hẹn'}
                 </button>
               </div>
             </form>
           </div>
-        </>
+        </div>
       )}
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={isReviewModalOpen}
+        onClose={() => {
+          setIsReviewModalOpen(false);
+          setAppointmentToReview(null);
+        }}
+        appointment={appointmentToReview}
+        onSuccess={(appointmentId) => {
+          setReviewedAppointments(prev => ({
+            ...prev,
+            [appointmentId]: true
+          }));
+        }}
+      />
     </div>
   );
 }

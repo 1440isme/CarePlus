@@ -4,6 +4,10 @@
   margin-top: 5px;
 }
 
+.ckeditor-wrapper textarea {
+  display: none !important;
+}
+
 .editor-loading {
   padding: 20px;
   background-color: #f9fafb;
