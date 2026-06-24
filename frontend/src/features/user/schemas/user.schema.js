@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
 const vietnamPhoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
+const humanNameRegex = /^[\p{L}\s]+$/u;
 
 export const updateMeSchema = z.object({
   name: z
     .string()
     .trim()
     .min(1, 'Họ tên không được để trống')
-    .max(100, 'Họ tên tối đa 100 ký tự'),
+    .max(100, 'Họ tên tối đa 100 ký tự')
+    .regex(humanNameRegex, 'Họ tên không được chứa số hoặc ký tự đặc biệt'),
   phone: z
     .string()
     .trim()

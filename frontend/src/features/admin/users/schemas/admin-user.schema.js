@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 const vietnamPhoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 const dateOfBirthRegex = /^\d{4}-\d{2}-\d{2}$/;
+const humanNameRegex = /^[\p{L}\s]+$/u;
+const doctorDisplayNameRegex = /^[\p{L}\s.]+$/u;
 
 function isValidPastDate(value) {
   if (!dateOfBirthRegex.test(value)) {
@@ -21,7 +23,8 @@ export const adminUserEditSchema = z.object({
   name: z.string()
     .trim()
     .min(1, 'Họ tên không được để trống')
-    .max(100, 'Họ tên tối đa 100 ký tự'),
+    .max(100, 'Họ tên tối đa 100 ký tự')
+    .regex(humanNameRegex, 'Họ tên không được chứa số hoặc ký tự đặc biệt'),
   phone: z.string()
     .trim()
     .regex(vietnamPhoneRegex, 'Số điện thoại chưa đúng định dạng Việt Nam'),
@@ -43,6 +46,9 @@ export const adminStaffCreateSchema = z.object({
   name: z.string()
     .trim()
     .max(100, 'Họ tên tối đa 100 ký tự')
+    .refine((value) => !value || humanNameRegex.test(value), {
+      message: 'Họ tên không được chứa số hoặc ký tự đặc biệt',
+    })
     .optional()
     .or(z.literal('')),
   email: z.string()
@@ -57,7 +63,13 @@ export const adminStaffCreateSchema = z.object({
   status: z.enum(['ACTIVE', 'LOCKED'], {
     errorMap: () => ({ message: 'Vui lòng chọn trạng thái' }),
   }),
-  doctorName: z.string().trim().optional().or(z.literal('')),
+  doctorName: z.string()
+    .trim()
+    .refine((value) => !value || doctorDisplayNameRegex.test(value), {
+      message: 'Họ tên bác sĩ không được chứa số hoặc ký tự đặc biệt',
+    })
+    .optional()
+    .or(z.literal('')),
   specialty: z.string().trim().optional().or(z.literal('')),
   academicTitle: z.string().trim().optional().or(z.literal('')),
   yearsOfExperience: z.string().trim().optional().or(z.literal('')),

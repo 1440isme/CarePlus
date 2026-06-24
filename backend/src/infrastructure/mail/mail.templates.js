@@ -62,6 +62,23 @@ function createPasswordResetSuccessTemplate({ name }) {
   };
 }
 
+function createAdminResetPasswordTemplate({ name, temporaryPassword }) {
+  return {
+    subject: 'CarePlus - Mật khẩu tài khoản của bạn đã được đặt lại',
+    ...createEmailLayout({
+      title: 'Mật khẩu CarePlus đã được đặt lại',
+      greeting: `Xin chào ${name || 'bạn'},`,
+      bodyLines: [
+        'Quản trị viên CarePlus đã đặt lại mật khẩu cho tài khoản của bạn.',
+        `Mật khẩu tạm thời mới: ${temporaryPassword}`,
+        'Vui lòng đăng nhập và đổi mật khẩu sau khi nhận được email này.',
+        'Nếu bạn không yêu cầu thao tác này, vui lòng liên hệ quản trị viên hoặc bộ phận hỗ trợ.',
+      ],
+      footer: 'CarePlus',
+    }),
+  };
+}
+
 function createBookingSuccessTemplate({ name, code, doctorName, specialtyName, date, time, fee }) {
   const formattedFee = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(fee);
   return {
@@ -120,6 +137,7 @@ module.exports = {
   createVerificationOtpTemplate,
   createPasswordResetTemplate,
   createPasswordResetSuccessTemplate,
+  createAdminResetPasswordTemplate,
   createBookingSuccessTemplate,
   createBookingCancellationTemplate,
   createNoShowLockTemplate,

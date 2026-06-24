@@ -121,6 +121,18 @@ class UserController {
       return next(error);
     }
   }
+
+  async resetUserPasswordByAdmin(req, res, next) {
+    try {
+      const data = await UserService.resetUserPasswordByAdmin(req.user, req.params.id);
+      return res.status(200).json({
+        success: true,
+        data,
+      });
+    } catch (error) {
+      return next(error);
+    }
+  }
 }
 
 module.exports = new UserController();

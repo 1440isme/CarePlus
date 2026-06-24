@@ -62,3 +62,8 @@ export async function resetUserNoShowCount(userId) {
   const response = await axiosInstance.patch(ADMIN_USER_API_PATHS.resetNoShow(userId));
   return response.data;
 }
+
+export async function resetUserPassword(userId) {
+  const response = await axiosInstance.patch(ADMIN_USER_API_PATHS.resetPassword(userId), {});
+  return response.data;
+}

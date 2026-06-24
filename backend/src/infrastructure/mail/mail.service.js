@@ -4,6 +4,7 @@ const {
   createVerificationOtpTemplate,
   createPasswordResetTemplate,
   createPasswordResetSuccessTemplate,
+  createAdminResetPasswordTemplate,
   createBookingSuccessTemplate,
   createBookingCancellationTemplate,
   createNoShowLockTemplate,
@@ -89,6 +90,20 @@ class MailService {
 
   async sendPasswordResetSuccessEmail({ to, name }) {
     const template = createPasswordResetSuccessTemplate({ name });
+
+    return this.sendMail({
+      to,
+      subject: template.subject,
+      html: template.html,
+      text: template.text,
+    });
+  }
+
+  async sendAdminResetPasswordEmail({ to, name, temporaryPassword }) {
+    const template = createAdminResetPasswordTemplate({
+      name,
+      temporaryPassword,
+    });
 
     return this.sendMail({
       to,

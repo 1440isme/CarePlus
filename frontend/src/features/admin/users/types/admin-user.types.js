@@ -4,6 +4,7 @@ export const ADMIN_USER_API_PATHS = {
   detail: (userId) => `/users/${userId}`,
   status: (userId) => `/users/${userId}/status`,
   resetNoShow: (userId) => `/users/${userId}/reset-no-show`,
+  resetPassword: (userId) => `/users/${userId}/reset-password`,
 };
 
 export const ADMIN_USER_QUERY_KEYS = {

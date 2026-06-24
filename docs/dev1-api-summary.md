@@ -333,6 +333,25 @@ search, role, status, createdFrom, createdTo, page, limit
 - Notes:
   - Reset no-show dùng endpoint riêng.
 
+### PATCH `/users/:id/reset-password`
+
+- Auth required: Yes
+- Role required: `ADMIN`
+- Request body:
+
+```json
+{}
+```
+
+- Success response: trả `message`
+- Error codes: `VALIDATION_ERROR`, `USER_NOT_FOUND`, `USER_EMAIL_NOT_FOUND`, `CANNOT_RESET_OWN_PASSWORD`, `SEND_RESET_PASSWORD_EMAIL_FAILED`, `RESET_USER_PASSWORD_FAILED`
+- Notes:
+  - Backend tự sinh mật khẩu tạm thời.
+  - API không trả mật khẩu mới.
+  - Mật khẩu mới được gửi qua email của người dùng.
+  - Không log mật khẩu mới hoặc `passwordHash`.
+  - Task này chưa revoke toàn bộ session/token hiện có sau khi reset mật khẩu.
+
 ### POST `/users/staff`
 
 - Auth required: Yes

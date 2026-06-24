@@ -13,6 +13,7 @@ export default function AdminUserConfirmDialog({
   title,
   description,
   confirmLabel,
+  pendingLabel = 'Đang xử lý...',
   confirmVariant = 'primary',
   user,
   isPending,
@@ -61,7 +62,7 @@ export default function AdminUserConfirmDialog({
             onClick={onConfirm}
             disabled={isPending}
           >
-            {isPending ? 'Đang xử lý' : confirmLabel}
+            {isPending ? pendingLabel : confirmLabel}
           </button>
         </div>
       </div>

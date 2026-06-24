@@ -9,6 +9,7 @@ import {
   ADMIN_USER_STATUS_OPTIONS,
   useAdminUsers,
   useResetUserNoShowCount,
+  useResetUserPassword,
   useUpdateUserStatus,
 } from '../../features/admin/users/index.js';
 import { Plus, X, CheckCircle, XCircle } from 'lucide-react';
@@ -35,12 +36,20 @@ function getMutationErrorMessage(error) {
       return 'Không thể tự khóa hoặc mở khóa tài khoản của chính mình.';
     case 'CANNOT_RESET_OWN_NO_SHOW':
       return 'Không thể tự reset số lần vắng mặt của chính mình.';
+    case 'CANNOT_RESET_OWN_PASSWORD':
+      return 'Không thể tự reset mật khẩu của chính mình.';
     case 'INVALID_USER_STATUS':
       return 'Trạng thái tài khoản không hợp lệ.';
+    case 'USER_EMAIL_NOT_FOUND':
+      return 'Người dùng chưa có email để nhận mật khẩu mới.';
     case 'UPDATE_USER_STATUS_FAILED':
       return 'Cập nhật trạng thái tài khoản thất bại.';
     case 'RESET_NO_SHOW_FAILED':
       return 'Reset số lần vắng mặt thất bại.';
+    case 'SEND_RESET_PASSWORD_EMAIL_FAILED':
+      return 'Không gửi được email thông báo mật khẩu mới.';
+    case 'RESET_USER_PASSWORD_FAILED':
+      return 'Reset mật khẩu thất bại.';
     default:
       return error?.message ?? 'Đã có lỗi xảy ra trên hệ thống.';
   }
@@ -135,6 +144,15 @@ export default function AdminUsersPage() {
       setDialogState({ type: null, user: null });
     },
   });
+  const resetPasswordMutation = useResetUserPassword({
+    onSuccess: (response) => {
+      setFeedback({
+        type: 'success',
+        message: response?.data?.message ?? 'Đã reset mật khẩu và gửi thông báo qua email cho người dùng.',
+      });
+      setDialogState({ type: null, user: null });
+    },
+  });
 
   const users = usersQuery.data?.data ?? [];
   const meta = usersQuery.data?.meta ?? {
@@ -175,21 +193,34 @@ export default function AdminUsersPage() {
       };
     }
 
-    if (dialogState.type === 'reset') {
+    if (dialogState.type === 'reset-no-show') {
       return {
         title: 'Reset số lần vắng mặt',
         description: 'Bạn có chắc muốn reset số lần vắng mặt của người dùng này không?',
         confirmLabel: 'Reset',
         confirmVariant: 'primary',
+        pendingLabel: 'Đang reset...',
+      };
+    }
+
+    if (dialogState.type === 'reset-password') {
+      return {
+        title: 'Reset mật khẩu người dùng',
+        description: 'Bạn có chắc muốn reset mật khẩu của người dùng này không? Mật khẩu tạm thời mới sẽ được gửi qua email của người dùng.',
+        confirmLabel: 'Reset mật khẩu',
+        confirmVariant: 'primary',
+        pendingLabel: 'Đang reset...',
       };
     }
 
     return null;
   }, [dialogState.type]);
 
-  const dialogErrorMessage = dialogState.type === 'reset'
+  const dialogErrorMessage = dialogState.type === 'reset-no-show'
     ? (resetNoShowMutation.error ? getMutationErrorMessage(resetNoShowMutation.error) : '')
-    : (updateStatusMutation.error ? getMutationErrorMessage(updateStatusMutation.error) : '');
+    : dialogState.type === 'reset-password'
+      ? (resetPasswordMutation.error ? getMutationErrorMessage(resetPasswordMutation.error) : '')
+      : (updateStatusMutation.error ? getMutationErrorMessage(updateStatusMutation.error) : '');
 
   const handleRoleChange = (value) => {
     setSelectedRole(value);
@@ -245,9 +276,10 @@ export default function AdminUsersPage() {
   });
 
   const handleCloseDialog = () => {
-    if (!updateStatusMutation.isPending && !resetNoShowMutation.isPending) {
+    if (!updateStatusMutation.isPending && !resetNoShowMutation.isPending && !resetPasswordMutation.isPending) {
       updateStatusMutation.reset();
       resetNoShowMutation.reset();
+      resetPasswordMutation.reset();
       setDialogState({ type: null, user: null });
     }
   };
@@ -265,8 +297,13 @@ export default function AdminUsersPage() {
       return;
     }
 
-    if (dialogState.type === 'reset') {
+    if (dialogState.type === 'reset-no-show') {
       resetNoShowMutation.mutate({ userId: dialogState.user.id });
+      return;
+    }
+
+    if (dialogState.type === 'reset-password') {
+      resetPasswordMutation.mutate({ userId: dialogState.user.id });
       return;
     }
 
@@ -382,6 +419,7 @@ export default function AdminUsersPage() {
         onRequestLockToggle={(user) => {
           updateStatusMutation.reset();
           resetNoShowMutation.reset();
+          resetPasswordMutation.reset();
           setDialogState({
             type: user.status === 'ACTIVE' ? 'lock' : 'unlock',
             user,
@@ -390,8 +428,18 @@ export default function AdminUsersPage() {
         onRequestResetNoShow={(user) => {
           updateStatusMutation.reset();
           resetNoShowMutation.reset();
+          resetPasswordMutation.reset();
           setDialogState({
-            type: 'reset',
+            type: 'reset-no-show',
+            user,
+          });
+        }}
+        onRequestResetPassword={(user) => {
+          updateStatusMutation.reset();
+          resetNoShowMutation.reset();
+          resetPasswordMutation.reset();
+          setDialogState({
+            type: 'reset-password',
             user,
           });
         }}
@@ -399,6 +447,8 @@ export default function AdminUsersPage() {
         statusUpdatingUserId={updateStatusMutation.variables?.userId ?? null}
         isResettingNoShow={resetNoShowMutation.isPending}
         resetNoShowUserId={resetNoShowMutation.variables?.userId ?? null}
+        isResettingPassword={resetPasswordMutation.isPending}
+        resetPasswordUserId={resetPasswordMutation.variables?.userId ?? null}
       />
 
       <AdminUserFormModal
@@ -424,9 +474,10 @@ export default function AdminUsersPage() {
         title={dialogConfig?.title ?? ''}
         description={dialogConfig?.description ?? ''}
         confirmLabel={dialogConfig?.confirmLabel ?? ''}
+        pendingLabel={dialogConfig?.pendingLabel ?? 'Đang xử lý...'}
         confirmVariant={dialogConfig?.confirmVariant ?? 'primary'}
         user={dialogState.user}
-        isPending={updateStatusMutation.isPending || resetNoShowMutation.isPending}
+        isPending={updateStatusMutation.isPending || resetNoShowMutation.isPending || resetPasswordMutation.isPending}
         errorMessage={dialogErrorMessage}
         onClose={handleCloseDialog}
         onConfirm={handleConfirmDialog}

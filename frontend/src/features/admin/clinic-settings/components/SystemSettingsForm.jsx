@@ -34,7 +34,33 @@ function buildDefaultValues(systemSettings) {
   };
 }
 
-function NumberField({ form, name, label }) {
+function blockInvalidNumberKey(event) {
+  if (['-', '+', 'e', 'E'].includes(event.key)) {
+    event.preventDefault();
+  }
+}
+
+function NumberField({ form, name, label, min }) {
+  const registeredField = form.register(name, { valueAsNumber: true });
+  const handleChange = (event) => {
+    if (event.target.value === '') {
+      registeredField.onChange(event);
+      return;
+    }
+
+    const nextValue = Number(event.target.value);
+
+    if (Number.isNaN(nextValue)) {
+      return;
+    }
+
+    if (nextValue < min) {
+      event.target.value = String(min);
+    }
+
+    registeredField.onChange(event);
+  };
+
   return (
     <div className="admin-system-settings-field">
       <label className="admin-system-settings-label" htmlFor={name}>
@@ -46,7 +72,11 @@ function NumberField({ form, name, label }) {
         className="admin-system-settings-input"
         type="number"
         step="1"
-        {...form.register(name, { valueAsNumber: true })}
+        {...registeredField}
+        min={min}
+        inputMode="numeric"
+        onKeyDown={blockInvalidNumberKey}
+        onChange={handleChange}
       />
       {form.formState.errors[name] ? (
         <p className="admin-system-settings-error">{form.formState.errors[name].message}</p>
@@ -113,26 +143,31 @@ export default function SystemSettingsForm({
               form={form}
               name="maxBookingDaysAhead"
               label="Đặt lịch trước tối đa (ngày)"
+              min={1}
             />
             <NumberField
               form={form}
               name="slotDurationMinutes"
               label="Thời lượng mỗi khung giờ khám (phút)"
+              min={1}
             />
             <NumberField
               form={form}
               name="cancelBeforeHours"
               label="Thời gian hủy lịch tối thiểu (giờ)"
+              min={0}
             />
             <NumberField
               form={form}
               name="maxNoShowBeforeLock"
               label="Số lần vắng mặt tối đa"
+              min={1}
             />
             <NumberField
               form={form}
               name="maxActiveAppointmentsPerUser"
               label="Số lịch hẹn active tối đa / người dùng"
+              min={1}
             />
           </div>
         </section>
