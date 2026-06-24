@@ -8,6 +8,8 @@ import {
 import { useAuth } from '../../hooks/useAuth.js';
 import { clearAuth } from '../../../features/auth/store/auth.slice.js';
 import { APP_ROUTES } from '../../constants/routes.js';
+import NotificationBellDropdown from '../../../features/notification/components/NotificationBellDropdown.jsx';
+import { useConversations } from '../../../features/chat/hooks/useChat.js';
 
 const navConfig = {
   DOCTOR: [
@@ -25,6 +27,10 @@ export default function DashboardLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+
+  const { data: convsResponse } = useConversations();
+  const conversations = convsResponse?.data || [];
+  const unreadChatCount = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
 
   useEffect(() => {
     if (!currentUser || role !== 'DOCTOR') {
@@ -95,7 +101,12 @@ export default function DashboardLayout() {
                 }`}
               >
                 {item.icon}
-                {item.label}
+                <span className="flex-1 flex items-center justify-between">
+                  {item.label}
+                  {item.label === 'Tin nhắn' && unreadChatCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2" />
+                  )}
+                </span>
                 {isActive(item) && <ChevronRight className="w-3 h-3 ml-auto" />}
               </NavLink>
             </li>
@@ -144,10 +155,7 @@ export default function DashboardLayout() {
           </button>
           <div className="flex-1" />
           <div className="flex items-center gap-4">
-            <button className="p-2 text-gray-400 hover:text-gray-600 relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBellDropdown />
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-600 transition-colors"

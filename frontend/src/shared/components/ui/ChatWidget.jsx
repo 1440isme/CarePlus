@@ -47,9 +47,9 @@ export default function ChatWidget() {
   // Active conversation details
   const activeConversation = conversations.find(c => c.id === activeConvId);
 
-  // 2. Fetch messages in active conversation
+  // 2. Fetch messages in active conversation (only if widget is open)
   const { data: messagesResponse } = useConversationMessages(activeConvId, {}, {
-    enabled: !!activeConvId && isAuthenticated && isPatient
+    enabled: !!activeConvId && isAuthenticated && isPatient && isOpen
   });
   const messages = messagesResponse?.data || [];
 
@@ -74,7 +74,7 @@ export default function ChatWidget() {
 
   // Join/leave conversation room
   useEffect(() => {
-    if (activeConvId && isAuthenticated && isPatient) {
+    if (activeConvId && isAuthenticated && isPatient && isOpen) {
       socketService.joinConversation(activeConvId);
     }
     return () => {
@@ -82,14 +82,14 @@ export default function ChatWidget() {
         socketService.leaveConversation(activeConvId);
       }
     };
-  }, [activeConvId, isAuthenticated, isPatient]);
+  }, [activeConvId, isAuthenticated, isPatient, isOpen]);
 
   // Listen for socket events
   useEffect(() => {
     if (!isAuthenticated || !isPatient) return;
 
     const unsubscribeMessage = socketService.onMessageReceived((msg) => {
-      if (msg.conversationId === activeConvId) {
+      if (msg.conversationId === activeConvId && isOpen) {
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.messages(activeConvId) });
       }
       queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
@@ -98,14 +98,14 @@ export default function ChatWidget() {
     const unsubscribeNotification = socketService.onNotification((notif) => {
       if (notif.type === 'CHAT') {
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
-        if (notif.conversationId === activeConvId) {
+        if (notif.conversationId === activeConvId && isOpen) {
           queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.messages(activeConvId) });
         }
       }
     });
 
     const unsubscribeTyping = socketService.onTypingStateChange(({ conversationId, userId, isTyping }) => {
-      if (conversationId === activeConvId && userId !== authUser?.id) {
+      if (conversationId === activeConvId && userId !== authUser?.id && isOpen) {
         setIsTyping(isTyping);
       }
     });
@@ -121,63 +121,70 @@ export default function ChatWidget() {
       unsubscribeTyping();
       socketService.socket?.off('chat:messages-read', unsubscribeMessagesRead);
     };
-  }, [activeConvId, isAuthenticated, isPatient, authUser?.id, queryClient]);
+  }, [activeConvId, isAuthenticated, isPatient, authUser?.id, queryClient, isOpen]);
 
   // Handle custom event to start/open chat with doctor
   useEffect(() => {
     const handleOpenDoctorChat = async (e) => {
       const { doctorId, doctorName } = e.detail;
       console.log('[ChatWidget] Received open-doctor-chat event:', { doctorId, doctorName });
-      setIsOpen(true);
-      setTempPartnerInfo({ name: doctorName, role: 'Bác sĩ', type: 'DOCTOR_CONSULTATION' });
 
-      const currentConvs = conversationsRef.current || [];
-      console.log('[ChatWidget] Current conversations in Ref:', currentConvs);
+      if (isAuthenticated && isPatient) {
+        setIsOpen(true);
+        const currentConvs = conversationsRef.current;
+        console.log('[ChatWidget] Current conversations in Ref:', currentConvs);
 
-      const existing = currentConvs.find(
-        (c) => c.type === 'DOCTOR_CONSULTATION' && String(c.doctor?.id) === String(doctorId)
-      );
+        const existing = currentConvs.find(
+          c => c.type === 'DOCTOR_CONSULTATION' && String(c.doctor?.id) === String(doctorId)
+        );
 
-      if (existing) {
-        console.log('[ChatWidget] Found existing doctor conversation room:', existing.id);
-        setActiveConvId(existing.id);
-      } else {
-        console.log('[ChatWidget] Creating new doctor conversation room for doctorId:', doctorId);
-        try {
-          const res = await createConversationMutation.mutateAsync({
-            type: 'DOCTOR_CONSULTATION',
-            doctorId: String(doctorId)
-          });
-          console.log('[ChatWidget] Created conversation success response:', res);
-          if (res?.data?.id) {
-            setActiveConvId(res.data.id);
-          } else if (res?.id) {
-            setActiveConvId(res.id);
-          } else {
-            console.error('[ChatWidget] Response missing ID:', res);
+        if (existing) {
+          console.log('[ChatWidget] Found existing doctor conversation room:', existing.id);
+          setActiveConvId(existing.id);
+        } else {
+          console.log('[ChatWidget] Creating new doctor conversation room for doctorId:', doctorId);
+          setTempPartnerInfo({ name: doctorName, role: 'Bác sĩ', type: 'DOCTOR_CONSULTATION' });
+          
+          try {
+            const res = await createConversationMutation.mutateAsync({
+              type: 'DOCTOR_CONSULTATION',
+              doctorId: String(doctorId)
+            });
+            console.log('[ChatWidget] Created conversation success response:', res);
+            
+            if (res?.data?.id) {
+              setActiveConvId(res.data.id);
+              setTempPartnerInfo(null);
+            } else if (res?.id) {
+              setActiveConvId(res.id);
+              setTempPartnerInfo(null);
+            } else {
+              console.error('[ChatWidget] Response missing ID:', res);
+            }
+          } catch (err) {
+            console.error('[ChatWidget] Failed to create doctor consultation chat:', err);
           }
-          queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
-        } catch (err) {
-          console.error('[ChatWidget] Failed to create doctor consultation chat:', err);
         }
       }
     };
 
     window.addEventListener('open-doctor-chat', handleOpenDoctorChat);
     return () => window.removeEventListener('open-doctor-chat', handleOpenDoctorChat);
-  }, [createConversationMutation, queryClient]);
+  }, [createConversationMutation, queryClient, isAuthenticated, isPatient]);
 
   // Scroll to bottom on new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (isOpen) {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   }, [messages.length, activeConvId, isOpen]);
 
-  // Set default active conversation if none selected
+  // Set default active conversation if none selected and widget is open
   useEffect(() => {
-    if (conversations.length > 0 && !activeConvId) {
+    if (isOpen && conversations.length > 0 && !activeConvId) {
       setActiveConvId(conversations[0].id);
     }
-  }, [conversations, activeConvId]);
+  }, [conversations, activeConvId, isOpen]);
 
   // Calculate unread count
   const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);

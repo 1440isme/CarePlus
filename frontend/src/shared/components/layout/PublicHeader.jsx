@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { useApp } from '../../../context/AppContext';
 import { useClinicInfo } from '../../../features/admin/clinic-settings/hooks/useClinicInfo.js';
+import NotificationBellDropdown from '../../../features/notification/components/NotificationBellDropdown.jsx';
 
 const navItems = [
   { label: 'Trang chủ', href: '/' },
@@ -85,37 +86,40 @@ export function PublicHeader() {
             </a>
 
             {currentUser ? (
-              <div className="relative">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-cyan-300 text-sm transition-colors"
-                >
-                  <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center">
-                    <User className="w-3.5 h-3.5 text-cyan-700" />
-                  </div>
-                  <span className="text-gray-700 max-w-32 truncate">{currentUser.name}</span>
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                </button>
-                {userMenuOpen && (
-                  <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
-                    <Link
-                      to={getPortalLink()}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <Calendar className="w-4 h-4" />
-                      Trang cá nhân
-                    </Link>
-                    <hr className="my-1" />
-                    <button
-                      onClick={handleLogout}
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Đăng xuất
-                    </button>
-                  </div>
-                )}
+              <div className="relative flex items-center gap-3">
+                <NotificationBellDropdown />
+                <div className="relative">
+                  <button
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-cyan-300 text-sm transition-colors"
+                  >
+                    <div className="w-6 h-6 bg-cyan-100 rounded-full flex items-center justify-center">
+                      <User className="w-3.5 h-3.5 text-cyan-700" />
+                    </div>
+                    <span className="text-gray-700 max-w-32 truncate">{currentUser.name}</span>
+                    <ChevronDown className="w-4 h-4 text-gray-400" />
+                  </button>
+                  {userMenuOpen && (
+                    <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-lg border border-gray-100 py-1 z-50">
+                      <Link
+                        to={getPortalLink()}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <Calendar className="w-4 h-4" />
+                        Trang cá nhân
+                      </Link>
+                      <hr className="my-1" />
+                      <button
+                        onClick={handleLogout}
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        Đăng xuất
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ) : (
               <>
