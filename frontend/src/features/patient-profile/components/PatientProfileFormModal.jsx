@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { createPatientProfileSchema } from '../schemas/patient-profile.schema.js';
 import {
@@ -7,6 +7,7 @@ import {
   PATIENT_PROFILE_RELATIONSHIP_OPTIONS,
 } from '../types/patient-profile.types.js';
 import { X } from 'lucide-react';
+import IsoDatePickerInput from '../../../shared/components/shared/IsoDatePickerInput.jsx';
 
 function getFormErrorMessage(error) {
   switch (error?.code) {
@@ -75,6 +76,7 @@ export default function PatientProfileFormModal({
   });
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -191,14 +193,21 @@ export default function PatientProfileFormModal({
             {/* DOB */}
             <div>
               <RequiredLabel htmlFor="relative-date-of-birth">Ngày sinh</RequiredLabel>
-              <div className="relative">
-                <input
-                  id="relative-date-of-birth"
-                  className={`${inputStyle} ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
-                  type="date"
-                  {...register('dateOfBirth')}
-                />
-              </div>
+              <Controller
+                control={control}
+                name="dateOfBirth"
+                render={({ field }) => (
+                  <IsoDatePickerInput
+                    className={`${inputStyle} pr-10 ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
+                    value={field.value}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    max={new Date().toISOString().split('T')[0]}
+                    ariaLabel="Mở lịch chọn ngày sinh"
+                  />
+                )}
+              />
               {errors.dateOfBirth ? <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth.message}</p> : null}
             </div>
 

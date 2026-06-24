@@ -1,8 +1,10 @@
 const bcrypt = require('bcrypt');
+const { randomBytes } = require('crypto');
 const UserRepository = require('./user.repository');
 const SpecialtyRepository = require('../specialty/specialty.repository');
 const { toUserDto, toUserListDto } = require('./user.dto');
 const UploadService = require('../upload/upload.service');
+const { mailService, MailServiceError } = require('../../infrastructure/mail/mail.service');
 const {
   USER_ERROR_CODES,
   USER_PAGINATION,
@@ -28,6 +30,38 @@ function logSafeUserError(action, error, fallbackCode) {
     statusCode: error?.statusCode || 500,
     message: error?.message || 'Unknown error',
   });
+}
+
+function generateTemporaryPassword(length = 12) {
+  const uppercaseChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lowercaseChars = 'abcdefghijkmnopqrstuvwxyz';
+  const numberChars = '23456789';
+  const specialChars = '@#$%&*!?';
+  const allChars = `${uppercaseChars}${lowercaseChars}${numberChars}${specialChars}`;
+  const requiredChars = [
+    uppercaseChars,
+    lowercaseChars,
+    numberChars,
+    specialChars,
+  ].map((charset) => {
+    const randomIndex = randomBytes(1)[0] % charset.length;
+    return charset[randomIndex];
+  });
+
+  const remainingChars = [];
+  for (let index = requiredChars.length; index < length; index += 1) {
+    const randomIndex = randomBytes(1)[0] % allChars.length;
+    remainingChars.push(allChars[randomIndex]);
+  }
+
+  const passwordChars = [...requiredChars, ...remainingChars];
+
+  for (let index = passwordChars.length - 1; index > 0; index -= 1) {
+    const randomIndex = randomBytes(1)[0] % (index + 1);
+    [passwordChars[index], passwordChars[randomIndex]] = [passwordChars[randomIndex], passwordChars[index]];
+  }
+
+  return passwordChars.join('');
 }
 
 function normalizeDateOfBirth(value) {
@@ -509,6 +543,76 @@ class UserService {
     }
   }
 
+  async resetUserPasswordByAdmin(adminUser, userId) {
+    try {
+      if (adminUser.userId === userId) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.CANNOT_RESET_OWN_PASSWORD,
+          message: 'Không thể tự reset mật khẩu của chính mình bằng chức năng quản trị.',
+          statusCode: 400,
+        });
+      }
+
+      const targetUser = await this.userRepository.findUserByIdWithPasswordHash(userId);
+
+      if (!targetUser) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.USER_NOT_FOUND,
+          message: 'Không tìm thấy người dùng.',
+          statusCode: 404,
+        });
+      }
+
+      if (typeof targetUser.email !== 'string' || !targetUser.email.trim()) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.USER_EMAIL_NOT_FOUND,
+          message: 'Người dùng chưa có email để nhận mật khẩu mới.',
+          statusCode: 400,
+        });
+      }
+
+      const temporaryPassword = generateTemporaryPassword();
+      const passwordHash = await bcrypt.hash(temporaryPassword, 10);
+
+      await this.userRepository.updateUserPasswordHash(targetUser.id, passwordHash);
+
+      try {
+        await this._sendAdminResetPasswordEmailOrThrow({
+          to: targetUser.email.trim(),
+          name: targetUser.name,
+          temporaryPassword,
+        });
+      } catch (error) {
+        await this.userRepository.updateUserPasswordHash(targetUser.id, targetUser.passwordHash);
+
+        if (error instanceof UserServiceError) {
+          throw error;
+        }
+
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.RESET_USER_PASSWORD_FAILED,
+          message: 'Reset mật khẩu thất bại.',
+          statusCode: 500,
+        });
+      }
+
+      return {
+        message: 'Đã reset mật khẩu và gửi thông báo qua email cho người dùng.',
+      };
+    } catch (error) {
+      logSafeUserError('resetUserPasswordByAdmin', error, USER_ERROR_CODES.RESET_USER_PASSWORD_FAILED);
+      if (error instanceof UserServiceError) {
+        throw error;
+      }
+
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.RESET_USER_PASSWORD_FAILED,
+        message: 'Reset mật khẩu thất bại.',
+        statusCode: 500,
+      });
+    }
+  }
+
   async _getUserOrThrow(userId) {
     const user = await this.userRepository.findUserById(userId);
 
@@ -567,6 +671,26 @@ class UserService {
         message: 'Không thể tải ảnh đại diện lên Cloudinary',
         statusCode: 500,
       });
+    }
+  }
+
+  async _sendAdminResetPasswordEmailOrThrow({ to, name, temporaryPassword }) {
+    try {
+      await mailService.sendAdminResetPasswordEmail({
+        to,
+        name,
+        temporaryPassword,
+      });
+    } catch (error) {
+      if (error instanceof MailServiceError) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.SEND_RESET_PASSWORD_EMAIL_FAILED,
+          message: 'Không gửi được email thông báo mật khẩu mới.',
+          statusCode: 503,
+        });
+      }
+
+      throw error;
     }
   }
 

@@ -22,6 +22,14 @@ function isValidVietnamPhone(phone) {
   return /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone);
 }
 
+function isValidHumanName(value) {
+  return /^[\p{L}\s]+$/u.test(value);
+}
+
+function isValidDoctorDisplayName(value) {
+  return /^[\p{L}\s.]+$/u.test(value);
+}
+
 function isValidDateOfBirth(value) {
   if (typeof value !== 'string') {
     return false;
@@ -82,6 +90,9 @@ const updateMeSchema = z.object({
     .trim()
     .min(1, 'name must not be empty')
     .max(100, 'name must be at most 100 characters')
+    .refine((value) => isValidHumanName(value), {
+      message: 'name must not contain numbers or special characters',
+    })
     .optional(),
   phone: z.string()
     .trim()
@@ -128,7 +139,10 @@ const createStaffUserSchema = z.object({
   name: z.string()
     .trim()
     .min(1, 'name must not be empty')
-    .max(100, 'name must be at most 100 characters'),
+    .max(100, 'name must be at most 100 characters')
+    .refine((value) => isValidHumanName(value), {
+      message: 'name must not contain numbers or special characters',
+    }),
   email: z.string()
     .trim()
     .email('email must be a valid email address')
@@ -147,7 +161,14 @@ const createStaffUserSchema = z.object({
       message: 'role must be one of DOCTOR, RECEPTIONIST, ADMIN',
     }),
   status: z.enum(VALID_USER_STATUSES).optional(),
-  doctorName: z.string().trim().min(1).max(100).optional(),
+  doctorName: z.string()
+    .trim()
+    .min(1)
+    .max(100)
+    .refine((value) => isValidDoctorDisplayName(value), {
+      message: 'doctorName must not contain numbers or special characters',
+    })
+    .optional(),
   specialtyId: z.string().trim().min(1).optional(),
   academicTitle: z.string().trim().min(1).max(100).optional(),
   yearsOfExperience: z.coerce.number().int().min(0).max(80).optional(),
@@ -182,6 +203,8 @@ const createStaffUserSchema = z.object({
     });
   }
 });
+
+const resetUserPasswordBodySchema = z.object({}).strict();
 
 function validateListUsers(req, res, next) {
   const details = [];
@@ -389,6 +412,35 @@ function validateResetNoShowCount(req, res, next) {
   return next();
 }
 
+function validateResetUserPassword(req, res, next) {
+  const details = [];
+  const userId = typeof req.params?.id === 'string' ? req.params.id.trim() : '';
+  const parsedBodyResult = resetUserPasswordBodySchema.safeParse(req.body || {});
+
+  if (!userId) {
+    details.push({
+      field: 'id',
+      message: 'id is required',
+    });
+  }
+
+  if (!parsedBodyResult.success) {
+    details.push(
+      ...parsedBodyResult.error.issues.map((issue) => ({
+        field: issue.path.length > 0 ? issue.path.join('.') : 'body',
+        message: issue.message,
+      })),
+    );
+  }
+
+  if (details.length > 0) {
+    return sendValidationError(res, details, USER_ERROR_CODES.VALIDATION_ERROR, 'Dữ liệu không hợp lệ');
+  }
+
+  req.body = parsedBodyResult.data;
+  return next();
+}
+
 module.exports = {
   validateListUsers,
   validateUpdateMe,
@@ -398,4 +450,5 @@ module.exports = {
   validateGetUserDetail,
   validateUpdateUserStatus,
   validateResetNoShowCount,
+  validateResetUserPassword,
 };

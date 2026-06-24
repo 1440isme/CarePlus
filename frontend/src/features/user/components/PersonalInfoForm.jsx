@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import ProfileAvatarUpload from './ProfileAvatarUpload.jsx';
 import { updateMeSchema } from '../schemas/user.schema.js';
 import { useUpdateMe } from '../hooks/useUpdateMe.js';
 import { Lock } from 'lucide-react';
+import IsoDatePickerInput from '../../../shared/components/shared/IsoDatePickerInput.jsx';
 
 function getUpdateErrorMessage(error) {
   switch (error?.code) {
@@ -50,6 +51,7 @@ export default function PersonalInfoForm({
   });
 
   const {
+    control,
     register,
     handleSubmit,
     reset,
@@ -179,14 +181,21 @@ export default function PersonalInfoForm({
         {/* DOB */}
         <div>
           <RequiredLabel htmlFor="patient-birthdate">Ngày sinh</RequiredLabel>
-          <div className="relative">
-            <input
-              id="patient-birthdate"
-              className={`${inputStyle} ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
-              type="date"
-              {...register('dateOfBirth')}
-            />
-          </div>
+          <Controller
+            control={control}
+            name="dateOfBirth"
+            render={({ field }) => (
+              <IsoDatePickerInput
+                className={`${inputStyle} pr-10 ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
+                value={field.value}
+                onChange={field.onChange}
+                onBlur={field.onBlur}
+                name={field.name}
+                max={new Date().toISOString().split('T')[0]}
+                ariaLabel="Mở lịch chọn ngày sinh"
+              />
+            )}
+          />
           {errors.dateOfBirth ? <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth.message}</p> : null}
         </div>
 

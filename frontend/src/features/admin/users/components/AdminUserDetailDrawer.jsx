@@ -52,6 +52,15 @@ function TrashIcon() {
   );
 }
 
+function KeyIcon() {
+  return (
+    <svg viewBox="0 0 20 20" aria-hidden="true">
+      <path d="M8.5 12.75a4.25 4.25 0 1 1 3.56-6.58l4.44.01v2h-1.5v1.5H13.5v1.5h-1.75l-.63-.63a4.22 4.22 0 0 1-2.62.9Z" />
+      <circle cx="8.5" cy="8.5" r="1.1" />
+    </svg>
+  );
+}
+
 function getInitials(name) {
   if (!name) {
     return 'A';
@@ -159,10 +168,13 @@ export default function AdminUserDetailDrawer({
   onClose,
   onRequestLockToggle,
   onRequestResetNoShow,
+  onRequestResetPassword,
   isStatusUpdating,
   statusUpdatingUserId,
   isResettingNoShow,
   resetNoShowUserId,
+  isResettingPassword,
+  resetPasswordUserId,
 }) {
   const [note, setNote] = useState('');
   const [isEditing, setIsEditing] = useState(false);
@@ -250,6 +262,7 @@ export default function AdminUserDetailDrawer({
 
   const isUserBeingUpdated = isStatusUpdating && statusUpdatingUserId === user.id;
   const isUserNoShowBeingReset = isResettingNoShow && resetNoShowUserId === user.id;
+  const isUserPasswordBeingReset = isResettingPassword && resetPasswordUserId === user.id;
   const isLockAction = user.status === 'ACTIVE';
   const editErrorMessage = updateAdminUserMutation.error?.message ?? 'Không thể cập nhật thông tin người dùng.';
   const isSaveDisabled = updateAdminUserMutation.isPending || !hasMeaningfulChanges;
@@ -399,29 +412,64 @@ export default function AdminUserDetailDrawer({
               <p className="admin-user-detail-section-title">C. THAO TÁC TÀI KHOẢN</p>
               <div className="admin-user-detail-account-actions">
                 <button
-                  className="admin-user-detail-danger-button"
+                  className={`admin-user-detail-account-action admin-user-detail-account-action-primary ${
+                    isLockAction
+                      ? 'admin-user-detail-danger-button'
+                      : 'admin-user-detail-success-button'
+                  }`}
                   type="button"
                   onClick={() => onRequestLockToggle(user)}
                   disabled={isUserBeingUpdated}
                 >
                   <LockIcon />
-                  <span>
-                    {isUserBeingUpdated
-                      ? 'Đang cập nhật'
-                      : isLockAction
-                        ? 'Khóa tài khoản'
-                        : 'Mở khóa tài khoản'}
+                  <span className="admin-user-detail-account-action-copy">
+                    <span className="admin-user-detail-account-action-title">
+                      {isUserBeingUpdated
+                        ? 'Đang cập nhật'
+                        : isLockAction
+                          ? 'Khóa tài khoản'
+                          : 'Mở khóa tài khoản'}
+                    </span>
+                    <span className="admin-user-detail-account-action-description">
+                      {isLockAction
+                        ? 'Tạm ngừng quyền đăng nhập của người dùng.'
+                        : 'Khôi phục quyền đăng nhập cho tài khoản này.'}
+                    </span>
                   </span>
                 </button>
 
                 <button
-                  className="admin-user-detail-warning-button"
+                  className="admin-user-detail-warning-button admin-user-detail-account-action"
                   type="button"
                   onClick={() => onRequestResetNoShow(user)}
                   disabled={isUserNoShowBeingReset || Number(user.noShowCount ?? 0) === 0}
                 >
                   <TrashIcon />
-                  <span>{isUserNoShowBeingReset ? 'Đang reset' : 'Reset số lần vắng mặt'}</span>
+                  <span className="admin-user-detail-account-action-copy">
+                    <span className="admin-user-detail-account-action-title">
+                      {isUserNoShowBeingReset ? 'Đang reset' : 'Reset số lần vắng mặt'}
+                    </span>
+                    <span className="admin-user-detail-account-action-description">
+                      Đưa số lần vắng mặt về 0.
+                    </span>
+                  </span>
+                </button>
+
+                <button
+                  className="admin-user-detail-secondary-button admin-user-detail-account-action"
+                  type="button"
+                  onClick={() => onRequestResetPassword(user)}
+                  disabled={isUserPasswordBeingReset}
+                >
+                  <KeyIcon />
+                  <span className="admin-user-detail-account-action-copy">
+                    <span className="admin-user-detail-account-action-title">
+                      {isUserPasswordBeingReset ? 'Đang reset...' : 'Reset mật khẩu'}
+                    </span>
+                    <span className="admin-user-detail-account-action-description">
+                      Gửi mật khẩu tạm thời mới qua email.
+                    </span>
+                  </span>
                 </button>
               </div>
             </section>

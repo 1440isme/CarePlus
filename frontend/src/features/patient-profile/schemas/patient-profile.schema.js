@@ -6,6 +6,7 @@ import {
 
 const vietnamPhoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
 const dateOfBirthRegex = /^\d{4}-\d{2}-\d{2}$/;
+const humanNameRegex = /^[\p{L}\s]+$/u;
 const validGenderValues = PATIENT_PROFILE_GENDER_OPTIONS.map((option) => option.value);
 const validRelationshipValues = PATIENT_PROFILE_RELATIONSHIP_OPTIONS.map((option) => option.value);
 
@@ -38,7 +39,8 @@ const basePatientProfileSchema = z.object({
     .string()
     .trim()
     .min(1, 'Họ và tên không được để trống')
-    .max(100, 'Họ và tên tối đa 100 ký tự'),
+    .max(100, 'Họ và tên tối đa 100 ký tự')
+    .regex(humanNameRegex, 'Họ và tên không được chứa số hoặc ký tự đặc biệt'),
   phone: z
     .string()
     .trim()

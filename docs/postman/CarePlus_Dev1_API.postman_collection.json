@@ -397,6 +397,34 @@
           }
         },
         {
+          "name": "Reset User Password",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/reset-password",
+            "description": "Admin reset mật khẩu người dùng. Backend tự sinh mật khẩu tạm thời và gửi qua email. API không trả mật khẩu mới trong response."
+          }
+        },
+        {
           "name": "Create Staff - Receptionist",
           "request": {
             "method": "POST",

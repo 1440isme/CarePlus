@@ -21,6 +21,10 @@ function isValidVietnamPhone(phone) {
   return /^(0|\+84)(3|5|7|8|9)\d{8}$/.test(phone);
 }
 
+function isValidHumanName(value) {
+  return /^[\p{L}\s]+$/u.test(value);
+}
+
 function isValidDateString(value) {
   if (typeof value !== 'string') {
     return false;
@@ -57,7 +61,10 @@ const createPatientProfileSchema = z.object({
   fullName: z.string()
     .trim()
     .min(1, 'fullName must not be empty')
-    .max(100, 'fullName must be at most 100 characters'),
+    .max(100, 'fullName must be at most 100 characters')
+    .refine((value) => isValidHumanName(value), {
+      message: 'fullName must not contain numbers or special characters',
+    }),
   phone: z.string()
     .trim()
     .refine((value) => isValidVietnamPhone(value), {
@@ -96,6 +103,9 @@ const updatePatientProfileSchema = z.object({
     .trim()
     .min(1, 'fullName must not be empty')
     .max(100, 'fullName must be at most 100 characters')
+    .refine((value) => isValidHumanName(value), {
+      message: 'fullName must not contain numbers or special characters',
+    })
     .optional(),
   phone: z.string()
     .trim()

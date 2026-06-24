@@ -9,6 +9,7 @@ const {
   validateGetUserDetail,
   validateUpdateUserStatus,
   validateResetNoShowCount,
+  validateResetUserPassword,
 } = require('./user.validator');
 const { USER_ROUTE_PATHS } = require('./user.types');
 const { authenticate } = require('../../middleware/auth.middleware');
@@ -75,6 +76,14 @@ router.patch(
   authorize(USER_ROLES.ADMIN),
   validateResetNoShowCount,
   UserController.resetNoShowCount,
+);
+
+router.patch(
+  USER_ROUTE_PATHS.RESET_PASSWORD,
+  authenticate,
+  authorize(USER_ROLES.ADMIN),
+  validateResetUserPassword,
+  UserController.resetUserPasswordByAdmin,
 );
 
 module.exports = router;

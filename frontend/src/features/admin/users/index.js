@@ -9,5 +9,6 @@ export { useCreateAdminStaffUser } from './hooks/useCreateAdminStaffUser.js';
 export { useUpdateAdminUser } from './hooks/useUpdateAdminUser.js';
 export { useUpdateUserStatus } from './hooks/useUpdateUserStatus.js';
 export { useResetUserNoShowCount } from './hooks/useResetUserNoShowCount.js';
+export { useResetUserPassword } from './hooks/useResetUserPassword.js';
 export * from './types/admin-user.types.js';
 export * from './schemas/admin-user.schema.js';
