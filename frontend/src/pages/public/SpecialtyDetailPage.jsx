@@ -72,7 +72,7 @@ export default function SpecialtyDetailPage() {
   // Generate virtual slots based on rules
   const slots = useMemo(
     () => flattenSlotGroups(buildVirtualSlots(bookingRulesResponse?.data)).map(s => ({
-      time: s.startTime,
+      time: `${s.startTime}-${s.endTime}`,
       avail: true,
     })),
     [bookingRulesResponse?.data]

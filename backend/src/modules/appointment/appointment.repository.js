@@ -228,7 +228,12 @@ class AppointmentRepository extends BaseRepository {
       const appointment = await tx.appointment.create({
         data: {
           code: data.code,
-          patientId: data.patientId,
+          patientId: data.patientId || null,
+          patientName: data.patientName || null,
+          patientPhone: data.patientPhone || null,
+          patientGender: data.patientGender || null,
+          patientDob: data.patientDob || null,
+          patientAddress: data.patientAddress || null,
           patientProfileId: data.patientProfileId || null,
           doctorId: data.doctorId,
           specialtyId: data.specialtyId,
@@ -244,7 +249,7 @@ class AppointmentRepository extends BaseRepository {
           forSelf: data.forSelf,
           relativeName: data.relativeName || null,
           consultationFee: data.consultationFee,
-          patientEmail: data.patientEmail,
+          patientEmail: data.patientEmail || null,
           reason: data.reason || null,
           note: data.note || null,
         },
