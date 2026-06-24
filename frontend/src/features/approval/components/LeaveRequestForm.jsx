@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
-import { useDoctorSchedules } from "../../schedule/hooks/useSchedules.js";
-import LoadingBlock from "../../../shared/components/feedback/LoadingBlock.jsx";
+import { useMemo, useState } from 'react';
+import { useDoctorSchedules } from '../../schedule/hooks/useSchedules.js';
+import LoadingBlock from '../../../shared/components/feedback/LoadingBlock.jsx';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const SHIFT_LABELS = {
   MORNING: "Ca sáng",
@@ -115,6 +116,8 @@ export default function LeaveRequestForm({
   const selectedSchedules = schedulesByDate.get(selectedDate) || [];
   const selectedWorkingShifts = getWorkingShiftsForDate(selectedSchedules);
   const shiftOptions = getShiftOptions(selectedWorkingShifts);
+
+  const todayIso = formatIsoDate(new Date());
 
   const handleMonthChange = (direction) => {
     setMonthDate(

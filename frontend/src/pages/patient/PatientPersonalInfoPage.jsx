@@ -21,14 +21,17 @@ function formatDateForInput(value) {
   if (!value) {
     return '';
   }
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return value;
   }
   const parsedDate = new Date(value);
   if (Number.isNaN(parsedDate.getTime())) {
     return '';
   }
-  return parsedDate.toLocaleDateString('vi-VN');
+  const year = parsedDate.getUTCFullYear();
+  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function getGenderLabel(value) {
@@ -48,8 +51,9 @@ function toDateDisplay(value) {
   if (!value) {
     return '--';
   }
-  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
-    return value;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [year, month, day] = value.split('-');
+    return `${day}/${month}/${year}`;
   }
   const parsedDate = new Date(value);
   if (Number.isNaN(parsedDate.getTime())) {
@@ -63,8 +67,8 @@ function buildDraftFromUser(user) {
     name: user?.name ?? '',
     phone: user?.phone ?? '',
     gender: user?.gender ?? 'MALE',
-    dateOfBirth: formatDateForInput(user?.dateOfBirth) || '15/05/1990',
-    address: user?.address ?? '123 Đường ABC, Quận 1, TP.HCM',
+    dateOfBirth: formatDateForInput(user?.dateOfBirth),
+    address: user?.address ?? '',
   };
 }
 

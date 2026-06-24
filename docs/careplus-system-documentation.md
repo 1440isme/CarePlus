@@ -21,11 +21,11 @@
    
  | Patient Portal | Bệnh nhân | /benh-nhan |  
    
- | Doctor Portal | Bác sĩ | /bac-si-portal |  
+| Doctor Portal | Bác sĩ | /portal/bac-si |  
    
- | Receptionist Portal | Lễ tân | /le-tan |  
+| Receptionist Portal | Lễ tân | /portal/le-tan |  
    
- | Admin Portal | Quản trị viên | /admin |  
+| Admin Portal | Quản trị viên | /portal/admin |  
    
     
    
@@ -703,7 +703,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Hiển thị trên tab "Đánh giá" trang chi tiết bác sĩ  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/khHMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4DmBdF2VlroAAAAAElFTkSuQmCC)  
  **ROLE: DOCTOR (Bác sĩ)**  
- **Doctor Portal (**/bac-si-portal  **)**  
+**Doctor Portal (**/portal/bac-si  **)**  
  ***4.1 Tổng quan***  
  **KPI cards (4 thẻ):**  
 - Lịch hẹn hôm nay  
@@ -712,8 +712,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Lịch hẹn vắng mặt (NO_SHOW)  
  **Timeline lịch hẹn hôm nay:**  
 - Danh sách lịch hẹn trong ngày  
-- "Xem tất cả" → /bac-si-portal/lich-hen  
- ***4.2 Lịch hẹn (*** */bac-si-portal/lich-hen* ***)***  
+- "Xem tất cả" → /portal/bac-si/lich-hen  
+***4.2 Lịch hẹn (*** */portal/bac-si/lich-hen* ***)***  
  **Default state:** Hôm nay + tab "Đã check-in"  
  **Filters:**  
 - Quick date: Hôm nay | Ngày mai | Tuần này | Tuần sau | Tháng này | Tùy chọn  
@@ -743,7 +743,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  **Detail drawer:**  
 - Thông tin bệnh nhân: tên, năm sinh, giới tính, SĐT, email, lý do khám  
 - Thông tin lịch: ngày giờ, ca, giá tham khảo  
- ***4.3 Lịch làm việc (*** */bac-si-portal/lich-lam-viec* ***)***  
+***4.3 Lịch làm việc (*** */portal/bac-si/lich-lam-viec* ***)***  
  **Toolbar (không có nút "Hôm nay"):**  
 - Week navigation (prev/next)  
 - Toggle Tuần / Tháng  
@@ -793,26 +793,26 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Lý do *  
 - Validation: giờ bắt đầu < giờ kết thúc  
 - Success: toast + block "Chờ duyệt" trên calendar  
- ***4.4 Tin nhắn (*** */bac-si-portal/tin-nhan* ***)***  
+***4.4 Tin nhắn (*** */portal/bac-si/tin-nhan* ***)***  
 - Danh sách cuộc trò chuyện (trái) + active chat (phải)  
 - Chỉ xem conversations liên quan đến bác sĩ  
 - Real-time (mock): gửi/nhận text, trạng thái "Đã xem"/"Đã gửi"  
- ***4.5 Thông tin cá nhân (*** */bac-si-portal/thong-tin-ca-nhan* ***)***  
+***4.5 Thông tin cá nhân (*** */portal/bac-si/thong-tin-ca-nhan* ***)***  
  **Fields có thể chỉnh:**  
 - Họ tên *, SĐT *, Giới tính, Ngày sinh, Học hàm/học vị, Số năm kinh nghiệm, Giới thiệu bản thân  
  **Fields readonly:**  
 - Email (có lock icon + helper), Chuyên khoa  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANElEQVR4nO3OQQmAABRAsad4EFMY9fewnUms4E2ELcGWmTmrKwAA/uLeqrU6vp4AAPDa/gDzYgM3ZPdzEgAAAABJRU5ErkJggg==)  
  **ROLE: RECEPTIONIST (Lễ tân)**  
- **Receptionist Portal (**/le-tan  **)**  
+**Receptionist Portal (**/portal/le-tan  **)**  
  ***5.1 Tổng quan***  
  **KPI cards (5 thẻ):** Lịch hẹn hôm nay | Đã check-in | Chờ khám | Đã hoàn thành | Vắng mặt  
  **Section "Lịch hẹn hôm nay":** Table tóm tắt + "Xem tất cả"  
  **Thao tác nhanh:**  
-- Đặt lịch khám → /le-tan/dat-lich  
-- Tra cứu lịch hẹn → /le-tan/lich-hen  
-- Xem lịch làm việc bác sĩ → /le-tan/lich-lam-viec-bac-si  
- ***5.2 Quản lý lịch hẹn (*** */le-tan/lich-hen* ***)***  
+- Đặt lịch khám → /portal/le-tan/dat-lich  
+- Tra cứu lịch hẹn → /portal/le-tan/lich-hen  
+- Xem lịch làm việc bác sĩ → /portal/le-tan/lich-bac-si  
+***5.2 Quản lý lịch hẹn (*** */portal/le-tan/lich-hen* ***)***  
  **Filter bar (1 hàng):** Chuyên khoa → Bác sĩ (phụ thuộc chuyên khoa) → Trạng thái → Hôm nay | Ngày mai | Tuần này | Tùy chọn  
  **Table columns:** Mã lịch, Ngày, Giờ, Bệnh nhân, Ngày sinh, Bác sĩ, Chuyên khoa, Trạng thái, Thao tác  
  *Không có cột SĐT trong danh sách (chỉ xem trong chi tiết)*  
@@ -881,7 +881,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Mã lịch, thông tin đầy đủ bệnh nhân + bác sĩ + ngày giờ + CONFIRMED badge  
 - **Chỉ 1 button:** "Tạo lịch hẹn mới"  
 - Không có "Xem chi tiết" hay "Quay về Quản lý"  
- ***5.4 Lịch làm việc bác sĩ (*** */le-tan/lich-lam-viec-bac-si* ***)***  
+***5.4 Lịch làm việc bác sĩ (*** */portal/le-tan/lich-bac-si* ***)***  
  **Read-only** — Lễ tân chỉ xem, không chỉnh sửa  
  **Toolbar:**  
 - Chuyên khoa filter → Bác sĩ filter (phụ thuộc chuyên khoa đã chọn)  
@@ -890,16 +890,17 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Shift filter, Status filter  
  **Week view:** Timetable 7 cột, cells hiển thị tên bác sĩ, chuyên khoa, thời gian, số lịch hẹn  
  **Day view:** Danh sách bác sĩ với status từng ca  
- ***5.5 Tin nhắn (*** */le-tan/tin-nhan* ***)***  
+***5.5 Tin nhắn (*** */portal/le-tan/tin-nhan* ***)***  
 - Conversation list + active chat  
 - Tìm kiếm theo tên, SĐT, email  
 - Gửi/nhận real-time (mock)  
- ***5.6 Thông tin cá nhân (*** */le-tan/thong-tin-ca-nhan* ***)***  
+***5.6 Thông tin cá nhân (*** */portal/le-tan/thong-tin-ca-nhan* ***)***  
 - Họ tên *, SĐT *, Giới tính, Ngày sinh, Địa chỉ  
 - Email readonly  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/khHMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4DmBdF2VlroAAAAAElFTkSuQmCC)  
  **ROLE: ADMIN (Quản trị viên)**  
- **Admin Portal (**/admin  **)**  
+**Admin Portal (**/portal/admin  **)**  
+- Route tương thích ngược: `/admin/*` hiện redirect sang `/portal/admin/*`; tài liệu này dùng `/portal/admin/*` làm URL chuẩn.  
  ***6.1 Tổng quan***  
  **KPI 6 thẻ:** Lịch hôm nay, Chờ duyệt, Hoàn thành, No-show, Số bác sĩ, Chuyên khoa  
  **Chart:** AreaChart lịch hẹn theo ngày (7 ngày gần nhất)  
@@ -914,7 +915,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - **Cột "Giá khám tham khảo"** (không phải "Giá khám")  
 - Helper text: "Giá này chỉ dùng để hiển thị tham khảo. Không xử lý thanh toán online."  
 - Edit modal cho phép cập nhật giá  
- ***6.4 Lịch làm việc (*** */admin/lich-lam-viec* ***)***  
+***6.4 Lịch làm việc (*** */portal/admin/lich-lam-viec* ***)***  
 - Quy tắc lịch làm việc theo bác sĩ  
 - Thêm quy tắc: từ ngày - đến ngày, ngày trong tuần, ca sáng/chiều/cả hai  
  ***6.5 Quản lý lịch hẹn***  
@@ -959,7 +960,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  ***6.8 Quản lý bài viết***  
    
  CRUD blog posts, filter theo status (PUBLISHED/DRAFT/ARCHIVED)  
- ***6.9 Email Preview (*** */admin/email-preview* ***)***  
+***6.9 Email Preview (*** */portal/admin/email-preview* ***)***  
    
  Preview 4 loại email:  
 - Xác minh tài khoản  
@@ -1093,8 +1094,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Phải: active chat (header + messages + input)  
  **Chat trang nội bộ (Doctor & Receptionist Portal)**  
  **URL:**  
-- Bác sĩ: /bac-si-portal/tin-nhan  
-- Lễ tân: /le-tan/tin-nhan  
+- Bác sĩ: /portal/bac-si/tin-nhan  
+- Lễ tân: /portal/le-tan/tin-nhan  
  **Features:**  
 - Conversation list (trái): search, online status, unread badges  
 - Active chat (phải): message history với timestamp, read receipts  
@@ -1150,63 +1151,64 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - `/benh-nhan/nguoi-than`: user quản lý hồ sơ người thân, không giới hạn số hồ sơ, chỉ hiển thị tổng số hồ sơ active, không có UI đặt mặc định, thêm/sửa/xóa mềm hồ sơ theo rule backend  
    
     
- **Doctor Portal (**/bac-si-portal  **)**  
+**Doctor Portal (**/portal/bac-si  **)**  
    
- /bac-si-portal                        → DoctorDashboard  
+/portal/bac-si                        → DoctorDashboard  
    
-  /bac-si-portal/lich-hen               → DoctorAppointmentList  
+  /portal/bac-si/lich-hen               → DoctorAppointmentList  
    
-  /bac-si-portal/lich-lam-viec          → DoctorWorkSchedule  
+  /portal/bac-si/lich-lam-viec          → DoctorWorkSchedule  
    
-  /bac-si-portal/tin-nhan               → ChatPage (Doctor)  
+  /portal/bac-si/tin-nhan               → ChatPage (Doctor)  
    
-  /bac-si-portal/thong-tin-ca-nhan      → DoctorProfile  
-   
-    
- **Receptionist Portal (**/le-tan  **)**  
-   
- /le-tan                               → ReceptionistDashboard  
-   
-  /le-tan/lich-hen                      → AppointmentManagement  
-   
-  /le-tan/dat-lich                      → ReceptionistBooking  
-   
-  /le-tan/lich-lam-viec-bac-si          → DoctorScheduleView  
-   
-  /le-tan/tin-nhan                      → ChatPage (Receptionist)  
-   
-  /le-tan/thong-tin-ca-nhan             → ReceptionistProfile  
+  /portal/bac-si/thong-tin-ca-nhan      → DoctorProfile  
    
     
- **Admin Portal (**/admin  **)**  
+**Receptionist Portal (**/portal/le-tan  **)**  
    
- /admin                        → AdminDashboard  
+/portal/le-tan                               → ReceptionistDashboard  
    
-  /admin/chuyen-khoa            → SpecialtyManagement  
+  /portal/le-tan/lich-hen                      → AppointmentManagement  
    
-  /admin/bac-si                 → DoctorManagement  
+  /portal/le-tan/dat-lich                      → ReceptionistBooking  
    
-  /admin/lich-lam-viec          → ScheduleRulesManagement  
+  /portal/le-tan/lich-bac-si          → DoctorScheduleView  
    
-  /admin/lich-hen               → AppointmentManagement (Admin)  
+  /portal/le-tan/tin-nhan                      → ChatPage (Receptionist)  
    
-  /admin/duyet-yeu-cau          → ApprovalRequests  
+  /portal/le-tan/thong-tin-ca-nhan             → ReceptionistProfile  
    
-  /admin/nguoi-dung             → UserManagement  
+    
+**Admin Portal (**/portal/admin  **)**  
+- Alias tương thích ngược: `/admin/*` redirect sang `/portal/admin/*`.  
    
-  /admin/blog                   → BlogManagement  
+/portal/admin                        → AdminDashboard  
    
-  /admin/email-preview          → EmailPreviewPage  
+  /portal/admin/chuyen-khoa            → SpecialtyManagement  
    
-  /admin/phong-kham             → ClinicInfo  
+  /portal/admin/bac-si                 → DoctorManagement  
    
-  /admin/cai-dat                → SystemSettings  
+  /portal/admin/lich-lam-viec          → ScheduleRulesManagement  
+   
+  /portal/admin/lich-hen               → AppointmentManagement (Admin)  
+   
+  /portal/admin/duyet-yeu-cau          → ApprovalRequests  
+   
+  /portal/admin/nguoi-dung             → UserManagement  
+   
+  /portal/admin/blog                   → BlogManagement  
+   
+  /portal/admin/email-preview          → EmailPreviewPage  
+   
+  /portal/admin/phong-kham             → ClinicInfo  
+   
+  /portal/admin/cai-dat                → SystemSettings  
   
 **Frontend Admin screens hiện tại:**  
-- `/admin/nguoi-dung`: Admin quản lý người dùng, list/search/filter role/status, pagination, xem chi tiết, sửa thông tin cơ bản, tạo tài khoản nhân sự, khóa/mở khóa, reset noShowCount; không có section đổi/đặt lại mật khẩu trong chi tiết user ở scope hiện tại; chi tiết user hiển thị số lần vắng mặt  
-- `/admin/chuyen-khoa`: Admin quản lý chuyên khoa, list/search/pagination nếu backend hỗ trợ, thêm, sửa, xem chi tiết nếu UI có, bật/tắt active  
-- `/admin/phong-kham`: Admin cập nhật thông tin phòng khám gồm tên, địa chỉ, hotline, email, giờ làm việc, mô tả  
-- `/admin/cai-dat`: Admin cập nhật system settings gồm giới hạn đặt lịch, thời lượng slot, thời gian hủy tối thiểu, số lần vắng mặt tối đa, số lịch hẹn active tối đa mỗi user, giờ ca sáng/chiều; không có Token TTL trên UI  
+- `/portal/admin/nguoi-dung`: Admin quản lý người dùng, list/search/filter role/status, pagination, xem chi tiết, sửa thông tin cơ bản, tạo tài khoản nhân sự, khóa/mở khóa, reset noShowCount; không có section đổi/đặt lại mật khẩu trong chi tiết user ở scope hiện tại; chi tiết user hiển thị số lần vắng mặt  
+- `/portal/admin/chuyen-khoa`: Admin quản lý chuyên khoa, list/search/pagination nếu backend hỗ trợ, thêm, sửa, xem chi tiết nếu UI có, bật/tắt active  
+- `/portal/admin/phong-kham`: Admin cập nhật thông tin phòng khám gồm tên, địa chỉ, hotline, email, giờ làm việc, mô tả  
+- `/portal/admin/cai-dat`: Admin cập nhật system settings gồm giới hạn đặt lịch, thời lượng slot, thời gian hủy tối thiểu, số lần vắng mặt tối đa, số lịch hẹn active tối đa mỗi user, giờ ca sáng/chiều; không có Token TTL trên UI  
    
     
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANElEQVR4nO3OUQmAABBAsSeYxKSXxlxGEAOIFfwTYUuwZWa2ag8AgL841uquzq8nAAC8dj05WAYOJzduCAAAAABJRU5ErkJggg==)  

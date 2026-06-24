@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, ArrowRight, CheckCircle, Star, ChevronRight, ChevronLeft,
   Calendar, Clock, Shield, Mail, Stethoscope, Users, BookOpen
 } from 'lucide-react';
 import axiosInstance from '../../shared/services/axios.instance';
+import { useQuery } from '@tanstack/react-query';
 import { SpecialtyCard } from '../../shared/components/shared/SpecialtyCard';
 import { DoctorCard } from '../../shared/components/shared/DoctorCard';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties';
@@ -133,6 +134,38 @@ export default function HomePage() {
   const expDoctors = expDoctorsData?.data || [];
   const favDoctors = favDoctorsData?.data || [];
   const blogs = blogsData?.data || [];
+
+  const { data: statsResponse } = useQuery({
+    queryKey: ['public-stats'],
+    queryFn: async () => {
+      const res = await axiosInstance.get('/clinic-settings/stats/public');
+      return res.data;
+    }
+  });
+  const publicStats = statsResponse?.data;
+
+  const totalSpecs = publicStats?.specialtyCount || specialtiesData?.meta?.total || 0;
+  const totalDocs = publicStats?.doctorCount || expDoctorsData?.meta?.total || 0;
+  
+  const formattedPatientCount = useMemo(() => {
+    if (!publicStats || publicStats.patientCount === undefined) return '0';
+    const count = publicStats.patientCount;
+    return count >= 100 ? `${count}+` : `${count}`;
+  }, [publicStats]);
+
+  const avgRating = useMemo(() => {
+    const doctorsWithRating = favDoctors.filter(d => d.rating > 0);
+    if (!doctorsWithRating.length) return '4.8';
+    const total = doctorsWithRating.reduce((sum, d) => sum + d.rating, 0);
+    return (total / doctorsWithRating.length).toFixed(1);
+  }, [favDoctors]);
+
+  const homeServices = [
+    { icon: <Stethoscope className="w-7 h-7" />, label: 'Khám chuyên khoa', desc: `${totalSpecs || 8} chuyên khoa đa dạng`, color: 'bg-cyan-50 text-cyan-600', href: '/chuyen-khoa' },
+    { icon: <Users className="w-7 h-7" />, label: 'Bác sĩ nổi bật', desc: 'Đội ngũ giàu kinh nghiệm', color: 'bg-blue-50 text-blue-600', href: '/bac-si' },
+    { icon: <Calendar className="w-7 h-7" />, label: 'Đặt lịch trong ngày', desc: 'Slot còn trống ngay hôm nay', color: 'bg-amber-50 text-amber-600', href: '/dat-lich' },
+    { icon: <BookOpen className="w-7 h-7" />, label: 'Hỏi đáp & Hướng dẫn', desc: 'Giải đáp thắc mắc nhanh', color: 'bg-green-50 text-green-600', href: '/faq' },
+  ];
 
   // Debounced search effect calling Elasticsearch API
   useEffect(() => {
@@ -332,14 +365,14 @@ export default function HomePage() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
               {[
-                { num: '8+', label: 'Chuyên khoa' },
-                { num: '6+', label: 'Bác sĩ chuyên khoa' },
-                { num: '1000+', label: 'Bệnh nhân tin tưởng' },
-                { num: '4.8★', label: 'Đánh giá trung bình' },
+                { num: `${totalSpecs || 8}+`, label: 'Chuyên khoa' },
+                { num: `${totalDocs || 6}+`, label: 'Bác sĩ chuyên khoa' },
+                { num: formattedPatientCount, label: 'Bệnh nhân tin tưởng' },
+                { num: `${avgRating}★`, label: 'Đánh giá trung bình' },
               ].map(s => (
                 <div key={s.label} className="text-center">
                   <div className="text-2xl md:text-3xl font-bold text-amber-300">{s.num}</div>
-                  <div className="text-sm text-cyan-150 text-cyan-100">{s.label}</div>
+                  <div className="text-sm text-cyan-100">{s.label}</div>
                 </div>
               ))}
             </div>
@@ -351,7 +384,7 @@ export default function HomePage() {
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {services.map(s => (
+            {homeServices.map(s => (
               <Link
                 key={s.label}
                 to={s.href}
@@ -502,8 +535,16 @@ export default function HomePage() {
                   key={blog.id}
                   className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md transition-all hover:-translate-y-0.5 group flex flex-col"
                 >
-                  <div className="h-40 bg-cyan-50 flex items-center justify-center text-4xl group-hover:scale-105 transition-transform duration-300">
-                    {blog.icon || '📖'}
+                  <div className="h-40 bg-cyan-50 relative overflow-hidden flex items-center justify-center text-4xl group-hover:scale-105 transition-transform duration-300">
+                    {blog.thumbnail ? (
+                      <img 
+                        src={blog.thumbnail} 
+                        alt={blog.title} 
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{blog.icon || '📖'}</span>
+                    )}
                   </div>
                   <div className="p-4 flex-1 flex flex-col justify-between">
                     <div>

@@ -153,6 +153,23 @@ export default function DoctorDetailPage() {
   // Generate realistic score distribution based on doctor's aggregated rating
   const distribution = useMemo(() => {
     if (!doctor?.rating || !doctor?.reviewCount) return [0, 0, 0, 0, 0];
+    
+    const distFromMeta = reviewsResponse?.meta?.ratingDistribution;
+    if (distFromMeta) {
+      const total = Object.values(distFromMeta).reduce((sum, v) => sum + v, 0);
+      if (total > 0) {
+        return [
+          Math.round((distFromMeta[5] || 0) / total * 105) > 100 
+            ? Math.round((distFromMeta[5] || 0) / total * 100)
+            : Math.round((distFromMeta[5] || 0) / total * 100),
+          Math.round((distFromMeta[4] || 0) / total * 100),
+          Math.round((distFromMeta[3] || 0) / total * 100),
+          Math.round((distFromMeta[2] || 0) / total * 100),
+          Math.round((distFromMeta[1] || 0) / total * 100),
+        ];
+      }
+    }
+
     const r = doctor.rating;
     
     const d5 = Math.min(100, Math.round(Math.max(0, (r - 3.5) * 2) * 45 + 10)); 
@@ -162,7 +179,7 @@ export default function DoctorDetailPage() {
     const d1 = Math.max(0, 100 - d5 - d4 - d3 - d2);
     
     return [d5, d4, d3, d2, d1];
-  }, [doctor?.rating, doctor?.reviewCount]);
+  }, [doctor?.rating, doctor?.reviewCount, reviewsResponse?.meta?.ratingDistribution]);
 
   const tabs = [
     { id: 'gioi-thieu', label: 'Giới thiệu' },

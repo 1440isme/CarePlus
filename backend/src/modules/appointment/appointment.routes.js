@@ -78,6 +78,13 @@ router.get(
 );
 
 router.get(
+  '/stats',
+  authenticate,
+  authorize(USER_ROLES.ADMIN),
+  AppointmentController.getAdminStats
+);
+
+router.get(
   APPOINTMENT_ROUTE_PATHS.ROOT,
   authenticate,
   authorize(USER_ROLES.RECEPTIONIST, USER_ROLES.ADMIN),
