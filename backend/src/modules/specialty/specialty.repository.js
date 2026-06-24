@@ -137,6 +137,47 @@ class SpecialtyRepository {
     });
   }
 
+  async findSpecialtiesByIds(ids = []) {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return [];
+    }
+
+    const specialties = await prisma.specialty.findMany({
+      where: {
+        id: {
+          in: ids,
+        },
+      },
+      select: specialtySelect,
+    });
+
+    if (specialties.length === 0) {
+      return [];
+    }
+
+    const doctorCounts = await prisma.doctor.groupBy({
+      by: ['specialtyId'],
+      where: {
+        specialtyId: {
+          in: specialties.map((specialty) => specialty.id),
+        },
+        active: true,
+      },
+      _count: {
+        _all: true,
+      },
+    });
+
+    const doctorCountMap = new Map(
+      doctorCounts.map((item) => [item.specialtyId, item._count._all]),
+    );
+
+    return specialties.map((specialty) => ({
+      ...specialty,
+      doctorCount: doctorCountMap.get(specialty.id) ?? 0,
+    }));
+  }
+
   async findSpecialtyById(id) {
     return prisma.specialty.findUnique({
       where: { id },

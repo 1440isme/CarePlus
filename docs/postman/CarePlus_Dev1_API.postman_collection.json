@@ -304,7 +304,8 @@
                 }
               ]
             },
-            "url": "{{baseUrl}}/users?search=&role=&status=&page=1&limit=10"
+            "url": "{{baseUrl}}/users?search=nguyen&role=&status=&page=1&limit=10",
+            "description": "Admin user search giữ nguyên contract. Backend ưu tiên Elasticsearch khi search có giá trị và tự fallback về Prisma nếu Elasticsearch không khả dụng."
           }
         },
         {
@@ -713,8 +714,8 @@
                 }
               ]
             },
-            "url": "{{baseUrl}}/specialties/admin?page=1&limit=10&search=",
-            "description": "Actual admin list route in code."
+            "url": "{{baseUrl}}/specialties/admin?page=1&limit=10&search=tim",
+            "description": "Actual admin list route in code. Backend ưu tiên Elasticsearch cho search admin và fallback về Prisma nếu Elasticsearch không khả dụng."
           }
         },
         {

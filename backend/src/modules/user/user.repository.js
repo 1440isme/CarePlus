@@ -100,6 +100,21 @@ class UserRepository {
     });
   }
 
+  async findUsersByIds(userIds) {
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      return [];
+    }
+
+    return prisma.user.findMany({
+      where: {
+        id: {
+          in: userIds,
+        },
+      },
+      select: USER_SELECT,
+    });
+  }
+
   async countUsers(filters) {
     const {
       search,

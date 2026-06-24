@@ -275,6 +275,8 @@ search, role, status, createdFrom, createdTo, page, limit
 - Error codes: `VALIDATION_ERROR`, `LIST_USERS_FAILED`
 - Notes:
   - Search/filter/pagination nằm ở endpoint này.
+  - Khi `search` có giá trị và Elasticsearch đang bật/khả dụng, backend ưu tiên Elasticsearch để lấy kết quả tìm kiếm rồi đối chiếu lại dữ liệu từ MySQL.
+  - Nếu Elasticsearch tắt, lỗi hoặc chưa chạy, backend fallback an toàn về Prisma/MySQL search cũ.
 
 ### GET `/users/:id`
 
@@ -587,6 +589,8 @@ search, page, limit
 - Error codes: `VALIDATION_ERROR`, `LIST_SPECIALTIES_FAILED`
 - Notes:
   - Route admin list thực tế là `/specialties/admin`, không phải `GET /specialties` có role admin.
+  - Khi `search` có giá trị và Elasticsearch đang bật/khả dụng, backend ưu tiên Elasticsearch cho search admin rồi đọc lại dữ liệu từ MySQL.
+  - Nếu Elasticsearch tắt, lỗi hoặc chưa chạy, backend fallback an toàn về Prisma/MySQL search cũ.
 
 ### POST `/specialties`
 

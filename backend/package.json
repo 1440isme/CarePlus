@@ -7,6 +7,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "mock:doctor": "node scripts/create-mock-doctor.js",
+    "search:reindex:dev1": "node src/scripts/reindex-dev1-search.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

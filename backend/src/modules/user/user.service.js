@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const { randomBytes } = require('crypto');
 const UserRepository = require('./user.repository');
 const SpecialtyRepository = require('../specialty/specialty.repository');
+const SearchService = require('../search/search.service');
 const { toUserDto, toUserListDto } = require('./user.dto');
 const UploadService = require('../upload/upload.service');
 const { mailService, MailServiceError } = require('../../infrastructure/mail/mail.service');
@@ -88,11 +89,6 @@ function normalizeDateOfBirth(value) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
-function normalizeCreatedDateRange(value, boundary) {
-  if (typeof value !== 'string') {
-  return undefined;
-}
-
 const ACADEMIC_TITLE_NORMALIZATION_MAP = {
   BS_CKI: 'BS.CKI',
   BS_CKII: 'BS.CKII',
@@ -113,6 +109,11 @@ function normalizeAcademicTitle(value) {
 
   return ACADEMIC_TITLE_NORMALIZATION_MAP[trimmedValue] || trimmedValue;
 }
+
+function normalizeCreatedDateRange(value, boundary) {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
 
   const trimmedValue = value.trim();
 
@@ -170,6 +171,7 @@ class UserService {
 
       const updateData = this._buildProfileUpdateData(dto);
       const updatedUser = await this.userRepository.updateUserProfile(currentUser.userId, updateData);
+      this._syncUserSearchDocumentSafe(updatedUser);
 
       return {
         message: 'Cập nhật thông tin cá nhân thành công',
@@ -203,6 +205,7 @@ class UserService {
 
       const uploadResult = await this._uploadAvatarOrThrow(currentUser.userId, file);
       const updatedUser = await this.userRepository.updateUserAvatar(currentUser.userId, uploadResult.url);
+      this._syncUserSearchDocumentSafe(updatedUser);
 
       if (currentUser.role === USER_ROLES.DOCTOR) {
         const prisma = require('../../infrastructure/database/prisma.client');
@@ -327,6 +330,7 @@ class UserService {
 
       const updateData = this._buildProfileUpdateData(dto);
       const updatedUser = await this.userRepository.updateUserProfile(userId, updateData);
+      this._syncUserSearchDocumentSafe(updatedUser);
 
       return {
         message: 'Cập nhật thông tin người dùng thành công',
@@ -379,6 +383,10 @@ class UserService {
         noShowCount: 0,
         emailVerified: true,
       }, doctorData);
+      this._syncUserSearchDocumentSafe(createdUser);
+      if (doctorData?.specialtyId) {
+        void this._syncSpecialtySearchDocumentByIdSafe(doctorData.specialtyId);
+      }
 
       return {
         message: 'Tạo tài khoản nhân sự thành công',
@@ -410,10 +418,38 @@ class UserService {
         createdTo: normalizedQuery.createdTo,
       };
 
-      const [users, total] = await Promise.all([
-        this.userRepository.findUsers(filters),
-        this.userRepository.countUsers(filters),
-      ]);
+      let users;
+      let total;
+
+      if (normalizedQuery.search) {
+        const searchResult = await SearchService.searchUsers({
+          query: normalizedQuery.search,
+          role: normalizedQuery.role,
+          status: normalizedQuery.status,
+          createdFrom: normalizedQuery.createdFrom,
+          createdTo: normalizedQuery.createdTo,
+          page: normalizedQuery.page,
+          limit: normalizedQuery.limit,
+        });
+
+        total = searchResult.meta.total;
+
+        if (searchResult.source === 'elasticsearch') {
+          const userIds = searchResult.data.map((item) => item.id);
+          const usersFromDb = await this.userRepository.findUsersByIds(userIds);
+          const userMap = new Map(usersFromDb.map((user) => [user.id, user]));
+          users = userIds
+            .map((userId) => userMap.get(userId))
+            .filter(Boolean);
+        } else {
+          users = searchResult.data;
+        }
+      } else {
+        [users, total] = await Promise.all([
+          this.userRepository.findUsers(filters),
+          this.userRepository.countUsers(filters),
+        ]);
+      }
 
       return {
         data: toUserListDto(users),
@@ -484,6 +520,7 @@ class UserService {
       }
 
       const updatedUser = await this.userRepository.updateUserStatus(userId, normalizedStatus);
+      this._syncUserSearchDocumentSafe(updatedUser);
       return {
         message: 'Cập nhật trạng thái tài khoản thành công',
         user: toUserDto(updatedUser),
@@ -522,6 +559,7 @@ class UserService {
       }
 
       const updatedUser = await this.userRepository.resetNoShowCount(userId, updateData);
+      this._syncUserSearchDocumentSafe(updatedUser);
       const message = targetUser.status === 'LOCKED'
         ? 'Đã reset số lần vắng mặt và mở khóa tài khoản thành công'
         : 'Đã reset số lần vắng mặt thành công';
@@ -760,6 +798,24 @@ class UserService {
       createdFrom: normalizeCreatedDateRange(query.createdFrom, 'start'),
       createdTo: normalizeCreatedDateRange(query.createdTo, 'end'),
     };
+  }
+
+  _syncUserSearchDocumentSafe(user) {
+    void SearchService.syncUserDocument(user);
+  }
+
+  async _syncSpecialtySearchDocumentByIdSafe(specialtyId) {
+    try {
+      const specialty = await SpecialtyRepository.findSpecialtyById(specialtyId);
+      if (specialty) {
+        await SearchService.syncSpecialtyDocument(specialty);
+      }
+    } catch (error) {
+      console.warn('[UserService] Failed to sync specialty search index after staff creation.', {
+        specialtyId,
+        message: error.message,
+      });
+    }
   }
 }
 
