@@ -94,6 +94,13 @@ class DoctorRepository extends BaseRepository {
     });
   }
 
+  async findDoctorsByIds(ids) {
+    return this.prisma.doctor.findMany({
+      where: { id: { in: ids } },
+      include: DOCTOR_INCLUDE,
+    });
+  }
+
   async updateDoctorProfile(doctorId, payload) {
     const { doctorData = {}, userData = {} } = payload;
 

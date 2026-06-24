@@ -1,4 +1,5 @@
 const SpecialtyRepository = require('./specialty.repository');
+const SearchService = require('../search/search.service');
 const {
   toAdminSpecialtyDto,
   toPublicSpecialtyDto,
@@ -37,16 +38,30 @@ class SpecialtyService {
   async listPublicSpecialties(query) {
     try {
       const normalizedQuery = this._normalizeListQuery(query);
-      const filters = {
-        search: normalizedQuery.search,
-        skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
-        take: normalizedQuery.limit,
-      };
+      
+      let specialties;
+      let total;
 
-      const [specialties, total] = await Promise.all([
-        this.specialtyRepository.findActiveSpecialties(filters),
-        this.specialtyRepository.countActiveSpecialties(filters),
-      ]);
+      if (normalizedQuery.search) {
+        const searchResult = await SearchService.searchSpecialties({
+          query: normalizedQuery.search,
+          active: true,
+          page: normalizedQuery.page,
+          limit: normalizedQuery.limit
+        });
+        specialties = searchResult.data;
+        total = searchResult.meta.total;
+      } else {
+        const filters = {
+          search: normalizedQuery.search,
+          skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
+          take: normalizedQuery.limit,
+        };
+        [specialties, total] = await Promise.all([
+          this.specialtyRepository.findActiveSpecialties(filters),
+          this.specialtyRepository.countActiveSpecialties(filters),
+        ]);
+      }
 
       return {
         data: toSpecialtyListDto(specialties),
@@ -73,16 +88,30 @@ class SpecialtyService {
   async listSpecialties(query) {
     try {
       const normalizedQuery = this._normalizeListQuery(query);
-      const filters = {
-        search: normalizedQuery.search,
-        skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
-        take: normalizedQuery.limit,
-      };
 
-      const [specialties, total] = await Promise.all([
-        this.specialtyRepository.findSpecialties(filters),
-        this.specialtyRepository.countSpecialties(filters),
-      ]);
+      let specialties;
+      let total;
+
+      if (normalizedQuery.search) {
+        const searchResult = await SearchService.searchSpecialties({
+          query: normalizedQuery.search,
+          active: undefined, // Include both active and inactive for admin
+          page: normalizedQuery.page,
+          limit: normalizedQuery.limit
+        });
+        specialties = searchResult.data;
+        total = searchResult.meta.total;
+      } else {
+        const filters = {
+          search: normalizedQuery.search,
+          skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
+          take: normalizedQuery.limit,
+        };
+        [specialties, total] = await Promise.all([
+          this.specialtyRepository.findSpecialties(filters),
+          this.specialtyRepository.countSpecialties(filters),
+        ]);
+      }
 
       return {
         data: toSpecialtyListDto(specialties, { includeTimestamps: true }),
@@ -168,6 +197,20 @@ class SpecialtyService {
         active: typeof dto.active === 'boolean' ? dto.active : true,
       });
 
+      // Index in Elasticsearch
+      if (specialty.active) {
+        await SearchService.indexDocument('specialties', specialty.id, {
+          name: specialty.name,
+          slug: specialty.slug,
+          description: specialty.description,
+          icon: specialty.icon,
+          doctorCount: specialty.doctorCount,
+          active: specialty.active,
+          createdAt: specialty.createdAt,
+          updatedAt: specialty.updatedAt
+        });
+      }
+
       return {
         message: 'Tạo chuyên khoa thành công',
         specialty: toAdminSpecialtyDto(specialty),
@@ -226,6 +269,22 @@ class SpecialtyService {
       const updateData = this._buildUpdateData(dto);
       const updatedSpecialty = await this.specialtyRepository.updateSpecialty(id, updateData);
 
+      // Index/delete in Elasticsearch
+      if (updatedSpecialty.active) {
+        await SearchService.indexDocument('specialties', updatedSpecialty.id, {
+          name: updatedSpecialty.name,
+          slug: updatedSpecialty.slug,
+          description: updatedSpecialty.description,
+          icon: updatedSpecialty.icon,
+          doctorCount: updatedSpecialty.doctorCount,
+          active: updatedSpecialty.active,
+          createdAt: updatedSpecialty.createdAt,
+          updatedAt: updatedSpecialty.updatedAt
+        });
+      } else {
+        await SearchService.deleteDocument('specialties', updatedSpecialty.id);
+      }
+
       return {
         message: 'Cập nhật chuyên khoa thành công',
         specialty: toAdminSpecialtyDto(updatedSpecialty),
@@ -268,6 +327,9 @@ class SpecialtyService {
       }
 
       const deletedSpecialty = await this.specialtyRepository.softDeleteSpecialty(id);
+
+      // Delete from Elasticsearch
+      await SearchService.deleteDocument('specialties', id);
 
       return {
         message: 'Xóa chuyên khoa thành công',

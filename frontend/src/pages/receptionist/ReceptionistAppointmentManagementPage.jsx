@@ -1,10 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAppointments, useUpdateAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import socketService from '../../shared/services/socket.service.js';
 
 function StatusBadge({ status }) {
   const cfg = {
@@ -64,6 +66,24 @@ export default function ReceptionistAppointmentManagementPage() {
     ...(selectedStatus ? { status: selectedStatus } : {}),
   };
 
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socketService.socket) return;
+
+    const handleReload = () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    };
+
+    socketService.socket.on('appointment:created', handleReload);
+    socketService.socket.on('appointment:status-changed', handleReload);
+
+    return () => {
+      socketService.socket.off('appointment:created', handleReload);
+      socketService.socket.off('appointment:status-changed', handleReload);
+    };
+  }, [queryClient]);
+
   const appointmentsQuery = useAppointments(appointmentsParams);
   const updateStatusMutation = useUpdateAppointmentStatus();
 
@@ -99,6 +119,12 @@ export default function ReceptionistAppointmentManagementPage() {
       setSelectedStatus(value);
     } else if (filterType === 'search') {
       setSearch(value);
+      if (value.trim()) {
+        setDateMode('all');
+        setSelectedDate('');
+        setStartDate('');
+        setEndDate('');
+      }
     }
   };
 
@@ -132,6 +158,10 @@ export default function ReceptionistAppointmentManagementPage() {
       setSelectedDate('');
       setStartDate(todayStr);
       setEndDate(todayStr);
+    } else if (mode === 'all') {
+      setSelectedDate('');
+      setStartDate('');
+      setEndDate('');
     }
   };
 
@@ -180,6 +210,7 @@ export default function ReceptionistAppointmentManagementPage() {
           {/* Date mode toggle */}
           <div className="inline-flex border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
             {[
+              { key: 'all', label: 'Tất cả' },
               { key: 'today', label: 'Hôm nay' },
               { key: 'tomorrow', label: 'Ngày mai' },
               { key: 'week', label: 'Tuần này' },

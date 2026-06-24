@@ -278,12 +278,38 @@ export default function HomePage() {
                     <div className="p-4 text-center text-gray-500 text-sm">
                       Đang tìm kiếm kết quả...
                     </div>
-                  ) : (!searchResults || (searchResults.doctors.length === 0 && searchResults.blogs.length === 0)) ? (
+                  ) : (!searchResults || (searchResults.doctors.length === 0 && searchResults.blogs.length === 0 && (!searchResults.specialties || searchResults.specialties.length === 0))) ? (
                     <div className="p-4 text-center text-gray-500 text-sm">
                       Không tìm thấy kết quả nào phù hợp.
                     </div>
                   ) : (
                     <div className="p-2">
+                      {searchResults.specialties && searchResults.specialties.length > 0 && (
+                        <div className="mb-2">
+                          <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">
+                            Chuyên khoa
+                          </div>
+                          {searchResults.specialties.slice(0, 5).map((spec) => (
+                            <Link
+                              to={`/chuyen-khoa/${spec.slug || spec.id}`}
+                              key={spec.id}
+                              className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 rounded-xl transition-colors"
+                              onClick={() => setShowDropdown(false)}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center text-sm flex-shrink-0">
+                                🏥
+                              </div>
+                              <div>
+                                <div className="text-sm font-semibold text-gray-900">{spec.name}</div>
+                                <div className="text-xs text-gray-500">
+                                  {spec.doctorCount ? `${spec.doctorCount} bác sĩ` : 'Chuyên khoa'}
+                                </div>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      )}
+
                       {searchResults.doctors && searchResults.doctors.length > 0 && (
                         <div className="mb-2">
                           <div className="px-3 py-1.5 text-xs font-semibold text-gray-400 uppercase tracking-wider">

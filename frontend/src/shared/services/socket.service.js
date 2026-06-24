@@ -9,7 +9,16 @@ class SocketService {
 
   connect(token) {
     if (this.socket) {
-      if (this.socket.connected) return;
+      const oldToken = this.socket.auth?.token;
+      this.socket.auth = { token };
+      
+      if (this.socket.connected) {
+        if (oldToken !== token) {
+          console.log('⚡ Socket token changed, reconnecting with new token...');
+          this.socket.disconnect().connect();
+        }
+        return;
+      }
       this.socket.connect();
       return;
     }
