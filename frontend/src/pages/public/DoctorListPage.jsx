@@ -1,52 +1,122 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams, useNavigate } from 'react-router-dom';
-import { Search, Heart, MapPin, Star, Clock, Calendar } from 'lucide-react';
+import { Search, Heart, MapPin, Star, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDoctorList } from '../../features/doctor/index.js';
-import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
-import { buildVirtualSlots, flattenSlotGroups } from '../../features/timeslot/virtual-slot.service.js';
+import { buildVirtualSlots, flattenSlotGroups, filterSlotGroupsBySchedules, mergePersistedSlots } from '../../features/timeslot/virtual-slot.service.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
+import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { useClinicInfo } from '../../features/admin/clinic-settings/hooks/useClinicInfo.js';
-
-function getTodayDateString() {
-  return new Date().toISOString().slice(0, 10);
-}
 
 function formatPrice(value) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
 }
 
+// ── Per-doctor slot widget ────────────────────────────────────────────────────
+function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
+  const { data: tsData, isLoading } = useTimeSlots({ doctorId, date: selectedDate });
+
+  const slotGroups = useMemo(() => {
+    const slotData = tsData?.data;
+    const schedules = slotData?.schedules || [];
+    if (schedules.length === 0) return { morning: [], afternoon: [] };
+
+    return mergePersistedSlots(
+      filterSlotGroupsBySchedules(buildVirtualSlots(bookingRulesData), schedules),
+      slotData?.slots || [],
+    );
+  }, [tsData, bookingRulesData]);
+
+  const availableSlots = useMemo(() => {
+    const all = [
+      ...(slotGroups.morning || []),
+      ...(slotGroups.afternoon || []),
+    ];
+    return all.filter(s => s.status === 'AVAILABLE');
+  }, [slotGroups]);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (availableSlots.length === 0) {
+    return (
+      <div className="py-4 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+        Bác sĩ chưa có lịch trống ngày này
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+        LỊCH KHÁM CÒN TRỐNG ({availableSlots.length} khung)
+      </div>
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {availableSlots.slice(0, 8).map(slot => (
+          <button
+            key={slot.startTime}
+            type="button"
+            onClick={() => onBook(doctorId, `${slot.startTime}-${slot.endTime}`)}
+            className="py-1.5 px-1 text-xs rounded-lg text-center font-medium border border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 transition-all shadow-sm"
+          >
+            {slot.startTime}
+          </button>
+        ))}
+      </div>
+      <div className="text-xs text-gray-500">
+        Chọn giờ và đặt <span className="text-green-600 font-bold">(Phí đặt lịch 0đ)</span>
+      </div>
+    </>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export default function DoctorListPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
   const [specFilter, setSpecFilter] = useState(searchParams.get('specialty') || '');
+  const debounceRef = useRef(null);
 
-  // Fetch specialties using hook
   const { data: specialtiesData } = useSpecialties({});
   const specialties = specialtiesData?.data || [];
 
-  // Generate 7 days for the schedule filter
-  const today = new Date();
-  const dates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    return d.toISOString().slice(0, 10);
-  }), []);
+  // ── 7-day date selector ───────────────────────────────────────────────────
+  const dates = useMemo(() => {
+    const today = new Date();
+    return Array.from({ length: 7 }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return d.toISOString().slice(0, 10);
+    });
+  }, []);
 
-  const dayVi = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+  const dayVi = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const dateLabels = useMemo(() => {
     const labels = {};
     dates.forEach(d => {
-      const dt = new Date(d);
-      labels[d] = `${dayVi[dt.getDay()]} ${dt.getDate()}/${dt.getMonth() + 1}`;
+      const dt = new Date(d + 'T00:00:00');
+      labels[d] = {
+        short: `${dayVi[dt.getDay()]} ${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`,
+        day: dt.getDate(),
+        weekday: dayVi[dt.getDay()],
+      };
     });
     return labels;
   }, [dates]);
 
   const [selectedDate, setSelectedDate] = useState(dates[0]);
 
+  // ── Query ─────────────────────────────────────────────────────────────────
   const query = useMemo(() => {
     const q = {
       page: Number(searchParams.get('page') || 1),
@@ -54,51 +124,36 @@ export default function DoctorListPage() {
       active: true,
     };
     const search = searchParams.get('search');
-    if (search?.trim()) {
-      q.search = search.trim();
-    }
+    if (search?.trim()) q.search = search.trim();
     const specialtyId = searchParams.get('specialty');
-    if (specialtyId) {
-      q.specialtyId = specialtyId;
-    }
+    if (specialtyId) q.specialtyId = specialtyId;
     return q;
   }, [searchParams]);
 
   const { data, isLoading, error } = useDoctorList(query);
   const { data: bookingRulesResponse } = useBookingRules();
-  const { data: clinicResponse } = useClinicInfo({
-    staleTime: 10 * 60 * 1000,
-  });
+  const { data: clinicResponse } = useClinicInfo({ staleTime: 10 * 60 * 1000 });
   const clinicInfo = clinicResponse?.data;
   const doctors = data?.data || [];
 
-  // Generate virtual slots based on clinic settings rules
-  const slots = useMemo(
-    () => flattenSlotGroups(buildVirtualSlots(bookingRulesResponse?.data)).map(s => ({
-      time: `${s.startTime}-${s.endTime}`,
-      avail: true, // simplified availability check
-    })),
-    [bookingRulesResponse?.data]
-  );
+  // ── Debounced search ──────────────────────────────────────────────────────
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      if (value.trim()) {
+        next.set('search', value.trim());
+      } else {
+        next.delete('search');
+      }
+      next.set('page', '1');
+      setSearchParams(next);
+    }, 350);
+  }, [searchParams, setSearchParams]);
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    const next = new URLSearchParams(searchParams);
-    if (searchInput.trim()) {
-      next.set('search', searchInput.trim());
-    } else {
-      next.delete('search');
-    }
-    if (specFilter) {
-      next.set('specialty', specFilter);
-    } else {
-      next.delete('specialty');
-    }
-    next.set('page', '1');
-    setSearchParams(next);
-  };
-
-  const handleFilterChange = (e) => {
+  const handleSpecialtyChange = (e) => {
     const value = e.target.value;
     setSpecFilter(value);
     const next = new URLSearchParams(searchParams);
@@ -124,7 +179,7 @@ export default function DoctorListPage() {
   return (
     <div className="bg-gray-50 min-h-screen py-10">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
-        
+
         {/* Page Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Đội ngũ bác sĩ</h1>
@@ -132,24 +187,24 @@ export default function DoctorListPage() {
         </div>
 
         {/* Filter bar */}
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-150 p-4 mb-8 shadow-sm flex flex-wrap gap-4 items-center justify-between">
+        <div className="bg-white rounded-2xl border border-gray-150 p-4 mb-6 shadow-sm flex flex-wrap gap-4 items-center justify-between">
           <div className="flex-1 flex gap-4 min-w-[280px]">
             {/* Search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-              <input 
+              <input
                 type="text"
-                value={searchInput} 
-                onChange={e => setSearchInput(e.target.value)}
+                value={searchInput}
+                onChange={handleSearchChange}
                 placeholder="Tìm tên bác sĩ, chuyên khoa..."
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500" 
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
 
             {/* Specialty filter */}
-            <select 
-              value={specFilter} 
-              onChange={handleFilterChange}
+            <select
+              value={specFilter}
+              onChange={handleSpecialtyChange}
               className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               <option value="">Tất cả chuyên khoa</option>
@@ -159,32 +214,28 @@ export default function DoctorListPage() {
             </select>
           </div>
 
-          {/* Date dropdown */}
-          <div className="flex gap-2">
-            <select 
-              value={selectedDate} 
+          {/* Date filter — no submit button, changes immediately */}
+          <div className="text-sm text-gray-500 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-cyan-600" />
+            <span className="font-medium text-gray-700">Xem lịch ngày:</span>
+            <select
+              value={selectedDate}
               onChange={e => setSelectedDate(e.target.value)}
               className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
             >
               {dates.map(d => (
                 <option key={d} value={d}>
-                  {d === dates[0] ? `Hôm nay - ${dateLabels[d]}` : d === dates[1] ? `Ngày mai - ${dateLabels[d]}` : dateLabels[d]}
+                  {d === dates[0] ? `Hôm nay — ${dateLabels[d]?.short}` : d === dates[1] ? `Ngày mai — ${dateLabels[d]?.short}` : dateLabels[d]?.short}
                 </option>
               ))}
             </select>
-            <button 
-              type="submit" 
-              className="px-5 py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
-            >
-              Tìm kiếm
-            </button>
           </div>
-        </form>
+        </div>
 
         {/* Count */}
         <div className="text-sm text-gray-500 mb-4">
           Tìm thấy <strong className="text-gray-900">{doctors.length}</strong> bác sĩ
-          {query.specialtyName ? ` chuyên khoa ${query.specialtyName}` : ''}
+          {query.search ? ` cho từ khoá "${query.search}"` : ''}
         </div>
 
         {/* Status Blocks */}
@@ -199,8 +250,7 @@ export default function DoctorListPage() {
             <div className="space-y-4">
               {doctors.map((doctor) => {
                 const isFav = !!favorites[doctor.id];
-                // Fallback avatar
-                const docAvatar = doctor.avatar || (doctor.gender === 'FEMALE' 
+                const docAvatar = doctor.avatar || (doctor.gender === 'FEMALE'
                   ? 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&w=256&h=256&q=80'
                   : 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=256&h=256&q=80'
                 );
@@ -208,17 +258,17 @@ export default function DoctorListPage() {
                 return (
                   <div key={doctor.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all hover:shadow-md">
                     <div className="flex flex-col md:flex-row">
-                      
+
                       {/* Left: Doctor Profile */}
                       <div className="flex-1 p-6 border-b border-gray-100 md:border-b-0 md:border-r md:border-gray-100">
                         <div className="flex gap-4 mb-4">
                           <div className="relative flex-shrink-0">
-                            <img 
-                              src={docAvatar} 
+                            <img
+                              src={docAvatar}
                               alt={doctor.name}
-                              className="w-20 h-20 rounded-full object-cover object-top border-2 border-gray-150" 
+                              className="w-20 h-20 rounded-full object-cover object-top border-2 border-gray-150"
                             />
-                            <button 
+                            <button
                               type="button"
                               onClick={() => toggleFavorite(doctor.id)}
                               className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full border border-gray-200 flex items-center justify-center cursor-pointer shadow-sm"
@@ -254,41 +304,27 @@ export default function DoctorListPage() {
                         </p>
                       </div>
 
-                      {/* Right: Schedule Grid */}
+                      {/* Right: Real timeslots from API */}
                       <div className="w-full md:w-[45%] p-6 flex flex-col justify-between flex-shrink-0 bg-gray-50/50">
                         <div>
                           <div className="text-xs font-bold text-gray-800 mb-3 flex items-center gap-1.5">
                             <Calendar className="w-4 h-4 text-cyan-600" />
-                            <span>Lịch khám ngày {dateLabels[selectedDate] || selectedDate}</span>
+                            <span>
+                              Lịch khám {dateLabels[selectedDate]?.weekday}{' '}
+                              {selectedDate === dates[0] ? '(Hôm nay)' : selectedDate === dates[1] ? '(Ngày mai)' : ''}
+                              {' — '}{dateLabels[selectedDate]?.short}
+                            </span>
                           </div>
 
-                          {slots.length > 0 ? (
-                            <>
-                              <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">LỊCH KHÁM CÒN TRỐNG</div>
-                              <div className="grid grid-cols-4 gap-2 mb-4">
-                                {slots.slice(0, 8).map(slot => (
-                                  <button 
-                                    key={slot.time}
-                                    type="button"
-                                    onClick={() => handleBook(doctor.id, slot.time)}
-                                    className="py-1.5 px-2 text-xs rounded-lg text-center font-medium border border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 transition-all shadow-sm"
-                                  >
-                                    {slot.time}
-                                  </button>
-                                ))}
-                              </div>
-                              <div className="text-xs text-gray-500">
-                                Chọn giờ và đặt <span className="text-green-600 font-bold">(Phí đặt lịch 0đ)</span>
-                              </div>
-                            </>
-                          ) : (
-                            <div className="py-4 text-center text-xs text-gray-400">
-                              Bác sĩ chưa mở lịch vào ngày này. Vui lòng chọn ngày khác.
-                            </div>
-                          )}
+                          <DoctorSlots
+                            doctorId={doctor.id}
+                            selectedDate={selectedDate}
+                            onBook={handleBook}
+                            bookingRulesData={bookingRulesResponse?.data}
+                          />
                         </div>
 
-                        <div className="border-t border-gray-150 pt-4 mt-6 flex flex-col gap-2">
+                        <div className="border-t border-gray-150 pt-4 mt-4 flex flex-col gap-2">
                           <div className="text-xs font-bold text-gray-700">CarePlus Clinic</div>
                           <div className="text-[11px] text-gray-500 flex gap-1.5 items-start">
                             <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
@@ -299,8 +335,8 @@ export default function DoctorListPage() {
                               <div className="text-[10px] text-gray-400">Giá khám tham khảo</div>
                               <div className="text-sm font-bold text-cyan-600">{formatPrice(doctor.price)}</div>
                             </div>
-                            <Link 
-                              to={`/bac-si/${doctor.id}`} 
+                            <Link
+                              to={`/bac-si/${doctor.id}`}
                               className="text-xs font-semibold text-cyan-600 hover:text-cyan-700"
                             >
                               Xem chi tiết →

@@ -341,6 +341,130 @@ class SearchService {
       }
     };
   }
+
+  /**
+   * Full-text search for specialties with DB fallback.
+   */
+  static async searchSpecialties({ query, active = true, page = 1, limit = 10 }) {
+    const from = (page - 1) * limit;
+    const esAvailable = await this.isHealthy();
+
+    if (esAvailable) {
+      try {
+        const mustQueries = [];
+        if (query) {
+          mustQueries.push({
+            multi_match: {
+              query: query,
+              fields: ['name^3', 'description'],
+              fuzziness: 'AUTO',
+            }
+          });
+        } else {
+          mustQueries.push({ match_all: {} });
+        }
+
+        const filterQueries = [];
+        if (active !== undefined) {
+          filterQueries.push({ term: { active: active } });
+        }
+
+        const esResponse = await elasticClient.search({
+          index: 'specialties',
+          from: from,
+          size: limit,
+          query: {
+            bool: {
+              must: mustQueries,
+              filter: filterQueries,
+            }
+          }
+        });
+
+        const hits = esResponse.hits.hits;
+        const totalHits = typeof esResponse.hits.total === 'object'
+          ? esResponse.hits.total.value
+          : esResponse.hits.total;
+
+        const data = hits.map(hit => ({
+          id: hit._id,
+          ...hit._source,
+          score: hit._score,
+        }));
+
+        return {
+          success: true,
+          source: 'elasticsearch',
+          data,
+          meta: {
+            page,
+            limit,
+            total: totalHits,
+            totalPages: Math.ceil(totalHits / limit)
+          }
+        };
+      } catch (error) {
+        console.error('Elasticsearch specialty search error, falling back to MySQL:', error.message);
+      }
+    }
+
+    // Fallback: MySQL DB query
+    console.log('Running fallback specialty search in database...');
+    return this.searchSpecialtiesFallback({ query, active, page, limit });
+  }
+
+  /**
+   * Fallback database search for Specialties using MySQL LIKE query.
+   */
+  static async searchSpecialtiesFallback({ query, active, page, limit }) {
+    const skip = (page - 1) * limit;
+    
+    const whereClause = {};
+    if (active !== undefined) {
+      whereClause.active = active;
+    }
+
+    if (query) {
+      whereClause.OR = [
+        { name: { contains: query } },
+        { description: { contains: query } }
+      ];
+    }
+
+    const [specialties, total] = await Promise.all([
+      prisma.specialty.findMany({
+        where: whereClause,
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' }
+      }),
+      prisma.specialty.count({
+        where: whereClause
+      })
+    ]);
+
+    return {
+      success: true,
+      source: 'mysql',
+      data: specialties.map(spec => ({
+        id: spec.id,
+        name: spec.name,
+        slug: spec.slug,
+        description: spec.description,
+        icon: spec.icon,
+        doctorCount: spec.doctorCount,
+        active: spec.active,
+        createdAt: spec.createdAt,
+        updatedAt: spec.updatedAt,
+      })),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit)
+      }
+    };
+  }
 }
 
 module.exports = SearchService;

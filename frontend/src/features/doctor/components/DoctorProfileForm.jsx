@@ -3,6 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { doctorProfileSchema } from '../schemas/doctor.schema.js';
 import { CheckCircle, Edit2, Save, Lock, AlertCircle } from 'lucide-react';
+import ProfileAvatarUpload from '../../../features/user/components/ProfileAvatarUpload.jsx';
 
 function getInitials(name) {
   if (!name) return 'BS';
@@ -86,8 +87,12 @@ export default function DoctorProfileForm({
       <div className="bg-white border border-gray-200 rounded-xl shadow-xs overflow-hidden">
         <div className="bg-[#49BCE2] h-1.5 w-full" />
         <div className="p-5 flex flex-col sm:flex-row items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-blue-50 border-2 border-gray-100 flex items-center justify-center text-lg font-bold text-[#49BCE2] flex-shrink-0">
-            {getInitials(doctor?.user?.name || doctor?.name)}
+          <div className="relative">
+            <ProfileAvatarUpload
+              name={doctor?.user?.name || doctor?.name}
+              avatarUrl={doctor?.user?.avatarUrl || doctor?.avatar}
+              compact
+            />
           </div>
           <div className="flex-1 text-center sm:text-left">
             <h2 className="text-lg font-bold text-gray-800">

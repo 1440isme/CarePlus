@@ -54,10 +54,36 @@ class DoctorService {
         sortOrder: normalizedQuery.sortOrder,
       };
 
-      const [doctors, total] = await Promise.all([
-        this.doctorRepository.findDoctors(filters),
-        this.doctorRepository.countDoctors(filters),
-      ]);
+      let doctors;
+      let total;
+
+      if (filters.search) {
+        const searchResult = await SearchService.searchDoctors({
+          query: filters.search,
+          active: filters.active,
+          page: filters.page,
+          limit: filters.limit
+        });
+
+        // Join with DB to get full data (avatar, user, specialty, etc.)
+        const esIds = searchResult.data.map(d => d.id);
+        if (esIds.length > 0) {
+          const fullDoctors = await this.doctorRepository.findDoctorsByIds(esIds);
+          // Preserve ES score ordering
+          const orderedDoctors = esIds
+            .map(id => fullDoctors.find(d => String(d.id) === String(id)))
+            .filter(Boolean);
+          doctors = orderedDoctors;
+        } else {
+          doctors = [];
+        }
+        total = searchResult.meta.total;
+      } else {
+        [doctors, total] = await Promise.all([
+          this.doctorRepository.findDoctors(filters),
+          this.doctorRepository.countDoctors(filters),
+        ]);
+      }
 
       return {
         data: toDoctorListDto(doctors),
@@ -305,12 +331,17 @@ class DoctorService {
   _syncDoctorToSearch(doctor) {
     SearchService.indexDocument('doctors', doctor.id, {
       name: doctor.name,
+      specialtyId: doctor.specialtyId,
       specialtyName: doctor.specialtyName,
       description: doctor.description,
       title: doctor.title,
       experience: doctor.experience,
       price: doctor.price,
       rating: doctor.rating,
+      reviewCount: doctor.reviewCount,
+      avatar: doctor.avatar,
+      position: doctor.position,
+      userId: doctor.userId,
       active: doctor.active,
     }).catch(() => {});
   }

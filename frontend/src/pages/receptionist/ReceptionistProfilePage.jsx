@@ -6,6 +6,7 @@ import { Edit2, Save, Lock, CheckCircle } from 'lucide-react';
 import { useMe } from '../../features/user/hooks/useMe.js';
 import { useUpdateMe } from '../../features/user/hooks/useUpdateMe.js';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+import ProfileAvatarUpload from '../../features/user/components/ProfileAvatarUpload.jsx';
 
 // ── Zod schema ──────────────────────────────────────────────────────────────
 const localUpdateSchema = z.object({
@@ -221,8 +222,12 @@ export default function ReceptionistProfilePage() {
 
             <div className="flex items-center gap-4 p-5">
               {/* Avatar */}
-              <div className="w-16 h-16 rounded-full bg-[#49BCE2] flex items-center justify-center text-white text-xl font-bold shrink-0 select-none">
-                {getInitials(user.name)}
+              <div className="relative shrink-0">
+                <ProfileAvatarUpload
+                  name={user.name}
+                  avatarUrl={user.avatarUrl}
+                  compact
+                />
               </div>
 
               {/* Info */}

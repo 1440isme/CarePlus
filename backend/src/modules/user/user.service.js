@@ -156,7 +156,8 @@ class UserService {
 
   async updateMyAvatar(currentUser, file) {
     try {
-      await this._getUserOrThrow(currentUser.userId);
+      const user = await this._getUserOrThrow(currentUser.userId);
+      const oldAvatarUrl = user.avatarUrl;
 
       if (!file) {
         throw new UserServiceError({
@@ -168,6 +169,55 @@ class UserService {
 
       const uploadResult = await this._uploadAvatarOrThrow(currentUser.userId, file);
       const updatedUser = await this.userRepository.updateUserAvatar(currentUser.userId, uploadResult.url);
+
+      if (currentUser.role === USER_ROLES.DOCTOR) {
+        const prisma = require('../../infrastructure/database/prisma.client');
+        await prisma.doctor.update({
+          where: { userId: currentUser.userId },
+          data: { avatar: uploadResult.url }
+        });
+        
+        // Update Doctor ES index
+        try {
+          const SearchService = require('../search/search.service');
+          const doctor = await prisma.doctor.findUnique({
+            where: { userId: currentUser.userId }
+          });
+          if (doctor && doctor.active) {
+            await SearchService.indexDocument('doctors', doctor.id, {
+              userId: doctor.userId,
+              title: doctor.title,
+              name: doctor.name,
+              specialtyId: doctor.specialtyId,
+              specialtyName: doctor.specialtyName,
+              experience: doctor.experience,
+              price: doctor.price,
+              rating: doctor.rating,
+              reviewCount: doctor.reviewCount,
+              avatar: doctor.avatar,
+              description: doctor.description,
+              position: doctor.position,
+              active: doctor.active,
+              createdAt: doctor.createdAt,
+              updatedAt: doctor.updatedAt
+            });
+          }
+        } catch (esError) {
+          console.error('[UserService] Failed to update doctor ES index:', esError.message);
+        }
+      }
+
+      // Cleanup old avatar from Cloudinary
+      if (oldAvatarUrl) {
+        const oldPublicId = getCloudinaryPublicId(oldAvatarUrl);
+        if (oldPublicId) {
+          try {
+            await UploadService.deleteImage(oldPublicId);
+          } catch (deleteErr) {
+            console.error('[UserService] Failed to delete old avatar from Cloudinary:', deleteErr.message);
+          }
+        }
+      }
 
       return {
         message: 'Cập nhật ảnh đại diện thành công',
@@ -587,6 +637,24 @@ class UserService {
       createdTo: normalizeCreatedDateRange(query.createdTo, 'end'),
     };
   }
+}
+
+function getCloudinaryPublicId(url) {
+  if (!url || !url.includes('cloudinary.com')) return null;
+  const parts = url.split('/upload/');
+  if (parts.length < 2) return null;
+  let path = parts[1];
+  if (path.startsWith('v')) {
+    const slashIdx = path.indexOf('/');
+    if (slashIdx !== -1) {
+      path = path.substring(slashIdx + 1);
+    }
+  }
+  const dotIdx = path.lastIndexOf('.');
+  if (dotIdx !== -1) {
+    path = path.substring(0, dotIdx);
+  }
+  return path;
 }
 
 module.exports = new UserService(UserRepository);
