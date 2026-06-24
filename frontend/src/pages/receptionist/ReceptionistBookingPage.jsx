@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Heart, Bone, Baby, Sparkles, Activity, HeartPulse, Stethoscope, Ear } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
@@ -12,6 +13,28 @@ import {
 import { useSearchPatients, useBookAppointmentByReceptionist } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+
+const specialtyIconMap = {
+  Heart: <Heart className="w-5 h-5" />,
+  Bone: <Bone className="w-5 h-5" />,
+  Baby: <Baby className="w-5 h-5" />,
+  Sparkles: <Sparkles className="w-5 h-5" />,
+  Activity: <Activity className="w-5 h-5" />,
+  HeartPulse: <HeartPulse className="w-5 h-5" />,
+  Stethoscope: <Stethoscope className="w-5 h-5" />,
+  Ear: <Ear className="w-5 h-5" />,
+};
+
+const colorClasses = [
+  'bg-red-50 text-red-600',
+  'bg-blue-50 text-blue-600',
+  'bg-green-50 text-green-600',
+  'bg-purple-50 text-purple-600',
+  'bg-amber-50 text-amber-600',
+  'bg-pink-50 text-pink-600',
+  'bg-cyan-50 text-cyan-600',
+  'bg-indigo-50 text-indigo-600',
+];
 
 export default function ReceptionistBookingPage() {
   const [step, setStep] = useState(1);
@@ -81,20 +104,7 @@ export default function ReceptionistBookingPage() {
     return dates;
   }, []);
 
-  // Specialty emojis mapping
-  const getSpecialtyEmoji = (slug) => {
-    const mapping = {
-      'tim-mach': '🫀',
-      'nhi-khoa': '👶',
-      'da-lieu': '🧴',
-      'noi-khoa': '🧠',
-      'co-xuong-khop': '🦴',
-      'tai-mui-hong': '👂',
-      'tieu-hoa': '🧪',
-      'san-phu-khoa': '🤰'
-    };
-    return mapping[slug] || '🩺';
-  };
+
 
   // Format date display (e.g. 14/06/2026)
   const formatDisplayDate = (dateStr) => {
@@ -188,15 +198,13 @@ export default function ReceptionistBookingPage() {
       if (!bookingData.name.trim()) {
         newErrors.name = 'Họ tên bệnh nhân không được để trống';
       }
-      if (!bookingData.phone.trim()) {
-        newErrors.phone = 'Số điện thoại không được để trống';
-      } else if (!/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(bookingData.phone.trim())) {
-        newErrors.phone = 'Số điện thoại không hợp lệ';
+      if (bookingData.phone.trim()) {
+        if (!/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(bookingData.phone.trim())) {
+          newErrors.phone = 'Số điện thoại không hợp lệ';
+        }
       }
-      if (!bookingData.patientUser) {
-        if (!bookingData.email.trim()) {
-          newErrors.email = 'Email không được để trống';
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingData.email.trim())) {
+      if (bookingData.email.trim()) {
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingData.email.trim())) {
           newErrors.email = 'Email không hợp lệ';
         }
       }
@@ -335,10 +343,9 @@ export default function ReceptionistBookingPage() {
 
   // ─── Shared input class ────────────────────────────────────────────────────
   const inputCls = (hasError) =>
-    `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white font-inherit transition ${
-      hasError
-        ? 'border-red-400 bg-red-50'
-        : 'border-gray-200'
+    `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white font-inherit transition ${hasError
+      ? 'border-red-400 bg-red-50'
+      : 'border-gray-200'
     }`;
 
   // ─── Error Banner ──────────────────────────────────────────────────────────
@@ -348,8 +355,8 @@ export default function ReceptionistBookingPage() {
       <div className="flex items-center justify-between gap-3 bg-red-50 border border-red-200 text-red-700 rounded-lg px-4 py-3 mb-5 text-sm font-semibold">
         <div className="flex items-center gap-2">
           <svg className="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <circle cx="12" cy="12" r="10" strokeWidth="2"/>
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01"/>
+            <circle cx="12" cy="12" r="10" strokeWidth="2" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01" />
           </svg>
           <span>{stepError}</span>
         </div>
@@ -359,7 +366,7 @@ export default function ReceptionistBookingPage() {
           className="text-red-400 hover:text-red-600 transition shrink-0"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
           </svg>
         </button>
       </div>
@@ -397,32 +404,29 @@ export default function ReceptionistBookingPage() {
                   <div key={s.num} className="flex items-center flex-1">
                     {/* Step node */}
                     <div className="flex flex-col items-center gap-1">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
-                        isCompleted
-                          ? 'bg-[#49BCE2] text-white'
-                          : isActive
-                            ? 'bg-[#49BCE2] text-white ring-4 ring-[#49BCE2]/20'
-                            : 'bg-gray-100 text-gray-400'
-                      }`}>
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${isCompleted
+                        ? 'bg-[#49BCE2] text-white'
+                        : isActive
+                          ? 'bg-[#49BCE2] text-white ring-4 ring-[#49BCE2]/20'
+                          : 'bg-gray-100 text-gray-400'
+                        }`}>
                         {isCompleted ? (
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/>
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
                           </svg>
                         ) : (
                           s.num
                         )}
                       </div>
-                      <span className={`text-xs font-medium whitespace-nowrap ${
-                        isActive ? 'text-[#49BCE2]' : isCompleted ? 'text-[#49BCE2]' : 'text-gray-400'
-                      }`}>
+                      <span className={`text-xs font-medium whitespace-nowrap ${isActive ? 'text-[#49BCE2]' : isCompleted ? 'text-[#49BCE2]' : 'text-gray-400'
+                        }`}>
                         {s.label}
                       </span>
                     </div>
                     {/* Connector line */}
                     {idx < STEPS.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${
-                        step > s.num ? 'bg-[#49BCE2]' : 'bg-gray-200'
-                      }`} />
+                      <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${step > s.num ? 'bg-[#49BCE2]' : 'bg-gray-200'
+                        }`} />
                     )}
                   </div>
                 );
@@ -442,7 +446,7 @@ export default function ReceptionistBookingPage() {
             {/* Search */}
             <div className="relative mb-5">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
               </svg>
               <input
                 type="text"
@@ -470,20 +474,22 @@ export default function ReceptionistBookingPage() {
               />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {specialtiesList.map((spec) => {
+                {specialtiesList.map((spec, idx) => {
                   const isSelected = bookingData.specialty?.id === spec.id;
+                  const colorClass = colorClasses[idx % colorClasses.length];
                   return (
                     <button
                       key={spec.id}
                       type="button"
                       onClick={() => handleSelectSpecialty(spec)}
-                      className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 text-center transition-all cursor-pointer ${
-                        isSelected
-                          ? 'border-[#49BCE2] bg-[#49BCE2]/5 shadow-sm'
-                          : 'border-gray-200 hover:border-[#49BCE2]/50 hover:bg-gray-50'
-                      }`}
+                      className={`flex flex-col items-center gap-1.5 p-4 rounded-xl border-2 text-center transition-all cursor-pointer ${isSelected
+                        ? 'border-[#49BCE2] bg-[#49BCE2]/5 shadow-sm'
+                        : 'border-gray-200 hover:border-[#49BCE2]/50 hover:bg-gray-50'
+                        }`}
                     >
-                      <span className="text-2xl">{getSpecialtyEmoji(spec.slug)}</span>
+                      <div className={`w-10 h-10 rounded-lg ${colorClass} flex items-center justify-center mb-1`}>
+                        {specialtyIconMap[spec.icon] || <Stethoscope className="w-5 h-5" />}
+                      </div>
                       <span className={`text-sm font-semibold leading-tight ${isSelected ? 'text-[#49BCE2]' : 'text-gray-700'}`}>
                         {spec.name}
                       </span>
@@ -525,11 +531,10 @@ export default function ReceptionistBookingPage() {
                     key={item.dateStr}
                     type="button"
                     onClick={() => handleSelectDate(item.dateStr)}
-                    className={`flex flex-col items-center justify-center min-w-[60px] px-3 py-2.5 rounded-xl border-2 transition-all shrink-0 ${
-                      isDateSel
-                        ? 'border-[#49BCE2] bg-[#49BCE2] text-white shadow-sm'
-                        : 'border-gray-200 hover:border-[#49BCE2]/50 text-gray-600 hover:bg-gray-50'
-                    }`}
+                    className={`flex flex-col items-center justify-center min-w-[60px] px-3 py-2.5 rounded-xl border-2 transition-all shrink-0 ${isDateSel
+                      ? 'border-[#49BCE2] bg-[#49BCE2] text-white shadow-sm'
+                      : 'border-gray-200 hover:border-[#49BCE2]/50 text-gray-600 hover:bg-gray-50'
+                      }`}
                   >
                     <span className="text-[10px] font-semibold uppercase tracking-wide">{item.dayLabel}</span>
                     <span className="text-lg font-bold leading-tight">{item.dayNum}</span>
@@ -541,7 +546,7 @@ export default function ReceptionistBookingPage() {
             {/* Doctor Search */}
             <div className="relative mb-4">
               <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
               </svg>
               <input
                 type="text"
@@ -574,11 +579,10 @@ export default function ReceptionistBookingPage() {
                   return (
                     <div
                       key={doc.id}
-                      className={`border-2 rounded-xl transition-all overflow-hidden ${
-                        isSelected
-                          ? 'border-[#49BCE2] shadow-sm'
-                          : 'border-gray-200 hover:border-gray-300'
-                      }`}
+                      className={`border-2 rounded-xl transition-all overflow-hidden ${isSelected
+                        ? 'border-[#49BCE2] shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300'
+                        }`}
                     >
                       {/* Doctor Info Row */}
                       <div
@@ -604,12 +608,11 @@ export default function ReceptionistBookingPage() {
                             </span>
                           </div>
                         </div>
-                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${
-                          isSelected ? 'border-[#49BCE2] bg-[#49BCE2]' : 'border-gray-300'
-                        }`}>
+                        <div className={`w-5 h-5 rounded-full border-2 shrink-0 flex items-center justify-center transition-all ${isSelected ? 'border-[#49BCE2] bg-[#49BCE2]' : 'border-gray-300'
+                          }`}>
                           {isSelected && (
                             <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"/>
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
                             </svg>
                           )}
                         </div>
@@ -644,13 +647,12 @@ export default function ReceptionistBookingPage() {
                                           type="button"
                                           disabled={!isAvailable}
                                           onClick={() => handleSelectTimeSlot(slot)}
-                                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                                            isSlotSel
-                                              ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
-                                              : isAvailable
-                                                ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
-                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
-                                          }`}
+                                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSlotSel
+                                            ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
+                                            : isAvailable
+                                              ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
+                                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                            }`}
                                         >
                                           {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
                                         </button>
@@ -674,13 +676,12 @@ export default function ReceptionistBookingPage() {
                                           type="button"
                                           disabled={!isAvailable}
                                           onClick={() => handleSelectTimeSlot(slot)}
-                                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                                            isSlotSel
-                                              ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
-                                              : isAvailable
-                                                ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
-                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
-                                          }`}
+                                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${isSlotSel
+                                            ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
+                                            : isAvailable
+                                              ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
+                                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                            }`}
                                         >
                                           {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
                                         </button>
@@ -716,7 +717,7 @@ export default function ReceptionistBookingPage() {
               </label>
               <div className="relative">
                 <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 z-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
                 </svg>
 
                 {bookingData.patientUser ? (
@@ -751,7 +752,7 @@ export default function ReceptionistBookingPage() {
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
                     >
                       <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                       </svg>
                     </button>
                   </>
@@ -855,7 +856,7 @@ export default function ReceptionistBookingPage() {
 
                 <div>
                   <label htmlFor="patientPhoneInput" className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Số điện thoại<Req />
+                    Số điện thoại
                   </label>
                   <input
                     id="patientPhoneInput"
@@ -878,23 +879,22 @@ export default function ReceptionistBookingPage() {
               {/* Email */}
               <div>
                 <label htmlFor="patientEmailInput" className="block text-xs font-medium text-gray-600 mb-1.5">
-                  Email tài khoản{!bookingData.patientUser && <Req />}
+                  Email tài khoản
                 </label>
                 <input
                   id="patientEmailInput"
                   type="email"
-                  placeholder={bookingData.patientUser ? 'Email tài khoản...' : 'Nhập email tài khoản...'}
+                  placeholder="Nhập email tài khoản (không bắt buộc)..."
                   value={bookingData.email}
                   onChange={(e) => {
                     setBookingData(prev => ({ ...prev, email: e.target.value }));
                     setStepError(null);
-                    if (validationErrors.email) setValidationErrors(prev => ({ ...prev, email: null }));
+                    if (validationErrors.email) {
+                      setValidationErrors(prev => ({ ...prev, email: null }));
+                    }
                   }}
                   className={inputCls(validationErrors.email)}
                 />
-                {validationErrors.email && (
-                  <p className="text-xs text-red-500 mt-1">{validationErrors.email}</p>
-                )}
               </div>
 
               {/* Giới tính + Ngày sinh */}
@@ -1033,7 +1033,7 @@ export default function ReceptionistBookingPage() {
               {/* Disclaimer */}
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-xs text-amber-700">
                 <svg className="w-4 h-4 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
                 </svg>
                 <span>Chi phí chỉ mang tính tham khảo. Bệnh nhân thanh toán trực tiếp tại quầy khi đến khám.</span>
               </div>
@@ -1049,7 +1049,7 @@ export default function ReceptionistBookingPage() {
             {/* Success icon */}
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
               </svg>
             </div>
             <h2 className="text-xl font-bold text-gray-800 mb-2">Đặt lịch thành công!</h2>
@@ -1081,12 +1081,6 @@ export default function ReceptionistBookingPage() {
                 <span className="text-sm font-semibold text-green-600">✓ Đã xác nhận</span>
               </div>
             </div>
-
-            {successBookingData.email && (
-              <p className="text-xs text-gray-400 mb-6">
-                📧 Email xác nhận đã được gửi đến <span className="font-medium text-gray-600">{successBookingData.email}</span>.
-              </p>
-            )}
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
@@ -1129,7 +1123,7 @@ export default function ReceptionistBookingPage() {
               className="flex items-center gap-1.5 border border-gray-200 text-gray-500 rounded-lg px-5 py-2.5 text-sm font-semibold hover:bg-gray-50 transition disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7"/>
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
               </svg>
               Quay lại
             </button>
@@ -1144,15 +1138,15 @@ export default function ReceptionistBookingPage() {
                 {bookMutation.isPending ? (
                   <>
                     <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                     </svg>
                     Đang đặt lịch...
                   </>
                 ) : (
                   <>
                     <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"/>
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
                     </svg>
                     Xác nhận đặt lịch
                   </>
@@ -1166,7 +1160,7 @@ export default function ReceptionistBookingPage() {
               >
                 Tiếp theo
                 <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/>
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
                 </svg>
               </button>
             )}

@@ -73,8 +73,9 @@ class AppointmentService {
       // 3. Verify Patient Relative Profile if forSelf === false
       let relativeName = null;
       let patientProfileId = null;
+      let profile = null;
       if (bookingData.forSelf === false) {
-        const profile = await this.patientProfileRepository.findProfileByIdAndUserId(
+        profile = await this.patientProfileRepository.findProfileByIdAndUserId(
           bookingData.patientProfileId,
           patientId
         );
@@ -147,6 +148,11 @@ class AppointmentService {
       const appointment = await this.appointmentRepository.createAppointmentWithTransaction({
         code,
         patientId,
+        patientName: bookingData.forSelf === false ? (profile?.fullName || relativeName) : user.name,
+        patientPhone: bookingData.forSelf === false ? (profile?.phone || null) : user.phone,
+        patientGender: bookingData.forSelf === false ? (profile?.gender || null) : user.gender,
+        patientDob: bookingData.forSelf === false ? (profile?.dateOfBirth || null) : user.dateOfBirth,
+        patientAddress: bookingData.forSelf === false ? (profile?.address || null) : user.address,
         patientProfileId,
         doctorId: doctor.id,
         specialtyId: doctor.specialtyId,
@@ -223,67 +229,29 @@ class AppointmentService {
   async createReceptionistAppointment(currentUser, bookingData) {
     try {
       let patientId = bookingData.patientId;
-      let user;
+      let user = null;
 
-      // 1. Get and check patient user status (or register new patient on-the-fly)
-      if (!patientId && (bookingData.email || bookingData.phone)) {
-        if (bookingData.email) {
-          user = await this.userRepository.findUserByEmail(bookingData.email.trim());
-        }
-        if (!user && bookingData.phone) {
-          user = await this.prisma.user.findFirst({
-            where: { phone: bookingData.phone.trim(), role: 'PATIENT' }
-          });
-        }
-        if (user) {
-          patientId = user.id;
-        }
-      } else if (patientId) {
+      // 1. Get and check patient user status
+      if (patientId) {
         user = await this.userRepository.findUserById(patientId);
       }
 
-      if (!user) {
-        // Create a new Patient User on-the-fly!
-        if (!bookingData.email) {
+      if (user) {
+        if (user.status === 'LOCKED') {
           throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
-            message: 'Email là bắt buộc để tạo tài khoản bệnh nhân.',
-            statusCode: 400,
+            code: APPOINTMENT_ERROR_CODES.PATIENT_LOCKED,
+            message: 'Tài khoản bệnh nhân đang bị khóa.',
+            statusCode: 403,
           });
         }
-        const defaultPasswordHash = await bcrypt.hash('CarePlus123!', 10);
-        const email = bookingData.email.trim();
-        user = await this.prisma.user.create({
-          data: {
-            name: bookingData.name.trim(),
-            email: email,
-            phone: bookingData.phone.trim(),
-            gender: bookingData.gender || 'MALE',
-            dateOfBirth: bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : null,
-            address: bookingData.address ? bookingData.address.trim() : null,
-            role: 'PATIENT',
-            status: 'ACTIVE',
-            emailVerified: false, // Create unactivated account
-            passwordHash: defaultPasswordHash,
-          }
-        });
-        patientId = user.id;
-      }
 
-      if (user.status === 'LOCKED') {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.PATIENT_LOCKED,
-          message: 'Tài khoản bệnh nhân đang bị khóa.',
-          statusCode: 403,
-        });
-      }
-
-      if (user.noShowCount >= 3) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.MAX_NO_SHOW_REACHED,
-          message: 'Tài khoản bệnh nhân đã bị tạm khóa chức năng đặt lịch do vắng mặt quá 3 lần.',
-          statusCode: 403,
-        });
+        if (user.noShowCount >= 3) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.MAX_NO_SHOW_REACHED,
+            message: 'Tài khoản bệnh nhân đã bị tạm khóa chức năng đặt lịch do vắng mặt quá 3 lần.',
+            statusCode: 403,
+          });
+        }
       }
 
       // 2. Resolve persisted slot or create one lazily from a frontend virtual slot.
@@ -311,7 +279,7 @@ class AppointmentService {
             statusCode: 400,
           });
         }
-        relativeName = profile.fullName;
+        relativeName = bookingData.name?.trim() || profile.fullName;
         patientProfileId = profile.id;
       }
 
@@ -319,32 +287,34 @@ class AppointmentService {
       const appointmentDate = timeSlot.schedule.workingDate;
       const doctor = timeSlot.schedule.doctor;
 
-      // Check same day booking for this person
-      const sameDayBooking = await this.appointmentRepository.findActiveAppointmentOnDate(
-        patientId,
-        patientProfileId,
-        appointmentDate
-      );
-      if (sameDayBooking) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.SAME_DAY_BOOKING_EXISTS,
-          message: 'Bệnh nhân này đã có lịch hẹn hoạt động trong ngày này.',
-          statusCode: 409,
-        });
-      }
+      // Check same day booking for this person (only if patientId is present)
+      if (patientId) {
+        const sameDayBooking = await this.appointmentRepository.findActiveAppointmentOnDate(
+          patientId,
+          patientProfileId,
+          appointmentDate
+        );
+        if (sameDayBooking) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.SAME_DAY_BOOKING_EXISTS,
+            message: 'Bệnh nhân này đã có lịch hẹn hoạt động trong ngày này.',
+            statusCode: 409,
+          });
+        }
 
-      // Check active booking with this doctor
-      const activeDoctorBooking = await this.appointmentRepository.findActiveAppointmentWithDoctor(
-        patientId,
-        patientProfileId,
-        doctor.id
-      );
-      if (activeDoctorBooking) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.ACTIVE_BOOKING_WITH_DOCTOR_EXISTS,
-          message: 'Bệnh nhân này đã có lịch hẹn hoạt động với bác sĩ này.',
-          statusCode: 409,
-        });
+        // Check active booking with this doctor
+        const activeDoctorBooking = await this.appointmentRepository.findActiveAppointmentWithDoctor(
+          patientId,
+          patientProfileId,
+          doctor.id
+        );
+        if (activeDoctorBooking) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.ACTIVE_BOOKING_WITH_DOCTOR_EXISTS,
+            message: 'Bệnh nhân này đã có lịch hẹn hoạt động với bác sĩ này.',
+            statusCode: 409,
+          });
+        }
       }
 
       // 5. Generate unique Code: CP + 10 digits
@@ -365,7 +335,12 @@ class AppointmentService {
       // 6. Perform booking transaction
       const appointment = await this.appointmentRepository.createAppointmentWithTransaction({
         code,
-        patientId,
+        patientId: patientId || null,
+        patientName: bookingData.name?.trim() || null,
+        patientPhone: bookingData.phone?.trim() || null,
+        patientGender: bookingData.gender || null,
+        patientDob: bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : null,
+        patientAddress: bookingData.address?.trim() || null,
         patientProfileId,
         doctorId: doctor.id,
         specialtyId: doctor.specialtyId,
@@ -381,7 +356,7 @@ class AppointmentService {
         forSelf: bookingData.forSelf,
         relativeName,
         consultationFee: doctor.price,
-        patientEmail: user.email,
+        patientEmail: bookingData.email?.trim() || (user ? user.email : null),
         reason: bookingData.reason,
         note: bookingData.note,
       });
@@ -404,20 +379,22 @@ class AppointmentService {
       }
 
       // 7. Send success email asynchronously
-      const emailRecipient = user.email;
-      const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
-      const dateStr = appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
+      const emailRecipient = user ? user.email : (bookingData.email?.trim() || null);
+      if (emailRecipient) {
+        const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
+        const dateStr = appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
 
-      this.mailService.sendBookingSuccessEmail({
-        to: emailRecipient,
-        name: user.name,
-        code: appointment.code,
-        doctorName: doctor.name,
-        specialtyName: doctor.specialtyName,
-        date: dateStr,
-        time: timeStr,
-        fee: doctor.price,
-      }).catch((err) => console.error('Failed to send booking success email:', err.message));
+        this.mailService.sendBookingSuccessEmail({
+          to: emailRecipient,
+          name: user ? user.name : bookingData.name.trim(),
+          code: appointment.code,
+          doctorName: doctor.name,
+          specialtyName: doctor.specialtyName,
+          date: dateStr,
+          time: timeStr,
+          fee: doctor.price,
+        }).catch((err) => console.error('Failed to send booking success email:', err.message));
+      }
 
       return toAppointmentDto(appointment);
     } catch (error) {
@@ -602,16 +579,10 @@ class AppointmentService {
         const searchTrim = query.search.trim();
         where.OR = [
           { code: { contains: searchTrim } },
+          { patientName: { contains: searchTrim } },
           { relativeName: { contains: searchTrim } },
-          {
-            patient: {
-              OR: [
-                { name: { contains: searchTrim } },
-                { email: { contains: searchTrim } },
-                { phone: { contains: searchTrim } },
-              ],
-            },
-          },
+          { patientPhone: { contains: searchTrim } },
+          { patientEmail: { contains: searchTrim } },
         ];
       }
 
@@ -1156,25 +1127,10 @@ class AppointmentService {
       const searchTrim = query.search.trim();
       where.OR = [
         { code: { contains: searchTrim } },
+        { patientName: { contains: searchTrim } },
         { relativeName: { contains: searchTrim } },
-        {
-          patient: {
-            OR: [
-              { name: { contains: searchTrim } },
-              { email: { contains: searchTrim } },
-              { phone: { contains: searchTrim } },
-            ],
-          },
-        },
-        {
-          patientProfile: {
-            OR: [
-              { fullName: { contains: searchTrim } },
-              { email: { contains: searchTrim } },
-              { phone: { contains: searchTrim } },
-            ],
-          },
-        },
+        { patientPhone: { contains: searchTrim } },
+        { patientEmail: { contains: searchTrim } },
       ];
     }
 

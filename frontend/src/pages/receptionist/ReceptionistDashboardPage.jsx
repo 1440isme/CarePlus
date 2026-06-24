@@ -157,8 +157,8 @@ export default function ReceptionistDashboardPage() {
                   const patientName = appointment.patientName || 'Bệnh nhân';
                   const doctorName =
                     appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
-                  const time = appointment.timeSlot?.startTime
-                    ? appointment.timeSlot.startTime.slice(0, 5)
+                  const time = appointment.startTime
+                    ? appointment.startTime.slice(0, 5)
                     : '08:00';
 
                   return (
@@ -322,8 +322,8 @@ export default function ReceptionistDashboardPage() {
                   <div className="flex justify-between items-start px-4 py-3">
                     <span className="text-sm text-gray-500">Giờ khám</span>
                     <span className="text-sm font-semibold text-gray-800">
-                      {selectedAppointment.timeSlot?.startTime?.slice(0, 5) || '08:00'} -{' '}
-                      {selectedAppointment.timeSlot?.endTime?.slice(0, 5) || '08:30'}
+                      {selectedAppointment.startTime?.slice(0, 5) || '08:00'} -{' '}
+                      {selectedAppointment.endTime?.slice(0, 5) || '08:30'}
                     </span>
                   </div>
                   <div className="flex justify-between items-start px-4 py-3">

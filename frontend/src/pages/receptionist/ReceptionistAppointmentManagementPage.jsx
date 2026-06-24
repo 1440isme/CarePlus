@@ -315,8 +315,8 @@ export default function ReceptionistAppointmentManagementPage() {
                     const patientName = appointment.patientName || 'Bệnh nhân';
                     const doctorName = appointment.doctor?.name || appointment.doctorName || 'Bác sĩ';
                     const specialtyName = appointment.specialty?.name || 'N/A';
-                    const time = appointment.timeSlot?.startTime
-                      ? appointment.timeSlot.startTime.slice(0, 5)
+                    const time = appointment.startTime
+                      ? appointment.startTime.slice(0, 5)
                       : '08:00';
                     const formattedDate = appointment.appointmentDate
                       ? appointment.appointmentDate.split('-').reverse().join('/')
@@ -460,7 +460,7 @@ export default function ReceptionistAppointmentManagementPage() {
                 <div className="bg-white border border-gray-100 rounded-xl divide-y divide-gray-50">
                   {[
                     { label: 'Ngày khám', value: selectedAppointment.appointmentDate ? selectedAppointment.appointmentDate.split('-').reverse().join('/') : 'N/A' },
-                    { label: 'Giờ khám', value: `${selectedAppointment.timeSlot?.startTime?.slice(0, 5) || '08:00'} - ${selectedAppointment.timeSlot?.endTime?.slice(0, 5) || '08:30'}` },
+                    { label: 'Giờ khám', value: `${selectedAppointment.startTime?.slice(0, 5) || '08:00'} - ${selectedAppointment.endTime?.slice(0, 5) || '08:30'}` },
                     { label: 'Mã lịch', value: selectedAppointment.code, mono: true },
                   ].map(row => (
                     <div key={row.label} className="flex items-center justify-between px-4 py-3">

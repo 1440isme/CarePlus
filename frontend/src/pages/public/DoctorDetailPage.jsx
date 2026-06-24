@@ -132,6 +132,10 @@ export default function DoctorDetailPage() {
     setSearchParams(next);
   };
 
+  const handleBook = (doctorId, slotTime) => {
+    navigate(`/dat-lich?doctorId=${doctorId}&date=${selectedDate}&slot=${encodeURIComponent(slotTime)}`);
+  };
+
   const handleChatWithDoctor = () => {
     if (!isAuthenticated) {
       navigate(`/dang-nhap?redirect=/bac-si/${id}`);
@@ -338,19 +342,20 @@ export default function DoctorDetailPage() {
                                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                                   {slotGroups.morning.map(slot => {
                                     const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
+                                    const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
                                     return (
                                       <button
                                         key={slot.startTime}
                                         type="button"
                                         disabled={isBooked}
-                                        onClick={() => handleBook(doctor.id, slot.startTime)}
+                                        onClick={() => handleBook(doctor.id, slotTimeStr)}
                                         className={`py-2 px-3 text-xs rounded-xl text-center font-medium border transition-all ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
                                         }`}
                                       >
-                                        {slot.startTime}
+                                        {slotTimeStr}
                                       </button>
                                     );
                                   })}
@@ -368,19 +373,20 @@ export default function DoctorDetailPage() {
                                 <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
                                   {slotGroups.afternoon.map(slot => {
                                     const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
+                                    const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
                                     return (
                                       <button
                                         key={slot.startTime}
                                         type="button"
                                         disabled={isBooked}
-                                        onClick={() => handleBook(doctor.id, slot.startTime)}
+                                        onClick={() => handleBook(doctor.id, slotTimeStr)}
                                         className={`py-2 px-3 text-xs rounded-xl text-center font-medium border transition-all ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
                                         }`}
                                       >
-                                        {slot.startTime}
+                                        {slotTimeStr}
                                       </button>
                                     );
                                   })}
