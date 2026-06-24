@@ -388,6 +388,7 @@ model Message {
 }
 
 model ClinicInfo {
+  singletonKey String   @unique @default("CLINIC_INFO")
   id           String   @id @default(uuid())
   name         String
   address      String   @db.Text
@@ -400,18 +401,19 @@ model ClinicInfo {
 }
 
 model SystemSetting {
-  id                  String   @id @default(uuid())
-  maxBookingDaysAhead Int      @default(7)
-  slotDurationMinutes Int      @default(30)
-  cancelBeforeHours   Int      @default(2)
-  maxNoShowBeforeLock Int      @default(3)
+  singletonKey              String   @unique @default("SYSTEM_SETTING")
+  id                        String   @id @default(uuid())
+  maxBookingDaysAhead       Int      @default(7)
+  slotDurationMinutes       Int      @default(30)
+  cancelBeforeHours         Int      @default(2)
+  maxNoShowBeforeLock       Int      @default(3)
   maxActiveAppointmentsPerUser Int @default(5)
-  morningShiftStart   String   @default("08:00")
-  morningShiftEnd     String   @default("11:30")
-  afternoonShiftStart String   @default("13:30")
-  afternoonShiftEnd   String   @default("17:00")
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
+  morningShiftStart         String   @default("08:00")
+  morningShiftEnd           String   @default("11:30")
+  afternoonShiftStart       String   @default("13:30")
+  afternoonShiftEnd         String   @default("17:00")
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
 }
 
 model BlogPost {

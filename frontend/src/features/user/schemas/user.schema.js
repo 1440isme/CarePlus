@@ -18,7 +18,7 @@ export const updateMeSchema = z.object({
   dateOfBirth: z
     .string()
     .trim()
-    .regex(/^\d{2}\/\d{2}\/\d{4}$/, 'Ngày sinh phải theo định dạng DD/MM/YYYY'),
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Ngày sinh phải theo định dạng YYYY-MM-DD'),
   address: z
     .string()
     .trim()

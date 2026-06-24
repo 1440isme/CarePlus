@@ -27,10 +27,10 @@ const GENDER_OPTIONS = [
 const ACADEMIC_TITLE_OPTIONS = [
   { value: '', label: 'Chọn học hàm/Học vị' },
   { value: 'BS', label: 'BS' },
-  { value: 'BS_CKI', label: 'BS.CKI' },
-  { value: 'BS_CKII', label: 'BS.CKII' },
-  { value: 'THS_BS', label: 'ThS.BS' },
-  { value: 'TS_BS', label: 'TS.BS' },
+  { value: 'BS.CKI', label: 'BS.CKI' },
+  { value: 'BS.CKII', label: 'BS.CKII' },
+  { value: 'ThS.BS', label: 'ThS.BS' },
+  { value: 'TS.BS', label: 'TS.BS' },
 ];
 
 function CloseIcon() {

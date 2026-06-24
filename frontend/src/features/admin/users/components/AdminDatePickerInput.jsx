@@ -23,18 +23,6 @@ function normalizeDateInput(value) {
     return '';
   }
 
-  const slashMatch = trimmedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-  if (slashMatch) {
-    const [, dayText, monthText, yearText] = slashMatch;
-    const day = Number(dayText);
-    const month = Number(monthText);
-    const year = Number(yearText);
-
-    return isValidDateParts(day, month, year)
-      ? `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
-      : trimmedValue;
-  }
-
   const isoMatch = trimmedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
   if (isoMatch) {
     const [, yearText, monthText, dayText] = isoMatch;
@@ -43,7 +31,7 @@ function normalizeDateInput(value) {
     const year = Number(yearText);
 
     return isValidDateParts(day, month, year)
-      ? `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`
+      ? `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
       : trimmedValue;
   }
 
@@ -52,14 +40,11 @@ function normalizeDateInput(value) {
 
 function toNativeDateValue(value) {
   const normalizedValue = normalizeDateInput(value);
-  const slashMatch = normalizedValue.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
-
-  if (!slashMatch) {
+  const isoMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!isoMatch) {
     return '';
   }
-
-  const [, dayText, monthText, yearText] = slashMatch;
-  return `${yearText}-${monthText}-${dayText}`;
+  return normalizedValue;
 }
 
 export default function AdminDatePickerInput({
@@ -68,7 +53,7 @@ export default function AdminDatePickerInput({
   onBlur,
   name,
   className,
-  placeholder = 'DD/MM/YYYY',
+  placeholder = 'YYYY-MM-DD',
   disabled = false,
 }) {
   const nativeDateInputRef = useRef(null);

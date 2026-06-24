@@ -22,8 +22,25 @@ function isValidVietnamPhone(phone) {
 }
 
 function isValidDateString(value) {
-  const date = new Date(value);
-  return !Number.isNaN(date.getTime());
+  if (typeof value !== 'string') {
+    return false;
+  }
+
+  const trimmedValue = value.trim();
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
+
+  if (!match) {
+    return false;
+  }
+
+  const year = Number.parseInt(match[1], 10);
+  const month = Number.parseInt(match[2], 10);
+  const day = Number.parseInt(match[3], 10);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  return parsedDate.getUTCFullYear() === year
+    && parsedDate.getUTCMonth() === month - 1
+    && parsedDate.getUTCDate() === day;
 }
 
 function isNotFutureDate(value) {
@@ -58,7 +75,7 @@ const createPatientProfileSchema = z.object({
   dateOfBirth: z.string()
     .trim()
     .refine((value) => isValidDateString(value), {
-      message: 'dateOfBirth must be a valid date',
+      message: 'dateOfBirth must be a valid date in YYYY-MM-DD format',
     })
     .refine((value) => isNotFutureDate(value), {
       message: 'dateOfBirth must not be in the future',
@@ -99,7 +116,7 @@ const updatePatientProfileSchema = z.object({
   dateOfBirth: z.string()
     .trim()
     .refine((value) => isValidDateString(value), {
-      message: 'dateOfBirth must be a valid date',
+      message: 'dateOfBirth must be a valid date in YYYY-MM-DD format',
     })
     .refine((value) => isNotFutureDate(value), {
       message: 'dateOfBirth must not be in the future',

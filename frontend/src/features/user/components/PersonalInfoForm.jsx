@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import ProfileAvatarUpload from './ProfileAvatarUpload.jsx';
 import { updateMeSchema } from '../schemas/user.schema.js';
 import { useUpdateMe } from '../hooks/useUpdateMe.js';
-import { Lock, Calendar } from 'lucide-react';
+import { Lock } from 'lucide-react';
 
 function getUpdateErrorMessage(error) {
   switch (error?.code) {
@@ -183,13 +183,9 @@ export default function PersonalInfoForm({
             <input
               id="patient-birthdate"
               className={`${inputStyle} ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
-              type="text"
-              placeholder="DD/MM/YYYY"
+              type="date"
               {...register('dateOfBirth')}
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-              <Calendar className="w-4 h-4" />
-            </span>
           </div>
           {errors.dateOfBirth ? <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth.message}</p> : null}
         </div>
