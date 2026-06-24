@@ -323,9 +323,6 @@ export default function DoctorDetailPage() {
                                   {isToday ? 'Hôm nay' : option.weekday}
                                 </span>
                                 <span className="text-lg font-bold mt-0.5">{option.day.split('/')[0]}</span>
-                                <span className={`text-[10px] ${isSelected ? 'text-cyan-100' : 'text-gray-400'}`}>
-                                  Th{Number(option.day.split('/')[1])}
-                                </span>
                               </button>
                             );
                           })}
