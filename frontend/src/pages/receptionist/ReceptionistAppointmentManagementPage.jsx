@@ -90,7 +90,6 @@ export default function ReceptionistAppointmentManagementPage() {
   const updateStatusMutation = useUpdateAppointmentStatus();
   const approveMutation = useApproveRequest();
   const rejectMutation = useRejectRequest();
-  const queryClient = useQueryClient();
 
   const appointmentsList = appointmentsQuery.data?.data || [];
   const paginationMeta = appointmentsQuery.data?.meta || { page: 1, totalPages: 1, total: 0 };
