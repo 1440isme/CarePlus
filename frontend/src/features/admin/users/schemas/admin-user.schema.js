@@ -1,14 +1,14 @@
 import { z } from 'zod';
 
 const vietnamPhoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
-const dateOfBirthRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+const dateOfBirthRegex = /^\d{4}-\d{2}-\d{2}$/;
 
 function isValidPastDate(value) {
   if (!dateOfBirthRegex.test(value)) {
     return false;
   }
 
-  const [day, month, year] = value.split('/').map(Number);
+  const [year, month, day] = value.split('-').map(Number);
   const parsedDate = new Date(Date.UTC(year, month - 1, day));
 
   return parsedDate.getUTCFullYear() === year
@@ -28,7 +28,7 @@ export const adminUserEditSchema = z.object({
   gender: z.enum(['MALE', 'FEMALE', 'OTHER']),
   dateOfBirth: z.string()
     .trim()
-    .refine(isValidPastDate, 'Ngày sinh phải theo định dạng DD/MM/YYYY và không vượt quá hiện tại'),
+    .refine(isValidPastDate, 'Ngày sinh phải theo định dạng YYYY-MM-DD và không vượt quá hiện tại'),
   address: z.string()
     .trim()
     .max(255, 'Địa chỉ tối đa 255 ký tự')

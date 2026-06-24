@@ -25,6 +25,16 @@ class AuthServiceError extends Error {
   }
 }
 
+function logSafeAuthError(action, error, fallbackCode) {
+  console.error('[AuthService] action failed', {
+    module: 'auth',
+    action,
+    errorCode: error?.code || fallbackCode,
+    statusCode: error?.statusCode || 500,
+    message: error?.message || 'Unknown error',
+  });
+}
+
 class AuthService {
   constructor(authRepository) {
     this.authRepository = authRepository;
@@ -182,7 +192,7 @@ class AuthService {
         },
       };
     } catch (error) {
-      console.error('[AuthService.login] Unexpected error during login:', error);
+      logSafeAuthError('login', error, AUTH_ERROR_CODES.LOGIN_FAILED);
       if (error instanceof AuthServiceError) {
         throw error;
       }

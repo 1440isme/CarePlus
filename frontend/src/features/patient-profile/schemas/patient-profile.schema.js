@@ -5,7 +5,7 @@ import {
 } from '../types/patient-profile.types.js';
 
 const vietnamPhoneRegex = /^(0|\+84)(3|5|7|8|9)\d{8}$/;
-const dateOfBirthRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+const dateOfBirthRegex = /^\d{4}-\d{2}-\d{2}$/;
 const validGenderValues = PATIENT_PROFILE_GENDER_OPTIONS.map((option) => option.value);
 const validRelationshipValues = PATIENT_PROFILE_RELATIONSHIP_OPTIONS.map((option) => option.value);
 
@@ -14,7 +14,7 @@ function isValidDateOfBirth(value) {
     return false;
   }
 
-  const [day, month, year] = value.split('/').map(Number);
+  const [year, month, day] = value.split('-').map(Number);
   const date = new Date(year, month - 1, day);
 
   if (
@@ -50,7 +50,7 @@ const basePatientProfileSchema = z.object({
   dateOfBirth: z
     .string()
     .trim()
-    .regex(dateOfBirthRegex, 'Ngày sinh phải theo định dạng DD/MM/YYYY')
+    .regex(dateOfBirthRegex, 'Ngày sinh phải theo định dạng YYYY-MM-DD')
     .refine(isValidDateOfBirth, 'Ngày sinh không hợp lệ'),
   relationship: z
     .string()

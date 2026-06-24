@@ -38,8 +38,6 @@ export default function PatientProfilesList({
   onDelete,
 }) {
   const activeCount = profiles.length;
-  const maxRelatives = 4;
-  const atLimit = activeCount >= maxRelatives;
 
   return (
     <div className="max-w-[600px] font-sans">
@@ -47,14 +45,13 @@ export default function PatientProfilesList({
         <div>
           <h1 className="text-xl font-bold text-gray-800">Hồ sơ người thân</h1>
           <div className="text-xs text-gray-500 mt-1">
-            Đang hoạt động: <strong className={atLimit ? 'text-red-500' : 'text-[#49BCE2]'}>{activeCount}/{maxRelatives}</strong>
+            Đang hoạt động: <strong className="text-[#49BCE2]">{activeCount} hồ sơ</strong>
           </div>
         </div>
 
         <button
           onClick={onCreate}
-          className={`flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white shadow-sm transition-colors cursor-pointer ${atLimit ? 'bg-gray-200 text-gray-400 cursor-not-allowed shadow-none' : 'bg-[#49BCE2] hover:bg-[#3ca4c7]'}`}
-          disabled={atLimit}
+          className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-semibold text-white shadow-sm transition-colors cursor-pointer bg-[#49BCE2] hover:bg-[#3ca4c7]"
         >
           <Plus className="w-4 h-4" />
           <span>Thêm người thân</span>

@@ -9,11 +9,11 @@ function formatDateOfBirth(dateOfBirth) {
     return null;
   }
 
-  const day = String(parsedDate.getUTCDate()).padStart(2, '0');
-  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
   const year = parsedDate.getUTCFullYear();
+  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getUTCDate()).padStart(2, '0');
 
-  return `${day}/${month}/${year}`;
+  return `${year}-${month}-${day}`;
 }
 
 function toUserDto(user) {
