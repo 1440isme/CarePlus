@@ -15,7 +15,14 @@ import {
 import LeaveRequestForm from "../../features/approval/components/LeaveRequestForm.jsx";
 import LoadingBlock from "../../shared/components/feedback/LoadingBlock.jsx";
 import StateBlock from "../../shared/components/feedback/StateBlock.jsx";
-import { Calendar, Clock, Plus, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import {
+  Calendar,
+  Clock,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  X,
+} from "lucide-react";
 
 const SCHEDULE_STATUS_LABELS = {
   WORKING: "Đang làm việc",
@@ -65,7 +72,15 @@ const SHIFT_DEFINITIONS = [
   },
 ];
 
-const WEEKDAY_LABELS = ["Thứ 2", "Thứ 3", "Thứ 4", "Thứ 5", "Thứ 6", "Thứ 7", "CN"];
+const WEEKDAY_LABELS = [
+  "Thứ 2",
+  "Thứ 3",
+  "Thứ 4",
+  "Thứ 5",
+  "Thứ 6",
+  "Thứ 7",
+  "CN",
+];
 
 function formatIsoDate(date) {
   const year = date.getFullYear();
@@ -167,12 +182,16 @@ function scheduleCoversShift(schedule, shiftKey) {
 }
 
 function findShiftSchedule(daySchedules, shiftKey) {
-  return daySchedules.find((schedule) => scheduleCoversShift(schedule, shiftKey));
+  return daySchedules.find((schedule) =>
+    scheduleCoversShift(schedule, shiftKey),
+  );
 }
 
 function getShiftTimeText(schedule, shiftDefinition) {
-  const start = schedule?.[shiftDefinition.startField] || shiftDefinition.defaultStart;
-  const end = schedule?.[shiftDefinition.endField] || shiftDefinition.defaultEnd;
+  const start =
+    schedule?.[shiftDefinition.startField] || shiftDefinition.defaultStart;
+  const end =
+    schedule?.[shiftDefinition.endField] || shiftDefinition.defaultEnd;
   return `${start} - ${end}`;
 }
 
@@ -187,11 +206,13 @@ function getShiftDescription(schedule) {
 
 function getScheduleCardTone(schedule) {
   if (!schedule) return "border-gray-200 bg-white text-gray-400";
-  if (schedule.status === "PENDING") return "border-amber-200 bg-amber-50 text-amber-700";
+  if (schedule.status === "PENDING")
+    return "border-amber-200 bg-amber-50 text-amber-700";
   if (schedule.status === "APPROVED_OFF" || schedule.status === "CANCELLED") {
     return "border-gray-200 bg-gray-100 text-gray-500";
   }
-  if (schedule.status === "REJECTED") return "border-red-200 bg-red-50 text-red-600";
+  if (schedule.status === "REJECTED")
+    return "border-red-200 bg-red-50 text-red-600";
   return "border-[#49BCE2]/40 bg-[#EBF7FD] text-[#1587a8]";
 }
 
@@ -249,13 +270,15 @@ export default function DoctorWorkSchedulePage() {
   const requests = Array.isArray(requestsQuery.data?.data)
     ? requestsQuery.data.data
     : [];
+  const pendingLeaveRequestCount = useMemo(() => {
+    return requests.filter((request) => request.status === "PENDING").length;
+  }, [requests]);
   const weekSummary = useMemo(() => {
     return schedules.reduce(
       (summary, item) => {
         summary.totalSchedules += 1;
         summary.available += item.availableSlots || 0;
         summary.booked += item.bookedSlots || 0;
-        if (item.status === "PENDING") summary.pending += 1;
         if (item.status === "APPROVED_OFF") summary.approvedOff += 1;
         return summary;
       },
@@ -263,7 +286,6 @@ export default function DoctorWorkSchedulePage() {
         totalSchedules: 0,
         available: 0,
         booked: 0,
-        pending: 0,
         approvedOff: 0,
       },
     );
@@ -284,7 +306,7 @@ export default function DoctorWorkSchedulePage() {
       slotData?.slots || [],
     );
   }, [selectedSchedules, slotData, systemSettingsResponse?.data]);
-  
+
   const selectedDateLabel =
     typeof selectedDate === "string" && selectedDate.includes("-")
       ? selectedDate.split("-").reverse().join("/")
@@ -330,20 +352,20 @@ export default function DoctorWorkSchedulePage() {
 
   const getStatusConfig = (status) => {
     switch (status) {
-      case 'CONFIRMED':
-      case 'WORKING':
-        return 'bg-[#EBF7FD] text-[#49BCE2] border-[#49BCE2]/20';
-      case 'APPROVED_OFF':
-      case 'REJECTED':
-        return 'bg-red-50 text-red-600 border-red-200';
-      case 'PENDING':
-        return 'bg-amber-50 text-amber-600 border-amber-200';
-      case 'APPROVED':
-        return 'bg-green-50 text-green-600 border-green-200';
-      case 'CANCELLED':
-        return 'bg-gray-100 text-gray-500 border-gray-250';
+      case "CONFIRMED":
+      case "WORKING":
+        return "bg-[#EBF7FD] text-[#49BCE2] border-[#49BCE2]/20";
+      case "APPROVED_OFF":
+      case "REJECTED":
+        return "bg-red-50 text-red-600 border-red-200";
+      case "PENDING":
+        return "bg-amber-50 text-amber-600 border-amber-200";
+      case "APPROVED":
+        return "bg-green-50 text-green-600 border-green-200";
+      case "CANCELLED":
+        return "bg-gray-100 text-gray-500 border-gray-250";
       default:
-        return 'bg-gray-50 text-gray-500 border-gray-200';
+        return "bg-gray-50 text-gray-500 border-gray-200";
     }
   };
 
@@ -353,7 +375,8 @@ export default function DoctorWorkSchedulePage() {
       <div className="mb-5">
         <h1 className="text-xl font-bold text-gray-800">Lịch làm việc</h1>
         <p className="text-xs md:text-sm text-gray-500 mt-1">
-          Theo dõi lịch trực trong tuần, xem slot theo ngày và gửi yêu cầu nghỉ đúng theo luồng phê duyệt.
+          Theo dõi lịch trực trong tuần, xem slot theo ngày và gửi yêu cầu nghỉ
+          đúng theo luồng phê duyệt.
         </p>
       </div>
 
@@ -426,12 +449,31 @@ export default function DoctorWorkSchedulePage() {
         {/* Week Summary Pills */}
         <div className="flex flex-wrap gap-2">
           {[
-            { label: 'Số ngày làm việc', value: weekSummary.totalSchedules, color: 'bg-blue-50 text-blue-600 border-blue-100' },
-            { label: 'Số lịch hẹn', value: weekSummary.booked, color: 'bg-indigo-50 text-indigo-600 border-indigo-100' },
-            { label: 'Chờ duyệt', value: weekSummary.pending, color: 'bg-amber-50 text-amber-600 border-amber-100' },
-            { label: 'Nghỉ đã duyệt', value: weekSummary.approvedOff, color: 'bg-red-50 text-red-600 border-red-100' },
+            {
+              label: "Số ngày làm việc",
+              value: weekSummary.totalSchedules,
+              color: "bg-blue-50 text-blue-600 border-blue-100",
+            },
+            {
+              label: "Số lịch hẹn",
+              value: weekSummary.booked,
+              color: "bg-indigo-50 text-indigo-600 border-indigo-100",
+            },
+            {
+              label: "Chờ duyệt",
+              value: pendingLeaveRequestCount,
+              color: "bg-amber-50 text-amber-600 border-amber-100",
+            },
+            {
+              label: "Nghỉ đã duyệt",
+              value: weekSummary.approvedOff,
+              color: "bg-red-50 text-red-600 border-red-100",
+            },
           ].map((pill, idx) => (
-            <span key={idx} className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-lg border ${pill.color}`}>
+            <span
+              key={idx}
+              className={`inline-flex items-center px-3 py-1 text-xs font-semibold rounded-lg border ${pill.color}`}
+            >
               {pill.label}: {pill.value}
             </span>
           ))}
@@ -472,7 +514,9 @@ export default function DoctorWorkSchedulePage() {
                         key={isoDate}
                         className={`min-h-[66px] border-r border-b border-gray-100 px-2 py-3 text-center ${isoDate === todayIso ? "bg-cyan-50" : "bg-gray-50"}`}
                       >
-                        <div className="text-xs font-bold text-gray-700 capitalize">{formatDayLabel(date)}</div>
+                        <div className="text-xs font-bold text-gray-700 capitalize">
+                          {formatDayLabel(date)}
+                        </div>
                         {isoDate === todayIso ? (
                           <span className="mt-1 inline-flex rounded-md bg-[#49BCE2] px-2 py-0.5 text-[10px] font-bold text-white">
                             Hôm nay
@@ -491,7 +535,10 @@ export default function DoctorWorkSchedulePage() {
                       {weekDates.map((date) => {
                         const isoDate = formatIsoDate(date);
                         const daySchedules = schedulesByDate[isoDate] || [];
-                        const schedule = findShiftSchedule(daySchedules, shift.key);
+                        const schedule = findShiftSchedule(
+                          daySchedules,
+                          shift.key,
+                        );
                         const isSelected = isoDate === selectedDate;
 
                         return (
@@ -502,7 +549,9 @@ export default function DoctorWorkSchedulePage() {
                             onClick={() => setSelectedDate(isoDate)}
                           >
                             {schedule ? (
-                              <span className={`block min-h-[58px] rounded-lg border px-2.5 py-2 ${getScheduleCardTone(schedule)}`}>
+                              <span
+                                className={`block min-h-[58px] rounded-lg border px-2.5 py-2 ${getScheduleCardTone(schedule)}`}
+                              >
                                 <strong className="block text-[11px] font-bold">
                                   {getShiftTimeText(schedule, shift)}
                                 </strong>
@@ -549,7 +598,9 @@ export default function DoctorWorkSchedulePage() {
                         onClick={() => setSelectedDate(isoDate)}
                       >
                         <div className="mb-2 flex items-center justify-between">
-                          <strong className="text-xs font-bold text-gray-700">{date.getDate()}</strong>
+                          <strong className="text-xs font-bold text-gray-700">
+                            {date.getDate()}
+                          </strong>
                           {isToday ? (
                             <span className="rounded-full bg-[#49BCE2] px-2 py-0.5 text-[9px] font-bold text-white">
                               Hôm nay
@@ -559,15 +610,22 @@ export default function DoctorWorkSchedulePage() {
 
                         <div className="grid gap-1.5">
                           {SHIFT_DEFINITIONS.map((shift) => {
-                            const schedule = findShiftSchedule(daySchedules, shift.key);
+                            const schedule = findShiftSchedule(
+                              daySchedules,
+                              shift.key,
+                            );
                             return (
                               <span
                                 key={shift.key}
                                 className={`flex min-h-[30px] items-center justify-between gap-1 rounded-md border px-2 py-1 ${getScheduleCardTone(schedule)}`}
                               >
-                                <span className="text-[11px] font-bold">{shift.label}</span>
+                                <span className="text-[11px] font-bold">
+                                  {shift.label}
+                                </span>
                                 <small className="text-[10px] font-semibold">
-                                  {schedule ? getScheduleStatusLabel(schedule.status) : "Trống"}
+                                  {schedule
+                                    ? getScheduleStatusLabel(schedule.status)
+                                    : "Trống"}
                                 </small>
                               </span>
                             );
@@ -589,15 +647,14 @@ export default function DoctorWorkSchedulePage() {
         <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 shadow-sm">
           <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-100">
             <div>
-              <h3 className="text-sm font-bold text-gray-800">Chi tiết ngày {selectedDateLabel}</h3>
-              <p className="text-xs text-gray-400 mt-0.5">
-                {selectedSchedule
-                  ? `Trạng thái: ${getScheduleStatusLabel(selectedSchedule.status)}`
-                  : "Chưa có lịch trực trong ngày này."}
-              </p>
+              <h3 className="text-sm font-bold text-gray-800">
+                Chi tiết ngày {selectedDateLabel}
+              </h3>
             </div>
             {selectedSchedule && (
-              <span className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedSchedule.status)}`}>
+              <span
+                className={`px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedSchedule.status)}`}
+              >
                 {getScheduleStatusLabel(selectedSchedule.status)}
               </span>
             )}
@@ -614,22 +671,28 @@ export default function DoctorWorkSchedulePage() {
           ) : !selectedSchedule ? (
             <div className="text-center py-10 bg-gray-50 border border-dashed border-gray-200 rounded-lg">
               <Clock className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-              <p className="text-xs text-gray-400">Không có khung giờ làm việc nào.</p>
+              <p className="text-xs text-gray-400">
+                Không có khung giờ làm việc nào.
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-4">
               {/* Morning */}
               <div>
-                <h4 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Ca sáng</h4>
+                <h4 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">
+                  Ca sáng
+                </h4>
                 {slotsByShift.morning.length > 0 ? (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2">
                     {slotsByShift.morning.map((slot) => (
                       <span
                         key={slot.id}
                         className={`min-h-[38px] w-full rounded-lg border px-3 py-1.5 text-center text-[13px] font-semibold leading-tight flex items-center justify-center ${
-                          slot.status === 'BOOKED' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
-                          slot.status === 'LOCKED' ? 'bg-gray-100 border-gray-250 text-gray-500' :
-                          'bg-green-50 border-green-200 text-green-600'
+                          slot.status === "BOOKED"
+                            ? "bg-gray-100 border-gray-200 text-gray-400 opacity-60"
+                            : slot.status === "LOCKED"
+                              ? "bg-gray-100 border-gray-250 text-gray-500"
+                              : "bg-green-50 border-green-200 text-green-600"
                         }`}
                       >
                         {slot.startTime} - {slot.endTime}
@@ -643,16 +706,20 @@ export default function DoctorWorkSchedulePage() {
 
               {/* Afternoon */}
               <div>
-                <h4 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">Ca chiều</h4>
+                <h4 className="text-xs font-bold text-gray-600 mb-2 uppercase tracking-wider">
+                  Ca chiều
+                </h4>
                 {slotsByShift.afternoon.length > 0 ? (
                   <div className="grid grid-cols-[repeat(auto-fill,minmax(132px,1fr))] gap-2">
                     {slotsByShift.afternoon.map((slot) => (
                       <span
                         key={slot.id}
                         className={`min-h-[38px] w-full rounded-lg border px-3 py-1.5 text-center text-[13px] font-semibold leading-tight flex items-center justify-center ${
-                          slot.status === 'BOOKED' ? 'bg-indigo-50 border-indigo-200 text-indigo-600' :
-                          slot.status === 'LOCKED' ? 'bg-gray-100 border-gray-250 text-gray-500' :
-                          'bg-green-50 border-green-200 text-green-600'
+                          slot.status === "BOOKED"
+                            ? "bg-gray-100 border-gray-200 text-gray-400 opacity-60"
+                            : slot.status === "LOCKED"
+                              ? "bg-gray-100 border-gray-250 text-gray-500"
+                              : "bg-green-50 border-green-200 text-green-600"
                         }`}
                       >
                         {slot.startTime} - {slot.endTime}
@@ -670,8 +737,12 @@ export default function DoctorWorkSchedulePage() {
         {/* Right: leave requests */}
         <div className="bg-white border border-gray-200 rounded-lg p-4 md:p-5 shadow-sm">
           <div className="mb-4 pb-4 border-b border-gray-100">
-            <h3 className="text-sm font-bold text-gray-800">Yêu cầu nghỉ gần đây</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Theo dõi lịch sử các yêu cầu xin nghỉ làm việc.</p>
+            <h3 className="text-sm font-bold text-gray-800">
+              Yêu cầu nghỉ gần đây
+            </h3>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Theo dõi lịch sử các yêu cầu xin nghỉ làm việc.
+            </p>
           </div>
 
           {requestsQuery.isLoading ? (
@@ -685,20 +756,31 @@ export default function DoctorWorkSchedulePage() {
           ) : requests.length === 0 ? (
             <div className="text-center py-10 bg-gray-50 border border-dashed border-gray-200 rounded-lg">
               <Calendar className="w-8 h-8 mx-auto text-gray-300 mb-2" />
-              <p className="text-xs text-gray-400">Bác sĩ chưa gửi yêu cầu nghỉ nào.</p>
+              <p className="text-xs text-gray-400">
+                Bác sĩ chưa gửi yêu cầu nghỉ nào.
+              </p>
             </div>
           ) : (
             <div className="flex flex-col gap-3 max-h-[300px] overflow-y-auto pr-1">
               {requests.map((request) => (
-                <div key={request.id} className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs flex flex-col gap-2">
+                <div
+                  key={request.id}
+                  className="p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs flex flex-col gap-2"
+                >
                   <div className="flex justify-between items-start">
                     <div>
                       <strong className="text-gray-800">
-                        {request.date ? request.date.split("-").reverse().join("/") : "--"}
+                        {request.date
+                          ? request.date.split("-").reverse().join("/")
+                          : "--"}
                       </strong>
-                      <div className="text-gray-500 mt-0.5">{formatShiftLabel(request)}</div>
+                      <div className="text-gray-500 mt-0.5">
+                        {formatShiftLabel(request)}
+                      </div>
                     </div>
-                    <span className={`px-2 py-0.5 text-[9px] font-bold rounded border ${getStatusConfig(request.status)}`}>
+                    <span
+                      className={`px-2 py-0.5 text-[9px] font-bold rounded border ${getStatusConfig(request.status)}`}
+                    >
                       {getRequestStatusLabel(request.status)}
                     </span>
                   </div>
@@ -706,7 +788,9 @@ export default function DoctorWorkSchedulePage() {
                   <div className="text-gray-600 border-t border-gray-100 pt-1.5 mt-0.5">
                     <strong>Lý do:</strong> {request.reason}
                     {request.rejectionReason && (
-                      <p className="text-red-500 font-medium mt-1">Phản hồi admin: {request.rejectionReason}</p>
+                      <p className="text-red-500 font-medium mt-1">
+                        Phản hồi admin: {request.rejectionReason}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -718,14 +802,27 @@ export default function DoctorWorkSchedulePage() {
 
       {/* Leave request form modal */}
       {isLeaveModalOpen && (
-        <div className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4" onClick={() => setIsLeaveModalOpen(false)}>
-          <div className="bg-white rounded-lg p-5 md:p-6 w-full max-w-[980px] max-h-[calc(100vh-32px)] overflow-y-auto shadow-lg border border-gray-100" onClick={e => e.stopPropagation()}>
+        <div
+          className="fixed inset-0 bg-black/45 z-50 flex items-center justify-center p-4"
+          onClick={() => setIsLeaveModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg p-5 md:p-6 w-full max-w-[980px] max-h-[calc(100vh-32px)] overflow-y-auto shadow-lg border border-gray-100"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h3 className="text-base font-bold text-gray-800">Yêu cầu nghỉ</h3>
-                <p className="text-xs text-gray-400 mt-0.5">Gửi yêu cầu nghỉ theo ngày hoặc theo ca.</p>
+                <h3 className="text-base font-bold text-gray-800">
+                  Yêu cầu nghỉ
+                </h3>
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Gửi yêu cầu nghỉ theo ngày hoặc theo ca.
+                </p>
               </div>
-              <button onClick={() => setIsLeaveModalOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <button
+                onClick={() => setIsLeaveModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition-colors"
+              >
                 <X className="w-5 h-5" />
               </button>
             </div>
