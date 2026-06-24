@@ -21,63 +21,22 @@ export default function ContactPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-2xl mx-auto text-center">
         <h1 className="text-3xl font-extrabold text-gray-900 mb-2">Liên hệ với chúng tôi</h1>
-        <div className="w-16 h-1 bg-cyan-600 rounded mb-8" />
+        <div className="w-16 h-1 bg-cyan-600 rounded mx-auto mb-8" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            {contactItems.map(item => (
-              <div key={item.title} className="flex gap-4 p-4 bg-white rounded-2xl border border-gray-150 shadow-sm">
-                <div className="w-10 h-10 bg-cyan-50 rounded-xl flex items-center justify-center flex-shrink-0">
-                  {item.icon}
-                </div>
-                <div>
-                  <div className="font-bold text-gray-900 text-sm">{item.title}</div>
-                  <div className="text-xs text-gray-500 mt-1 leading-relaxed">{item.content}</div>
-                </div>
+        <div className="space-y-4 text-left">
+          {contactItems.map(item => (
+            <div key={item.title} className="flex gap-4 p-5 bg-white rounded-2xl border border-gray-150 shadow-sm transition-shadow hover:shadow-md">
+              <div className="w-12 h-12 bg-cyan-50 rounded-xl flex items-center justify-center flex-shrink-0">
+                {item.icon}
               </div>
-            ))}
-          </div>
-
-          <div className="bg-white rounded-2xl border border-gray-150 p-6 shadow-sm">
-            <h2 className="font-bold text-gray-900 text-base mb-4">Gửi tin nhắn cho chúng tôi</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs text-gray-600 mb-1.5 font-semibold">Họ tên</label>
-                <input 
-                  type="text" 
-                  placeholder="Nhập họ tên" 
-                  required
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white" 
-                />
+              <div className="flex-1">
+                <div className="font-bold text-gray-900 text-sm">{item.title}</div>
+                <div className="text-xs text-gray-500 mt-1 leading-relaxed">{item.content}</div>
               </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1.5 font-semibold">Email</label>
-                <input 
-                  type="email" 
-                  placeholder="email@example.com" 
-                  required
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 bg-white" 
-                />
-              </div>
-              <div>
-                <label className="block text-xs text-gray-600 mb-1.5 font-semibold">Nội dung</label>
-                <textarea 
-                  rows={4} 
-                  placeholder="Nội dung bạn cần hỗ trợ..." 
-                  required
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 resize-none bg-white" 
-                />
-              </div>
-              <button 
-                type="submit" 
-                className="w-full py-3 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm"
-              >
-                Gửi tin nhắn
-              </button>
-            </form>
-          </div>
+            </div>
+          ))}
         </div>
 
         <div className="mt-8 bg-white border border-gray-150 rounded-2xl h-64 flex items-center justify-center shadow-sm">

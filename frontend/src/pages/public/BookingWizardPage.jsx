@@ -645,6 +645,53 @@ export default function BookingWizardPage() {
     return price.toLocaleString('vi-VN') + 'đ';
   };
 
+  // Block non-patient authenticated users
+  const userRole = authUser?.role;
+  if (isAuthenticated && userRole && userRole !== 'PATIENT') {
+    return (
+      <div className="page-shell">
+        <div className="booking-wizard-container">
+          <div style={{
+            maxWidth: 520,
+            margin: '60px auto',
+            padding: '40px 32px',
+            background: '#fff',
+            borderRadius: 16,
+            border: '1.5px solid #FCA5A5',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.07)',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: 48, marginBottom: 16 }}>🔒</div>
+            <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#111827', marginBottom: 8 }}>
+              Chức năng này chỉ dành cho bệnh nhân
+            </h2>
+            <p style={{ color: '#6B7280', fontSize: '0.95rem', marginBottom: 24, lineHeight: 1.6 }}>
+              Tài khoản của bạn có vai trò <strong style={{ color: '#374151' }}>
+                {userRole === 'DOCTOR' ? 'Bác sĩ' : userRole === 'RECEPTIONIST' ? 'Lễ tân' : 'Quản trị viên'}
+              </strong>. Vui lòng sử dụng tài khoản bệnh nhân để đặt lịch khám.
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
+              style={{
+                padding: '10px 28px',
+                background: '#0092B8',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 10,
+                fontWeight: 600,
+                fontSize: '0.95rem',
+                cursor: 'pointer'
+              }}
+            >
+              ← Quay lại
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-shell">
       <div className="booking-wizard-container">
