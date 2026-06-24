@@ -24,7 +24,7 @@ router.post(
 router.get(
   APPROVAL_REQUEST_ROUTE_PATHS.ROOT,
   authenticate,
-  authorize(USER_ROLES.ADMIN, USER_ROLES.DOCTOR),
+  authorize(USER_ROLES.ADMIN, USER_ROLES.DOCTOR, USER_ROLES.RECEPTIONIST),
   validateListApprovalRequests,
   ApprovalRequestController.listRequests,
 );
@@ -32,7 +32,7 @@ router.get(
 router.get(
   APPROVAL_REQUEST_ROUTE_PATHS.DETAIL,
   authenticate,
-  authorize(USER_ROLES.ADMIN, USER_ROLES.DOCTOR),
+  authorize(USER_ROLES.ADMIN, USER_ROLES.DOCTOR, USER_ROLES.RECEPTIONIST),
   validateApprovalRequestId,
   ApprovalRequestController.getRequestDetail,
 );
@@ -40,7 +40,7 @@ router.get(
 router.patch(
   APPROVAL_REQUEST_ROUTE_PATHS.APPROVE,
   authenticate,
-  authorize(USER_ROLES.ADMIN),
+  authorize(USER_ROLES.ADMIN, USER_ROLES.RECEPTIONIST),
   validateApprovalRequestId,
   ApprovalRequestController.approveRequest,
 );
@@ -48,7 +48,7 @@ router.patch(
 router.patch(
   APPROVAL_REQUEST_ROUTE_PATHS.REJECT,
   authenticate,
-  authorize(USER_ROLES.ADMIN),
+  authorize(USER_ROLES.ADMIN, USER_ROLES.RECEPTIONIST),
   validateApprovalRequestId,
   validateRejectRequest,
   ApprovalRequestController.rejectRequest,

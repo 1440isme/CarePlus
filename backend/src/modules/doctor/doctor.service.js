@@ -215,10 +215,10 @@ class DoctorService {
         noShowAppointments: appointments.filter((item) => item.status === 'NO_SHOW').length,
         todaySchedule: todaySchedule
           ? {
-              scheduleId: todaySchedule.id,
-              workingDate: formatDateOnly(todaySchedule.workingDate),
-              status: todaySchedule.status,
-            }
+            scheduleId: todaySchedule.id,
+            workingDate: formatDateOnly(todaySchedule.workingDate),
+            status: todaySchedule.status,
+          }
           : null,
         weeklySchedule: weeklySchedules.map((schedule) => ({
           scheduleId: schedule.id,
@@ -343,7 +343,7 @@ class DoctorService {
       position: doctor.position,
       userId: doctor.userId,
       active: doctor.active,
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   _wrapUnexpectedError(error, code, message) {

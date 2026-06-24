@@ -38,7 +38,7 @@ class SpecialtyService {
   async listPublicSpecialties(query) {
     try {
       const normalizedQuery = this._normalizeListQuery(query);
-      
+
       let specialties;
       let total;
 

@@ -61,7 +61,7 @@ class SearchService {
    * General search method with fallback to database.
    * Supports multi_match full-text, filters, highlighting, and pagination.
    */
-  static async searchDoctors({ query, active = true, page = 1, limit = 10 }) {
+  static async searchDoctors({ query, active = true, specialtyId, page = 1, limit = 10 }) {
     const from = (page - 1) * limit;
 
     // Check if Elasticsearch is available
@@ -70,7 +70,7 @@ class SearchService {
     if (esAvailable) {
       try {
         const mustQueries = [];
-        
+
         if (query) {
           mustQueries.push({
             multi_match: {
@@ -86,6 +86,9 @@ class SearchService {
         const filterQueries = [];
         if (active !== undefined) {
           filterQueries.push({ term: { active: active } });
+        }
+        if (specialtyId) {
+          filterQueries.push({ term: { specialtyId: specialtyId } });
         }
 
         const esResponse = await elasticClient.search({
@@ -108,8 +111,8 @@ class SearchService {
         });
 
         const hits = esResponse.hits.hits;
-        const totalHits = typeof esResponse.hits.total === 'object' 
-          ? esResponse.hits.total.value 
+        const totalHits = typeof esResponse.hits.total === 'object'
+          ? esResponse.hits.total.value
           : esResponse.hits.total;
 
         const data = hits.map(hit => ({
@@ -137,19 +140,22 @@ class SearchService {
 
     // Fallback: MySQL DB query
     console.log('Running fallback doctor search in database...');
-    return this.searchDoctorsFallback({ query, active, page, limit });
+    return this.searchDoctorsFallback({ query, active, specialtyId, page, limit });
   }
 
   /**
    * Fallback database search for Doctors using MySQL LIKE query.
    */
-  static async searchDoctorsFallback({ query, active, page, limit }) {
+  static async searchDoctorsFallback({ query, active, specialtyId, page, limit }) {
     const skip = (page - 1) * limit;
-    
+
     // Construct database query criteria
     const whereClause = {};
     if (active !== undefined) {
       whereClause.active = active;
+    }
+    if (specialtyId) {
+      whereClause.specialtyId = specialtyId;
     }
 
     if (query) {
@@ -288,7 +294,7 @@ class SearchService {
    */
   static async searchBlogsFallback({ query, status, page, limit }) {
     const skip = (page - 1) * limit;
-    
+
     const whereClause = {};
     if (status) {
       whereClause.status = status;
@@ -418,7 +424,7 @@ class SearchService {
    */
   static async searchSpecialtiesFallback({ query, active, page, limit }) {
     const skip = (page - 1) * limit;
-    
+
     const whereClause = {};
     if (active !== undefined) {
       whereClause.active = active;

@@ -295,11 +295,13 @@ async function seed() {
 
         if (matchesRule || hasAppointment) {
           const scheduleId = `sched_${docId}_${dateStr}`;
+          const dbShift = rule.shift === 'BOTH' ? 'ALL_DAY' : rule.shift;
 
           schedulesToCreate.push({
             id: scheduleId,
             doctorId: docId,
             workingDate,
+            workingShift: dbShift,
             status: 'WORKING'
           });
 
@@ -320,6 +322,7 @@ async function seed() {
               slotsToCreate.push({
                 id: slotId,
                 scheduleId,
+                workingShift: 'MORNING',
                 startTime: time,
                 endTime,
                 status: isUnavailable ? 'LOCKED' : 'AVAILABLE'
@@ -341,6 +344,7 @@ async function seed() {
                 slotsToCreate.push({
                   id: slotId,
                   scheduleId,
+                  workingShift: 'AFTERNOON',
                   startTime: time,
                   endTime,
                   status: isUnavailable ? 'LOCKED' : 'AVAILABLE'

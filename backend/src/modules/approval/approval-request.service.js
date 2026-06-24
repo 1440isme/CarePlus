@@ -170,16 +170,80 @@ class ApprovalRequestService {
     try {
       const request = await this._getPendingRequestOrThrow(requestId);
       const approvedRequest = await this.approvalRequestRepository.prisma.$transaction(async (dbClient) => {
-        await this.timeSlotService.lockSlotsForScheduleException({
-          doctorId: request.doctorId,
-          date: request.date,
-          exceptionType: request.exceptionType,
-          shift: request.shift,
-          startTime: null,
-          endTime: null,
-        }, dbClient);
+        if (request.type === APPROVAL_REQUEST_TYPES.CANCELLATION) {
+          const appointment = await dbClient.appointment.findUnique({
+            where: { code: request.appointmentCode },
+          });
 
-        await this._markSchedulesApprovedOff(request, dbClient);
+          if (!appointment) {
+            throw new ApprovalRequestServiceError({
+              code: 'APPOINTMENT_NOT_FOUND',
+              message: 'Không tìm thấy lịch hẹn liên quan đến yêu cầu hủy',
+              statusCode: 404,
+            });
+          }
+
+          if (appointment.status === 'CONFIRMED') {
+            await dbClient.appointment.update({
+              where: { id: appointment.id },
+              data: {
+                status: 'CANCELLED',
+                reason: request.reason || 'Hủy bởi bệnh nhân (đã duyệt)',
+              },
+            });
+
+            await dbClient.timeSlot.update({
+              where: { id: appointment.timeSlotId },
+              data: { status: 'AVAILABLE' },
+            });
+
+            // Emit socket event for appointment status changed
+            try {
+              const socketService = require('../../infrastructure/realtime/socket.service');
+              const { toAppointmentDto } = require('../appointment/appointment.dto');
+              const updatedAppt = await dbClient.appointment.findUnique({
+                where: { id: appointment.id },
+                include: { doctor: true, patient: true, patientProfile: true, specialty: true, timeSlot: true }
+              });
+              const appointmentDto = toAppointmentDto(updatedAppt);
+              socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
+              socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
+              if (appointment.patientId) {
+                socketService.emitToUser(appointment.patientId, 'appointment:status-changed', appointmentDto);
+              }
+
+              // Send email notification asynchronously
+              try {
+                const { mailService } = require('../../infrastructure/mail/mail.service');
+                const dateStr = updatedAppt.appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
+                mailService.sendBookingCancellationEmail({
+                  to: updatedAppt.patientEmail || updatedAppt.patient?.email,
+                  name: updatedAppt.patient?.name || updatedAppt.patientName,
+                  code: updatedAppt.code,
+                  doctorName: updatedAppt.doctor?.name || updatedAppt.doctorName,
+                  date: dateStr,
+                  time: `${updatedAppt.startTime} - ${updatedAppt.endTime}`,
+                  reason: request.reason || 'Hủy theo yêu cầu của bệnh nhân (đã duyệt)',
+                }).catch((err) => console.error('Failed to send booking cancellation email:', err.message));
+              } catch (mailErr) {
+                console.error('Failed to send cancellation email:', mailErr.message);
+              }
+            } catch (socketErr) {
+              console.error('Failed to emit appointment:status-changed socket event or send email:', socketErr.message);
+            }
+          }
+        } else {
+          await this.timeSlotService.lockSlotsForScheduleException({
+            doctorId: request.doctorId,
+            date: request.date,
+            exceptionType: request.exceptionType,
+            shift: request.shift,
+            startTime: null,
+            endTime: null,
+          }, dbClient);
+
+          await this._markSchedulesApprovedOff(request, dbClient);
+        }
 
         const updatedRequest = await this.approvalRequestRepository.updateRequestStatus(
           request.id,
@@ -218,14 +282,16 @@ class ApprovalRequestService {
       }
 
       return {
-        message: 'Duyệt yêu cầu nghỉ thành công',
+        message: request.type === APPROVAL_REQUEST_TYPES.CANCELLATION
+          ? 'Duyệt yêu cầu hủy lịch thành công'
+          : 'Duyệt yêu cầu nghỉ thành công',
         request: toApprovalRequestDto(approvedRequest),
       };
     } catch (error) {
       throw this._wrapUnexpectedError(
         error,
         APPROVAL_REQUEST_ERROR_CODES.APPROVE_REQUEST_FAILED,
-        'Không thể duyệt yêu cầu nghỉ',
+        'Không thể duyệt yêu cầu',
       );
     }
   }
@@ -271,14 +337,16 @@ class ApprovalRequestService {
       }
 
       return {
-        message: 'Từ chối yêu cầu nghỉ thành công',
+        message: request.type === APPROVAL_REQUEST_TYPES.CANCELLATION
+          ? 'Từ chối yêu cầu hủy lịch thành công'
+          : 'Từ chối yêu cầu nghỉ thành công',
         request: toApprovalRequestDto(rejectedRequest),
       };
     } catch (error) {
       throw this._wrapUnexpectedError(
         error,
         APPROVAL_REQUEST_ERROR_CODES.REJECT_REQUEST_FAILED,
-        'Không thể từ chối yêu cầu nghỉ',
+        'Không thể từ chối yêu cầu',
       );
     }
   }
