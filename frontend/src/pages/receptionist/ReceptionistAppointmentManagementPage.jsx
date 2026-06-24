@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAppointments, useUpdateAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
+import { useApproveRequest, useRejectRequest } from '../../features/approval/hooks/useApprovalRequests.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -13,6 +15,7 @@ function StatusBadge({ status }) {
     COMPLETED: { label: 'Hoàn thành', bg: '#F0FDF4', text: '#15803D', dot: '#16A34A' },
     NO_SHOW: { label: 'Vắng mặt', bg: '#FEF2F2', text: '#EF4444', dot: '#EF4444' },
     CANCELLED: { label: 'Đã hủy', bg: '#F5F5F5', text: '#888', dot: '#aaa' },
+    PENDING_CANCELLATION: { label: 'Chờ hủy', bg: '#FFFBEB', text: '#D97706', dot: '#F59E0B' },
   };
   const c = cfg[status] || { label: status, bg: '#F5F5F5', text: '#888', dot: '#aaa' };
   return (
@@ -66,6 +69,9 @@ export default function ReceptionistAppointmentManagementPage() {
 
   const appointmentsQuery = useAppointments(appointmentsParams);
   const updateStatusMutation = useUpdateAppointmentStatus();
+  const approveMutation = useApproveRequest();
+  const rejectMutation = useRejectRequest();
+  const queryClient = useQueryClient();
 
   const appointmentsList = appointmentsQuery.data?.data || [];
   const paginationMeta = appointmentsQuery.data?.meta || { page: 1, totalPages: 1, total: 0 };
@@ -80,6 +86,26 @@ export default function ReceptionistAppointmentManagementPage() {
       setCancelReason('');
     } catch (error) {
       alert(`Lỗi cập nhật trạng thái: ${error.response?.data?.error?.message || error.message}`);
+    }
+  };
+
+  const handleApproveCancel = async (requestId) => {
+    try {
+      await approveMutation.mutateAsync(requestId);
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setSelectedAppointmentId(null);
+    } catch (err) {
+      alert(`Lỗi duyệt yêu cầu hủy: ${err.response?.data?.error?.message || err.message}`);
+    }
+  };
+
+  const handleRejectCancel = async (requestId, rejectionReason) => {
+    try {
+      await rejectMutation.mutateAsync({ requestId, rejectionReason });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      setSelectedAppointmentId(null);
+    } catch (err) {
+      alert(`Lỗi từ chối yêu cầu hủy: ${err.response?.data?.error?.message || err.message}`);
     }
   };
 
@@ -340,7 +366,7 @@ export default function ReceptionistAppointmentManagementPage() {
                         <td className="px-4 py-3.5 text-gray-700">{doctorName}</td>
                         <td className="px-4 py-3.5 text-gray-500">{specialtyName}</td>
                         <td className="px-4 py-3.5">
-                          <StatusBadge status={appointment.status} />
+                          <StatusBadge status={appointment.hasPendingCancellation ? 'PENDING_CANCELLATION' : appointment.status} />
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2 justify-end">
@@ -434,7 +460,7 @@ export default function ReceptionistAppointmentManagementPage() {
               {/* Status */}
               <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
                 <span className="text-sm font-semibold text-gray-700">Trạng thái</span>
-                <StatusBadge status={selectedAppointment.status} />
+                <StatusBadge status={selectedAppointment.hasPendingCancellation ? 'PENDING_CANCELLATION' : selectedAppointment.status} />
               </div>
 
               {/* Doctor Info */}
@@ -511,95 +537,153 @@ export default function ReceptionistAppointmentManagementPage() {
 
             {/* Drawer Footer - Actions */}
             <div className="p-4 border-t border-gray-100 sticky bottom-0 bg-white space-y-2">
-              {updateStatusMutation.isPending ? (
+              {updateStatusMutation.isPending || approveMutation.isPending || rejectMutation.isPending ? (
                 <div className="py-2">
-                  <LoadingBlock label="Đang cập nhật trạng thái..." />
+                  <LoadingBlock label="Đang xử lý..." />
                 </div>
               ) : (
                 <>
-                  {selectedAppointment.status === 'CONFIRMED' && !isCancelling && (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'CHECKED_IN')}
-                        className="flex-1 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-xl text-sm font-semibold transition-colors"
-                      >
-                        ✓ Check-in
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'NO_SHOW')}
-                        className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
-                      >
-                        Vắng mặt
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsCancelling(true)}
-                        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                      >
-                        Hủy lịch
-                      </button>
+                  {selectedAppointment.hasPendingCancellation ? (
+                    <div className="space-y-3 p-3.5 bg-amber-50 border border-amber-200 rounded-xl">
+                      <p className="text-xs text-amber-850 font-semibold leading-relaxed">
+                        ⚠️ Bệnh nhân đã gửi yêu cầu hủy lịch này (sát giờ khám). Vui lòng xác nhận duyệt hoặc từ chối yêu cầu.
+                      </p>
+                      
+                      {!isCancelling ? (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleApproveCancel(selectedAppointment.pendingCancellationRequestId)}
+                            className="flex-1 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg text-xs font-semibold transition-colors"
+                          >
+                            Duyệt hủy
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsCancelling(true)}
+                            className="flex-1 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition-colors"
+                          >
+                            Từ chối hủy
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          <label className="block text-xs font-semibold text-gray-700">
+                            Lý do từ chối hủy (tùy chọn)
+                          </label>
+                          <textarea
+                            placeholder="Nhập lý do từ chối..."
+                            rows={2}
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            className="w-full border border-gray-200 rounded-lg px-2.5 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-red-300 bg-white resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => handleRejectCancel(selectedAppointment.pendingCancellationRequestId, cancelReason)}
+                              className="flex-1 py-1.5 bg-red-500 hover:bg-red-600 text-white rounded-lg text-xs font-semibold transition-colors"
+                            >
+                              Xác nhận từ chối
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setIsCancelling(false); setCancelReason(''); }}
+                              className="flex-1 py-1.5 border border-gray-200 text-gray-600 rounded-lg text-xs hover:bg-gray-50 transition-colors"
+                            >
+                              Hủy bỏ
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ) : (
+                    <>
+                      {selectedAppointment.status === 'CONFIRMED' && !isCancelling && (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, 'CHECKED_IN')}
+                            className="flex-1 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-xl text-sm font-semibold transition-colors"
+                          >
+                            ✓ Check-in
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, 'NO_SHOW')}
+                            className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50 transition-colors"
+                          >
+                            Vắng mặt
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsCancelling(true)}
+                            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                          >
+                            Hủy lịch
+                          </button>
+                        </div>
+                      )}
 
-                  {selectedAppointment.status === 'CHECKED_IN' && !isCancelling && (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleUpdateStatus(selectedAppointment.id, 'COMPLETED')}
-                        className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                      >
-                        ✓ Hoàn thành khám
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setIsCancelling(true)}
-                        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors"
-                      >
-                        Hủy lịch
-                      </button>
-                    </div>
-                  )}
+                      {selectedAppointment.status === 'CHECKED_IN' && !isCancelling && (
+                        <div className="flex gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateStatus(selectedAppointment.id, 'COMPLETED')}
+                            className="flex-1 py-2.5 bg-green-500 hover:bg-green-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                          >
+                            ✓ Hoàn thành khám
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setIsCancelling(true)}
+                            className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors"
+                          >
+                            Hủy lịch
+                          </button>
+                        </div>
+                      )}
 
-                  {isCancelling && (
-                    <div className="space-y-2.5">
-                      <label className="block text-sm font-semibold text-gray-700">
-                        Lý do hủy lịch <span className="text-red-500">*</span>
-                      </label>
-                      <textarea
-                        placeholder="Vui lòng nhập lý do hủy lịch..."
-                        rows={3}
-                        value={cancelReason}
-                        onChange={(e) => setCancelReason(e.target.value)}
-                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          disabled={!cancelReason.trim()}
-                          onClick={() => handleUpdateStatus(selectedAppointment.id, 'CANCELLED', cancelReason)}
-                          className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                          Xác nhận hủy
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => { setIsCancelling(false); setCancelReason(''); }}
-                          className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition-colors"
-                        >
-                          Hủy bỏ
-                        </button>
-                      </div>
-                    </div>
-                  )}
+                      {isCancelling && (
+                        <div className="space-y-2.5">
+                          <label className="block text-sm font-semibold text-gray-700">
+                            Lý do hủy lịch <span className="text-red-500">*</span>
+                          </label>
+                          <textarea
+                            placeholder="Vui lòng nhập lý do hủy lịch..."
+                            rows={3}
+                            value={cancelReason}
+                            onChange={(e) => setCancelReason(e.target.value)}
+                            className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-red-300 resize-none"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={!cancelReason.trim()}
+                              onClick={() => handleUpdateStatus(selectedAppointment.id, 'CANCELLED', cancelReason)}
+                              className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-xl text-sm font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                              Xác nhận hủy
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => { setIsCancelling(false); setCancelReason(''); }}
+                              className="flex-1 py-2.5 border border-gray-200 text-gray-600 rounded-xl text-sm hover:bg-gray-50 transition-colors"
+                            >
+                              Hủy bỏ
+                            </button>
+                          </div>
+                        </div>
+                      )}
 
-                  {(selectedAppointment.status === 'COMPLETED' ||
-                    selectedAppointment.status === 'CANCELLED' ||
-                    selectedAppointment.status === 'NO_SHOW') && (
-                    <p className="text-center text-xs text-gray-400 py-1">
-                      Lịch hẹn này đã hoàn tất chu kỳ trạng thái.
-                    </p>
+                      {(selectedAppointment.status === 'COMPLETED' ||
+                        selectedAppointment.status === 'CANCELLED' ||
+                        selectedAppointment.status === 'NO_SHOW') && (
+                        <p className="text-center text-xs text-gray-400 py-1">
+                          Lịch hẹn này đã hoàn tất chu kỳ trạng thái.
+                        </p>
+                      )}
+                    </>
                   )}
                 </>
               )}

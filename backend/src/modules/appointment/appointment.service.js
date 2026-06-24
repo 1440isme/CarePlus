@@ -448,8 +448,26 @@ class AppointmentService {
         this.prisma.appointment.count({ where }),
       ]);
 
+      // Get all pending cancellation requests for these appointments
+      const codes = appointments.map(a => a.code).filter(Boolean);
+      const pendingCancels = await this.prisma.approvalRequest.findMany({
+        where: {
+          appointmentCode: { in: codes },
+          type: 'CANCELLATION',
+          status: 'PENDING'
+        },
+        select: { id: true, appointmentCode: true }
+      });
+      const pendingCancelMap = new Map(pendingCancels.map(p => [p.appointmentCode, p.id]));
+
+      const data = toAppointmentListDto(appointments);
+      data.forEach(dto => {
+        dto.hasPendingCancellation = pendingCancelMap.has(dto.code);
+        dto.pendingCancellationRequestId = pendingCancelMap.get(dto.code) || null;
+      });
+
       return {
-        data: toAppointmentListDto(appointments),
+        data,
         meta: {
           page,
           limit,
@@ -605,8 +623,26 @@ class AppointmentService {
         this.prisma.appointment.count({ where }),
       ]);
 
+      // Get all pending cancellation requests for these appointments
+      const codes = appointments.map(a => a.code).filter(Boolean);
+      const pendingCancels = await this.prisma.approvalRequest.findMany({
+        where: {
+          appointmentCode: { in: codes },
+          type: 'CANCELLATION',
+          status: 'PENDING'
+        },
+        select: { id: true, appointmentCode: true }
+      });
+      const pendingCancelMap = new Map(pendingCancels.map(p => [p.appointmentCode, p.id]));
+
+      const data = toAppointmentListDto(appointments);
+      data.forEach(dto => {
+        dto.hasPendingCancellation = pendingCancelMap.has(dto.code);
+        dto.pendingCancellationRequestId = pendingCancelMap.get(dto.code) || null;
+      });
+
       return {
-        data: toAppointmentListDto(appointments),
+        data,
         meta: {
           page,
           limit,
@@ -692,7 +728,8 @@ class AppointmentService {
         });
       }
 
-      return toAppointmentDto(appointment);
+      const dto = toAppointmentDto(appointment);
+      return this._attachPendingCancellationInfo(dto);
     } catch (error) {
       if (error instanceof AppointmentServiceError) {
         throw error;
@@ -717,7 +754,8 @@ class AppointmentService {
         });
       }
 
-      return toAppointmentDto(appointment);
+      const dto = toAppointmentDto(appointment);
+      return this._attachPendingCancellationInfo(dto);
     } catch (error) {
       if (error instanceof AppointmentServiceError) {
         throw error;
@@ -842,19 +880,72 @@ class AppointmentService {
         });
       }
 
-      // Check cancellation limit (At least 24 hours prior to appointment time)
+      // Check cancellation limit (using dynamic cancelBeforeHours from SystemSetting)
+      const settings = await this.clinicSettingsRepository.getSystemSetting();
+      const cancelBeforeHours = settings?.cancelBeforeHours || 2;
+
       const dateString = appointment.appointmentDate.toISOString().slice(0, 10);
       const appointmentTime = new Date(`${dateString}T${appointment.startTime}:00+07:00`);
       const now = new Date();
       const diffMs = appointmentTime.getTime() - now.getTime();
       const diffHours = diffMs / (1000 * 60 * 60);
 
-      if (diffHours < 24) {
+      if (diffHours < 0) {
         throw new AppointmentServiceError({
           code: APPOINTMENT_ERROR_CODES.CANCELLATION_LIMIT_EXCEEDED,
-          message: 'Chỉ được phép hủy lịch hẹn trước giờ khám ít nhất 24 giờ.',
+          message: 'Không thể hủy lịch hẹn đã diễn ra hoặc đã qua giờ khám.',
           statusCode: 400,
         });
+      }
+
+      if (diffHours < cancelBeforeHours) {
+        // Shorter than cancelBeforeHours: Cancellation requires approval
+        // Check if there is already an active cancellation request for this appointment
+        const existingRequest = await this.prisma.approvalRequest.findFirst({
+          where: {
+            appointmentCode: appointment.code,
+            type: 'CANCELLATION',
+            status: 'PENDING',
+          }
+        });
+
+        if (existingRequest) {
+          throw new AppointmentServiceError({
+            code: 'CANCELLATION_REQUEST_ALREADY_EXISTS',
+            message: 'Yêu cầu hủy lịch hẹn này đang chờ lễ tân xét duyệt.',
+            statusCode: 400,
+          });
+        }
+
+        // Create cancellation request
+        const approvalRequest = await this.prisma.approvalRequest.create({
+          data: {
+            type: 'CANCELLATION',
+            doctorId: appointment.doctorId,
+            doctorName: appointment.doctor?.name || 'Bác sĩ',
+            appointmentCode: appointment.code,
+            reason: body.reason || 'Bệnh nhân yêu cầu hủy sát giờ',
+            status: 'PENDING',
+          }
+        });
+
+        // Trigger socket event for receptionist / admin
+        try {
+          const socketService = require('../../infrastructure/realtime/socket.service');
+          const { toApprovalRequestDto } = require('../approval/approval-request.dto');
+          const requestDto = toApprovalRequestDto(approvalRequest);
+          socketService.emitToRole('receptionist', 'approval-request:created', requestDto);
+          socketService.emitToRole('admin', 'approval-request:created', requestDto);
+        } catch (socketErr) {
+          console.error('Failed to emit approval-request:created socket event:', socketErr.message);
+        }
+
+        return {
+          success: true,
+          requiresApproval: true,
+          message: 'Yêu cầu hủy lịch đã được gửi đến lễ tân duyệt do sát giờ khám.',
+          data: toAppointmentDto(appointment)
+        };
       }
 
       const { appointment: updatedAppointment } = await this.appointmentRepository.updateStatusWithTransaction(
@@ -1219,6 +1310,21 @@ class AppointmentService {
       startTime: bookingData.startTime,
       endTime: bookingData.endTime,
     });
+  }
+
+  async _attachPendingCancellationInfo(dto) {
+    if (!dto) return null;
+    const pendingCancel = await this.prisma.approvalRequest.findFirst({
+      where: {
+        appointmentCode: dto.code,
+        type: 'CANCELLATION',
+        status: 'PENDING'
+      },
+      select: { id: true }
+    });
+    dto.hasPendingCancellation = !!pendingCancel;
+    dto.pendingCancellationRequestId = pendingCancel?.id || null;
+    return dto;
   }
 
   _wrapUnexpectedError(error, code, message) {

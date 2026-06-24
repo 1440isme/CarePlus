@@ -15,6 +15,11 @@ const STATUS_LABELS = {
   REJECTED: 'Đã từ chối',
 };
 
+const TYPE_LABELS = {
+  SCHEDULE_EXCEPTION: 'Lịch nghỉ bác sĩ',
+  CANCELLATION: 'Yêu cầu hủy lịch',
+};
+
 function formatScope(item) {
   if (item.type === 'CANCELLATION') return item.appointmentCode || '--';
   if (item.exceptionType === 'ALL_DAY') return SHIFT_LABELS.ALL_DAY;

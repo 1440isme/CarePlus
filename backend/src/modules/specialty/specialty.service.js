@@ -39,14 +39,38 @@ class SpecialtyService {
       const normalizedQuery = this._normalizeListQuery(query);
       const filters = {
         search: normalizedQuery.search,
-        skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
-        take: normalizedQuery.limit,
+        page: normalizedQuery.page,
+        limit: normalizedQuery.limit,
+        active: true,
       };
 
-      const [specialties, total] = await Promise.all([
-        this.specialtyRepository.findActiveSpecialties(filters),
-        this.specialtyRepository.countActiveSpecialties(filters),
-      ]);
+      let specialties;
+      let total;
+
+      if (filters.search) {
+        const SearchService = require('../search/search.service');
+        const esResult = await SearchService.searchSpecialties({
+          query: filters.search,
+          active: filters.active,
+          page: filters.page,
+          limit: filters.limit,
+        });
+        specialties = esResult.data;
+        total = esResult.meta.total;
+      } else {
+        const [dbSpecialties, dbTotal] = await Promise.all([
+          this.specialtyRepository.findActiveSpecialties({
+            search: filters.search,
+            skip: (filters.page - 1) * filters.limit,
+            take: filters.limit,
+          }),
+          this.specialtyRepository.countActiveSpecialties({
+            search: filters.search,
+          }),
+        ]);
+        specialties = dbSpecialties;
+        total = dbTotal;
+      }
 
       return {
         data: toSpecialtyListDto(specialties),
@@ -75,14 +99,38 @@ class SpecialtyService {
       const normalizedQuery = this._normalizeListQuery(query);
       const filters = {
         search: normalizedQuery.search,
-        skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
-        take: normalizedQuery.limit,
+        page: normalizedQuery.page,
+        limit: normalizedQuery.limit,
+        active: undefined,
       };
 
-      const [specialties, total] = await Promise.all([
-        this.specialtyRepository.findSpecialties(filters),
-        this.specialtyRepository.countSpecialties(filters),
-      ]);
+      let specialties;
+      let total;
+
+      if (filters.search) {
+        const SearchService = require('../search/search.service');
+        const esResult = await SearchService.searchSpecialties({
+          query: filters.search,
+          active: filters.active,
+          page: filters.page,
+          limit: filters.limit,
+        });
+        specialties = esResult.data;
+        total = esResult.meta.total;
+      } else {
+        const [dbSpecialties, dbTotal] = await Promise.all([
+          this.specialtyRepository.findSpecialties({
+            search: filters.search,
+            skip: (filters.page - 1) * filters.limit,
+            take: filters.limit,
+          }),
+          this.specialtyRepository.countSpecialties({
+            search: filters.search,
+          }),
+        ]);
+        specialties = dbSpecialties;
+        total = dbTotal;
+      }
 
       return {
         data: toSpecialtyListDto(specialties, { includeTimestamps: true }),
@@ -168,6 +216,23 @@ class SpecialtyService {
         active: typeof dto.active === 'boolean' ? dto.active : true,
       });
 
+      // Sync to Elasticsearch
+      try {
+        const SearchService = require('../search/search.service');
+        await SearchService.indexDocument('specialties', specialty.id, {
+          name: specialty.name,
+          slug: specialty.slug,
+          description: specialty.description,
+          icon: specialty.icon,
+          doctorCount: specialty.doctorCount,
+          active: specialty.active,
+          createdAt: specialty.createdAt,
+          updatedAt: specialty.updatedAt
+        });
+      } catch (esErr) {
+        console.error('Failed to index specialty to ES:', esErr.message);
+      }
+
       return {
         message: 'Tạo chuyên khoa thành công',
         specialty: toAdminSpecialtyDto(specialty),
@@ -226,6 +291,23 @@ class SpecialtyService {
       const updateData = this._buildUpdateData(dto);
       const updatedSpecialty = await this.specialtyRepository.updateSpecialty(id, updateData);
 
+      // Sync to Elasticsearch
+      try {
+        const SearchService = require('../search/search.service');
+        await SearchService.indexDocument('specialties', updatedSpecialty.id, {
+          name: updatedSpecialty.name,
+          slug: updatedSpecialty.slug,
+          description: updatedSpecialty.description,
+          icon: updatedSpecialty.icon,
+          doctorCount: updatedSpecialty.doctorCount,
+          active: updatedSpecialty.active,
+          createdAt: updatedSpecialty.createdAt,
+          updatedAt: updatedSpecialty.updatedAt
+        });
+      } catch (esErr) {
+        console.error('Failed to update indexed specialty in ES:', esErr.message);
+      }
+
       return {
         message: 'Cập nhật chuyên khoa thành công',
         specialty: toAdminSpecialtyDto(updatedSpecialty),
@@ -268,6 +350,23 @@ class SpecialtyService {
       }
 
       const deletedSpecialty = await this.specialtyRepository.softDeleteSpecialty(id);
+
+      // Sync to Elasticsearch
+      try {
+        const SearchService = require('../search/search.service');
+        await SearchService.indexDocument('specialties', deletedSpecialty.id, {
+          name: deletedSpecialty.name,
+          slug: deletedSpecialty.slug,
+          description: deletedSpecialty.description,
+          icon: deletedSpecialty.icon,
+          doctorCount: deletedSpecialty.doctorCount,
+          active: deletedSpecialty.active,
+          createdAt: deletedSpecialty.createdAt,
+          updatedAt: deletedSpecialty.updatedAt
+        });
+      } catch (esErr) {
+        console.error('Failed to sync soft-deleted specialty in ES:', esErr.message);
+      }
 
       return {
         message: 'Xóa chuyên khoa thành công',

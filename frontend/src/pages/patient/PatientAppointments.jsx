@@ -98,7 +98,11 @@ export default function PatientAppointments() {
 
   const selectedAppointment = appointmentsList.find(a => a.id === selectedAppointmentId);
 
-  const getStatusConfig = (status) => {
+  const getStatusConfig = (appt) => {
+    if (appt?.hasPendingCancellation) {
+      return { label: 'Chờ hủy', bg: 'bg-amber-50 text-amber-600 border-amber-200' };
+    }
+    const status = typeof appt === 'string' ? appt : appt?.status;
     switch (status) {
       case 'CONFIRMED':
         return { label: 'Đã xác nhận', bg: 'bg-[#EBF7FD] text-[#49BCE2] border-[#49BCE2]/20' };
@@ -120,12 +124,15 @@ export default function PatientAppointments() {
     if (!cancelReason.trim() || !cancellingAppointmentId) return;
 
     try {
-      await cancelMutation.mutateAsync({
+      const result = await cancelMutation.mutateAsync({
         id: cancellingAppointmentId,
         payload: { reason: cancelReason }
       });
       setCancellingAppointmentId(null);
       setCancelReason('');
+      if (result?.requiresApproval) {
+        alert("Yêu cầu hủy lịch đã được gửi đến lễ tân duyệt do sát giờ khám.");
+      }
     } catch (error) {
       alert(`Lỗi hủy lịch hẹn: ${error.response?.data?.error?.message || error.message}`);
     }
@@ -270,7 +277,7 @@ export default function PatientAppointments() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredAppointments.map((appt) => {
-                      const statusCfg = getStatusConfig(appt.status);
+                      const statusCfg = getStatusConfig(appt);
                       const isReviewed = reviewedAppointments[appt.id] || appt.isReviewed;
                       const formattedDate = appt.appointmentDate
                         ? appt.appointmentDate.split('-').reverse().join('/')
@@ -316,7 +323,7 @@ export default function PatientAppointments() {
                                 Chi tiết
                               </button>
 
-                              {appt.status === 'CONFIRMED' && (
+                              {appt.status === 'CONFIRMED' && !appt.hasPendingCancellation && (
                                 <button
                                   type="button"
                                   className="px-2.5 py-1 text-xs border border-red-500 text-red-500 rounded bg-white font-semibold hover:bg-red-50 transition-colors cursor-pointer"
@@ -357,7 +364,7 @@ export default function PatientAppointments() {
             {/* Mobile list */}
             <div className="flex flex-col gap-2.5 md:hidden">
               {filteredAppointments.map((appt) => {
-                const statusCfg = getStatusConfig(appt.status);
+                const statusCfg = getStatusConfig(appt);
                 const isReviewed = reviewedAppointments[appt.id] || appt.isReviewed;
                 const formattedDate = appt.appointmentDate
                   ? appt.appointmentDate.split('-').reverse().join('/')
@@ -395,7 +402,7 @@ export default function PatientAppointments() {
                       >
                         Chi tiết
                       </button>
-                      {appt.status === 'CONFIRMED' && (
+                      {appt.status === 'CONFIRMED' && !appt.hasPendingCancellation && (
                         <button
                           type="button"
                           className="flex-1 py-1.5 text-xs border border-red-500 text-red-500 rounded-lg bg-white font-semibold hover:bg-red-50 transition-colors cursor-pointer"
@@ -453,8 +460,8 @@ export default function PatientAppointments() {
                 { label: 'Quan hệ', value: selectedAppointment.forSelf ? 'Bản thân' : (selectedAppointment.patientProfile?.relationship || 'Người thân') },
                 { label: 'Giá khám tham khảo', value: `${(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} đ` },
                 { label: 'Trạng thái', value: (
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedAppointment.status).bg}`}>
-                    {getStatusConfig(selectedAppointment.status).label}
+                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedAppointment).bg}`}>
+                    {getStatusConfig(selectedAppointment).label}
                   </span>
                 )},
               ].map(row => (

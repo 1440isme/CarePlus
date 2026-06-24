@@ -423,7 +423,7 @@ class TimeSlotService {
 
       if (existingLock) {
         if (existingLock === lockClientId) {
-          await redis.expire(key, 300);
+          await redis.expire(key, 120);
           return { slotId, lockClientId, success: true };
         } else {
           throw new TimeSlotServiceError({
@@ -434,7 +434,7 @@ class TimeSlotService {
         }
       }
 
-      const acquired = await redis.set(key, lockClientId, 'NX', 'EX', 300);
+      const acquired = await redis.set(key, lockClientId, 'NX', 'EX', 120);
       if (!acquired) {
         throw new TimeSlotServiceError({
           code: TIMESLOT_ERROR_CODES.SLOT_ALREADY_LOCKED,

@@ -16,7 +16,7 @@ async function reindex() {
     console.log('Connected to Elasticsearch.');
 
     // 2. Recreate Indices
-    const indicesToRecreate = ['doctors', 'blogs'];
+    const indicesToRecreate = ['doctors', 'blogs', 'specialties'];
 
     for (const index of indicesToRecreate) {
       const exists = await elasticClient.indices.exists({ index });
@@ -105,6 +105,36 @@ async function reindex() {
       }
     } else {
       console.log('No blog posts found in database.');
+    }
+
+    // 5. Fetch and Bulk Index Specialties
+    console.log('Fetching specialties from database...');
+    const specialties = await prisma.specialty.findMany({});
+
+    if (specialties.length > 0) {
+      console.log(`Indexing ${specialties.length} specialties...`);
+      const body = specialties.flatMap(spec => [
+        { index: { _index: 'specialties', _id: spec.id } },
+        {
+          name: spec.name,
+          slug: spec.slug,
+          description: spec.description,
+          icon: spec.icon,
+          doctorCount: spec.doctorCount,
+          active: spec.active,
+          createdAt: spec.createdAt,
+          updatedAt: spec.updatedAt
+        }
+      ]);
+
+      const bulkResponse = await elasticClient.bulk({ refresh: true, operations: body });
+      if (bulkResponse.errors) {
+        console.error('Errors occurred during specialty bulk index:', bulkResponse.errors);
+      } else {
+        console.log('Successfully indexed all specialties.');
+      }
+    } else {
+      console.log('No specialties found in database.');
     }
 
     console.log('Reindexing completed successfully!');

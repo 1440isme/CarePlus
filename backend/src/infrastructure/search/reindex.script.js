@@ -40,6 +40,16 @@ async function reindexAll() {
             status: { type: 'keyword' }
           }
         }
+      },
+      specialties: {
+        mappings: {
+          properties: {
+            name: { type: 'text', analyzer: 'standard' },
+            description: { type: 'text', analyzer: 'standard' },
+            slug: { type: 'keyword' },
+            active: { type: 'boolean' }
+          }
+        }
       }
     };
 
@@ -99,6 +109,24 @@ async function reindexAll() {
       });
     }
     console.log('✅ Blogs reindexed successfully');
+
+    // 5. Reindex Specialties
+    console.log('📖 Fetching specialties from MySQL...');
+    const specialties = await prisma.specialty.findMany();
+    console.log(`Indexing ${specialties.length} specialties...`);
+    for (const spec of specialties) {
+      await elasticClient.index({
+        index: 'specialties',
+        id: spec.id,
+        document: {
+          name: spec.name,
+          description: spec.description,
+          slug: spec.slug,
+          active: spec.active
+        }
+      });
+    }
+    console.log('✅ Specialties reindexed successfully');
 
     console.log('🎉 Full reindex completed successfully!');
   } catch (error) {

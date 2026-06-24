@@ -13,6 +13,7 @@ function StatusBadge({ status }) {
     COMPLETED: { label: 'Hoàn thành', bg: '#F0FDF4', text: '#15803D', dot: '#16A34A' },
     NO_SHOW: { label: 'Vắng mặt', bg: '#FEF2F2', text: '#EF4444', dot: '#EF4444' },
     CANCELLED: { label: 'Đã hủy', bg: '#F5F5F5', text: '#888', dot: '#aaa' },
+    PENDING_CANCELLATION: { label: 'Chờ hủy', bg: '#FFFBEB', text: '#D97706', dot: '#F59E0B' },
   };
   const c = cfg[status] || { label: status, bg: '#F5F5F5', text: '#888', dot: '#aaa' };
   return (
@@ -340,7 +341,7 @@ export default function AdminAppointmentManagementPage() {
                         <td className="px-4 py-3.5 text-gray-700">{doctorName}</td>
                         <td className="px-4 py-3.5 text-gray-500">{specialtyName}</td>
                         <td className="px-4 py-3.5">
-                          <StatusBadge status={appointment.status} />
+                          <StatusBadge status={appointment.hasPendingCancellation ? 'PENDING_CANCELLATION' : appointment.status} />
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2 justify-end">
@@ -434,7 +435,7 @@ export default function AdminAppointmentManagementPage() {
               {/* Status */}
               <div className="flex items-center justify-between py-2 px-3 bg-gray-50 rounded-xl">
                 <span className="text-sm font-semibold text-gray-700">Trạng thái</span>
-                <StatusBadge status={selectedAppointment.status} />
+                <StatusBadge status={selectedAppointment.hasPendingCancellation ? 'PENDING_CANCELLATION' : selectedAppointment.status} />
               </div>
 
               {/* Doctor Info */}

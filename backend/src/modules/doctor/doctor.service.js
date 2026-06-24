@@ -54,10 +54,28 @@ class DoctorService {
         sortOrder: normalizedQuery.sortOrder,
       };
 
-      const [doctors, total] = await Promise.all([
-        this.doctorRepository.findDoctors(filters),
-        this.doctorRepository.countDoctors(filters),
-      ]);
+      let doctors;
+      let total;
+
+      if (filters.search) {
+        const SearchService = require('../search/search.service');
+        const esResult = await SearchService.searchDoctors({
+          query: filters.search,
+          active: filters.active,
+          specialtyId: filters.specialtyId,
+          page: filters.page,
+          limit: filters.limit,
+        });
+        doctors = esResult.data;
+        total = esResult.meta.total;
+      } else {
+        const [dbDoctors, dbTotal] = await Promise.all([
+          this.doctorRepository.findDoctors(filters),
+          this.doctorRepository.countDoctors(filters),
+        ]);
+        doctors = dbDoctors;
+        total = dbTotal;
+      }
 
       return {
         data: toDoctorListDto(doctors),
