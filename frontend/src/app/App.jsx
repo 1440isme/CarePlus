@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { GuestOnlyRoute } from './route-guards.jsx';
 import { APP_ROUTES } from '../shared/constants/routes.js';
 import PublicLayout from '../shared/components/layout/PublicLayout';
@@ -61,6 +61,15 @@ import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
  */
+function LegacyPortalRedirect({ fromPrefix, toPrefix }) {
+  const location = useLocation();
+  const suffix = location.pathname.startsWith(fromPrefix)
+    ? location.pathname.slice(fromPrefix.length)
+    : '';
+
+  return <Navigate to={`${toPrefix}${suffix}${location.search}`} replace />;
+}
+
 function App() {
   useAuthBootstrap();
 
@@ -75,12 +84,24 @@ function App() {
           <Route path={APP_ROUTES.resetPassword} element={<ResetPasswordPage />} />
         </Route>
 
-        <Route path={APP_ROUTES.patientRoot} element={<PatientLayout />}>
+        <Route
+          path={APP_ROUTES.patientRoot}
+          element={(
+            <RequireRole allowedRoles={['PATIENT']}>
+              <PatientLayout />
+            </RequireRole>
+          )}
+        >
           <Route index element={<PatientDashboard />} />
           <Route path="thong-tin-ca-nhan" element={<PatientPersonalInfoPage />} />
           <Route path="lich-hen" element={<PatientAppointments />} />
           <Route path="nguoi-than" element={<PatientRelativesPage />} />
         </Route>
+
+        <Route
+          path="/admin/*"
+          element={<LegacyPortalRedirect fromPrefix="/admin" toPrefix={APP_ROUTES.adminRoot} />}
+        />
 
         <Route
           path={APP_ROUTES.doctorRoot}

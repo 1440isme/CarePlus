@@ -1,5 +1,8 @@
 const prisma = require('../../infrastructure/database/prisma.client');
 
+const CLINIC_INFO_SINGLETON_KEY = 'CLINIC_INFO';
+const SYSTEM_SETTING_SINGLETON_KEY = 'SYSTEM_SETTING';
+
 const publicClinicInfoSelect = {
   id: true,
   name: true,
@@ -30,71 +33,47 @@ const systemSettingSelect = {
 
 class ClinicSettingsRepository {
   async getClinicInfo() {
-    return prisma.clinicInfo.findFirst({
-      orderBy: {
-        createdAt: 'asc',
+    return prisma.clinicInfo.findUnique({
+      where: {
+        singletonKey: CLINIC_INFO_SINGLETON_KEY,
       },
       select: publicClinicInfoSelect,
     });
   }
 
   async upsertClinicInfo(data) {
-    const existingRecord = await prisma.clinicInfo.findFirst({
-      orderBy: {
-        createdAt: 'asc',
+    return prisma.clinicInfo.upsert({
+      where: {
+        singletonKey: CLINIC_INFO_SINGLETON_KEY,
       },
-      select: {
-        id: true,
+      update: data,
+      create: {
+        singletonKey: CLINIC_INFO_SINGLETON_KEY,
+        ...data,
       },
-    });
-
-    if (existingRecord) {
-      return prisma.clinicInfo.update({
-        where: {
-          id: existingRecord.id,
-        },
-        data,
-        select: adminClinicInfoSelect,
-      });
-    }
-
-    return prisma.clinicInfo.create({
-      data,
       select: adminClinicInfoSelect,
     });
   }
 
   async getSystemSetting() {
-    return prisma.systemSetting.findFirst({
-      orderBy: {
-        createdAt: 'asc',
+    return prisma.systemSetting.findUnique({
+      where: {
+        singletonKey: SYSTEM_SETTING_SINGLETON_KEY,
       },
       select: systemSettingSelect,
     });
   }
 
   async upsertSystemSetting(data) {
-    const existingRecord = await prisma.systemSetting.findFirst({
-      orderBy: {
-        createdAt: 'asc',
+    return prisma.systemSetting.upsert({
+      where: {
+        singletonKey: SYSTEM_SETTING_SINGLETON_KEY,
       },
-      select: {
-        id: true,
+      update: data,
+      create: {
+        singletonKey: SYSTEM_SETTING_SINGLETON_KEY,
+        ...data,
       },
-    });
-
-    if (existingRecord) {
-      return prisma.systemSetting.update({
-        where: {
-          id: existingRecord.id,
-        },
-        data,
-        select: systemSettingSelect,
-      });
-    }
-
-    return prisma.systemSetting.create({
-      data,
       select: systemSettingSelect,
     });
   }

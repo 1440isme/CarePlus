@@ -516,7 +516,7 @@ NotificationService: gửi email
 - React Router v7 với route config tập trung trong `app/router.tsx`.
 - Lazy loading cho mọi page: `React.lazy(() => import('./pages/...'))`.
 - Route guard qua `ProtectedRoute` component check role.
-- URL pattern theo spec: `/benh-nhan`, `/bac-si-portal`, `/le-tan`, `/admin`.
+- URL pattern theo spec: `/benh-nhan`, `/portal/bac-si`, `/portal/le-tan`, `/portal/admin`.
 
 ### Data Fetching
 
@@ -978,9 +978,9 @@ careplus/
 |------|------------------|
 | GUEST | Public pages, login, register |
 | PATIENT | `/benh-nhan/**`, `/dat-lich` |
-| DOCTOR | `/bac-si-portal/**` |
-| RECEPTIONIST | `/le-tan/**` |
-| ADMIN | `/admin/**` |
+| DOCTOR | `/portal/bac-si/**` |
+| RECEPTIONIST | `/portal/le-tan/**` |
+| ADMIN | `/portal/admin/**` |
 
 - RBAC check ở CÁCH hai tầng: frontend route guard + backend middleware.
 - Backend middleware: `authorize('ADMIN', 'RECEPTIONIST')` cho endpoint cần multiple roles.

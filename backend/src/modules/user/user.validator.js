@@ -33,20 +33,21 @@ function isValidDateOfBirth(value) {
     return false;
   }
 
-  const ddmmyyyyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmedValue);
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
 
-  if (ddmmyyyyMatch) {
-    const day = Number.parseInt(ddmmyyyyMatch[1], 10);
-    const month = Number.parseInt(ddmmyyyyMatch[2], 10);
-    const year = Number.parseInt(ddmmyyyyMatch[3], 10);
-    const parsedDate = new Date(Date.UTC(year, month - 1, day));
-
-    return parsedDate.getUTCFullYear() === year
-      && parsedDate.getUTCMonth() === month - 1
-      && parsedDate.getUTCDate() === day
-      && parsedDate.getTime() <= Date.now();
+  if (!isoMatch) {
+    return false;
   }
-  return false;
+
+  const year = Number.parseInt(isoMatch[1], 10);
+  const month = Number.parseInt(isoMatch[2], 10);
+  const day = Number.parseInt(isoMatch[3], 10);
+  const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+  return parsedDate.getUTCFullYear() === year
+    && parsedDate.getUTCMonth() === month - 1
+    && parsedDate.getUTCDate() === day
+    && parsedDate.getTime() <= Date.now();
 }
 
 function isValidDateOnly(value) {
@@ -93,7 +94,7 @@ const updateMeSchema = z.object({
   dateOfBirth: z.string()
     .trim()
     .refine((value) => isValidDateOfBirth(value), {
-      message: 'dateOfBirth must be a valid date in DD/MM/YYYY format',
+      message: 'dateOfBirth must be a valid date in YYYY-MM-DD format',
     })
     .optional(),
   address: z.string()

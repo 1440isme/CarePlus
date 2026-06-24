@@ -6,7 +6,7 @@ import {
   PATIENT_PROFILE_GENDER_OPTIONS,
   PATIENT_PROFILE_RELATIONSHIP_OPTIONS,
 } from '../types/patient-profile.types.js';
-import { X, Calendar } from 'lucide-react';
+import { X } from 'lucide-react';
 
 function getFormErrorMessage(error) {
   switch (error?.code) {
@@ -25,8 +25,8 @@ function getFormErrorMessage(error) {
   }
 }
 
-function formatDateForDisplay(value) {
-  if (typeof value === 'string' && /^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+function normalizeDateInputValue(value) {
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
     return value;
   }
   if (!value) {
@@ -36,18 +36,9 @@ function formatDateForDisplay(value) {
   if (Number.isNaN(parsedDate.getTime())) {
     return '';
   }
-  const day = String(parsedDate.getDate()).padStart(2, '0');
-  const month = String(parsedDate.getMonth() + 1).padStart(2, '0');
-  const year = parsedDate.getFullYear();
-  return `${day}/${month}/${year}`;
-}
-
-function toApiDateValue(value) {
-  const trimmedValue = typeof value === 'string' ? value.trim() : '';
-  if (!trimmedValue) {
-    return trimmedValue;
-  }
-  const [day, month, year] = trimmedValue.split('/');
+  const year = parsedDate.getUTCFullYear();
+  const month = String(parsedDate.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(parsedDate.getUTCDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
 }
 
@@ -56,7 +47,7 @@ function normalizeFormValues(profile) {
     fullName: profile?.fullName ?? '',
     phone: profile?.phone ?? '',
     gender: profile?.gender ?? '',
-    dateOfBirth: formatDateForDisplay(profile?.dateOfBirth),
+    dateOfBirth: normalizeDateInputValue(profile?.dateOfBirth),
     relationship: profile?.relationship ?? '',
     address: profile?.address ?? '',
   };
@@ -99,7 +90,7 @@ export default function PatientProfileFormModal({
       fullName: values.fullName.trim(),
       phone: values.phone.trim(),
       gender: values.gender,
-      dateOfBirth: toApiDateValue(values.dateOfBirth),
+      dateOfBirth: values.dateOfBirth,
       relationship: values.relationship,
       address: values.address?.trim() ? values.address.trim() : undefined,
     };
@@ -204,13 +195,9 @@ export default function PatientProfileFormModal({
                 <input
                   id="relative-date-of-birth"
                   className={`${inputStyle} ${errors.dateOfBirth ? 'border-red-400 focus:ring-red-400' : ''}`}
-                  type="text"
-                  placeholder="dd/mm/yyyy"
+                  type="date"
                   {...register('dateOfBirth')}
                 />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">
-                  <Calendar className="w-4 h-4" />
-                </span>
               </div>
               {errors.dateOfBirth ? <p className="text-xs text-red-500 mt-1">{errors.dateOfBirth.message}</p> : null}
             </div>

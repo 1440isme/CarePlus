@@ -20,6 +20,16 @@ class UserServiceError extends Error {
   }
 }
 
+function logSafeUserError(action, error, fallbackCode) {
+  console.error('[UserService] action failed', {
+    module: 'user',
+    action,
+    errorCode: error?.code || fallbackCode,
+    statusCode: error?.statusCode || 500,
+    message: error?.message || 'Unknown error',
+  });
+}
+
 function normalizeDateOfBirth(value) {
   if (typeof value !== 'string') {
     return undefined;
@@ -31,23 +41,44 @@ function normalizeDateOfBirth(value) {
     return undefined;
   }
 
-  const ddmmyyyyMatch = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(trimmedValue);
+  const isoMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(trimmedValue);
 
-  if (ddmmyyyyMatch) {
-    const day = Number.parseInt(ddmmyyyyMatch[1], 10);
-    const month = Number.parseInt(ddmmyyyyMatch[2], 10);
-    const year = Number.parseInt(ddmmyyyyMatch[3], 10);
-
-    return new Date(Date.UTC(year, month - 1, day));
+  if (!isoMatch) {
+    return undefined;
   }
 
-  return undefined;
+  const year = Number.parseInt(isoMatch[1], 10);
+  const month = Number.parseInt(isoMatch[2], 10);
+  const day = Number.parseInt(isoMatch[3], 10);
+
+  return new Date(Date.UTC(year, month - 1, day));
 }
 
 function normalizeCreatedDateRange(value, boundary) {
   if (typeof value !== 'string') {
-    return undefined;
+  return undefined;
+}
+
+const ACADEMIC_TITLE_NORMALIZATION_MAP = {
+  BS_CKI: 'BS.CKI',
+  BS_CKII: 'BS.CKII',
+  THS_BS: 'ThS.BS',
+  TS_BS: 'TS.BS',
+};
+
+function normalizeAcademicTitle(value) {
+  if (typeof value !== 'string') {
+    return value;
   }
+
+  const trimmedValue = value.trim();
+
+  if (!trimmedValue) {
+    return trimmedValue;
+  }
+
+  return ACADEMIC_TITLE_NORMALIZATION_MAP[trimmedValue] || trimmedValue;
+}
 
   const trimmedValue = value.trim();
 
@@ -86,7 +117,7 @@ class UserService {
       const user = await this._getUserOrThrow(currentUser.userId);
       return toUserDto(user);
     } catch (error) {
-      console.error('Error in UserService.getMe:', error);
+      logSafeUserError('getMe', error, USER_ERROR_CODES.GET_ME_FAILED);
       if (error instanceof UserServiceError) {
         throw error;
       }
@@ -515,6 +546,7 @@ class UserService {
       return undefined;
     }
 
+    const academicTitle = normalizeAcademicTitle(normalizedDto.academicTitle);
     const specialty = await SpecialtyRepository.findSpecialtyById(normalizedDto.specialtyId);
 
     if (!specialty || specialty.active === false) {
@@ -527,7 +559,7 @@ class UserService {
     }
 
     return {
-      title: normalizedDto.academicTitle,
+      title: academicTitle,
       name: normalizedDto.doctorName || normalizedDto.name,
       specialtyId: specialty.id,
       specialtyName: specialty.name,
@@ -535,7 +567,7 @@ class UserService {
       price: normalizedDto.consultationFee,
       avatar: normalizedDto.avatarUrl || null,
       description: 'Thông tin bác sĩ đang được cập nhật.',
-      position: normalizedDto.academicTitle,
+      position: academicTitle,
       active: normalizedDto.status === 'ACTIVE',
     };
   }
