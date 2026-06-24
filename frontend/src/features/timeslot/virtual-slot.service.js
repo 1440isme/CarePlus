@@ -89,6 +89,35 @@ export function buildVirtualSlots(systemSettings = {}) {
   };
 }
 
+function findScheduleForShift(schedules, workingShift) {
+  return schedules.find((schedule) => {
+    const scheduleShift = schedule?.workingShift || schedule?.shift;
+    return scheduleShift === workingShift || scheduleShift === 'ALL_DAY';
+  });
+}
+
+export function buildVirtualSlotsForSchedules(systemSettings = {}, schedules = []) {
+  const settings = normalizeSettings(systemSettings);
+  const duration = settings.slotDurationMinutes;
+  const morningSchedule = findScheduleForShift(schedules, 'MORNING');
+  const afternoonSchedule = findScheduleForShift(schedules, 'AFTERNOON');
+
+  return {
+    morning: buildShiftSlots({
+      shift: 'morning',
+      start: morningSchedule?.morningShiftStart || settings.morningShiftStart,
+      end: morningSchedule?.morningShiftEnd || settings.morningShiftEnd,
+      duration,
+    }),
+    afternoon: buildShiftSlots({
+      shift: 'afternoon',
+      start: afternoonSchedule?.afternoonShiftStart || settings.afternoonShiftStart,
+      end: afternoonSchedule?.afternoonShiftEnd || settings.afternoonShiftEnd,
+      duration,
+    }),
+  };
+}
+
 export function filterSlotGroupsBySchedules(slotGroups, schedules = []) {
   const workingSchedules = schedules.filter((schedule) => schedule.status === 'WORKING');
   const hasWorkingSchedule = workingSchedules.length > 0;

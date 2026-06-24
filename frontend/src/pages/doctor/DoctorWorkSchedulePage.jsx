@@ -8,7 +8,7 @@ import {
 import { useTimeSlots } from "../../features/timeslot/hooks/useTimeSlots.js";
 import { useBookingRules } from "../../features/admin/clinic-settings/hooks/useBookingRules.js";
 import {
-  buildVirtualSlots,
+  buildVirtualSlotsForSchedules,
   filterSlotGroupsBySchedules,
   mergePersistedSlots,
 } from "../../features/timeslot/virtual-slot.service.js";
@@ -300,7 +300,7 @@ export default function DoctorWorkSchedulePage() {
 
     return mergePersistedSlots(
       filterSlotGroupsBySchedules(
-        buildVirtualSlots(systemSettingsResponse?.data),
+        buildVirtualSlotsForSchedules(systemSettingsResponse?.data, daySchedules),
         daySchedules,
       ),
       slotData?.slots || [],
