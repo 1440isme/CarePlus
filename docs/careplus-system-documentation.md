@@ -938,22 +938,23 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Reset no-show  
 - Mở khóa đặt lịch online  
   
-**Admin User APIs hiện tại (mount dưới `/api/v1/users`):**  
-- `GET /api/v1/users`: Admin xem danh sách user, search/filter role/status, pagination  
-- `GET /api/v1/users/:id`: Admin xem chi tiết user  
-- `PATCH /api/v1/users/:id`: Admin cập nhật thông tin cơ bản của user  
-- `PATCH /api/v1/users/:id/status`: Admin khóa/mở khóa tài khoản  
-- `PATCH /api/v1/users/:id/reset-no-show`: Admin reset số lần vắng mặt  
-- `POST /api/v1/users/staff`: Admin tạo tài khoản nhân sự  
+- Admin reset password đã được hỗ trợ (cung cấp nút Reset Password tự sinh mật khẩu tạm thời gửi qua email của người dùng).
+- Chi tiết user hiển thị số lần vắng mặt.
   
-**Giới hạn scope hiện tại:**  
-- Admin update user không dùng để sửa `passwordHash`  
-- Admin update user không dùng để reset password  
-- Admin update user không dùng để sửa `noShowCount` trực tiếp  
-- Admin reset noShowCount có endpoint riêng  
-- Admin khóa/mở khóa có endpoint riêng  
-- Admin reset password chưa thuộc scope hiện tại  
-  **Tạo tài khoản nhân sự:**  
+**Admin User APIs hiện tại (mount dưới `/api/v1/users`):**
+- `GET /api/v1/users`: Admin xem danh sách user, search/filter role/status, pagination. Hỗ trợ tìm kiếm qua Elasticsearch (fallback MySQL nếu lỗi/tắt).
+- `GET /api/v1/users/:id`: Admin xem chi tiết user.
+- `PATCH /api/v1/users/:id`: Admin cập nhật thông tin cơ bản của user (Họ tên, SĐT, Giới tính, Ngày sinh, Địa chỉ).
+- `PATCH /api/v1/users/:id/status`: Admin khóa/mở khóa tài khoản.
+- `PATCH /api/v1/users/:id/reset-no-show`: Admin reset số lần vắng mặt.
+- `PATCH /api/v1/users/:id/reset-password`: Admin đặt lại mật khẩu tạm thời gửi qua email.
+- `POST /api/v1/users/staff`: Admin tạo tài khoản nhân sự.
+
+**Giới hạn scope hiện tại:**
+- Admin update user không dùng để sửa `passwordHash` trực tiếp.
+- Admin update user không dùng để sửa `noShowCount` trực tiếp (phải dùng endpoint reset riêng).
+- Admin khóa/mở khóa và reset mật khẩu đều có endpoint riêng để đảm bảo bảo mật.
+  **Tạo tài khoản nhân sự:**  
 - Role: Doctor | Receptionist | Admin  
 - Email, SĐT, Mật khẩu tạm, Trạng thái  
 - Nếu role = Doctor → thêm Doctor profile (tên, chuyên khoa, học vị, kinh nghiệm, giá, avatar)  
@@ -1076,9 +1077,32 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  | Hủy lịch | Thông báo hủy |  
    
  | Tài khoản bị khóa | Thông báo no-show |  
-   
-    
- ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANUlEQVR4nO3OMQ2AABAAsSPBCj7fEl5YGfHAiAU2QtIq6DIzW7UHAMBfnGt1V8fXEwAAXrse4eAF6m0KxEoAAAAASUVORK5CYII=)  
+  
+**4.7 Upload & Cập nhật ảnh đại diện (Avatar)**
+- Bệnh nhân, Bác sĩ, Lễ tân và Admin đều hỗ trợ upload và cập nhật ảnh đại diện trực tiếp thông qua form Thông tin cá nhân/Cài đặt tài khoản.
+- File upload được gửi lên server qua API `PATCH /users/me/avatar` dạng `multipart/form-data` và lưu trữ trực tuyến trên Cloudinary (trả về URL ảnh thay vì lưu base64).
+- Ảnh đại diện của bác sĩ sau khi được cập nhật sẽ tự động phản ánh và đồng bộ hiển thị ngoài trang chủ, trang danh sách bác sĩ công khai và các widget chat.
+
+**4.8 Hệ thống Thông báo In-App (Real-time Notifications)**
+- Triển khai mô hình notification lưu trữ database MySQL thông qua model `Notification`.
+- Sử dụng **Socket.IO** để kết nối real-time giữa client và server. Socket tự động kết nối ngay khi đăng nhập thành công và ngắt khi đăng xuất, đảm bảo đồng bộ thông báo live trên toàn portal.
+- **In-App Notification Bell & Dropdown**: Tích hợp trên thanh header của mọi portal (Bệnh nhân, Bác sĩ, Lễ tân, Admin) và trang chủ công khai (khi đã login). Hiển thị unread badge đỏ, danh sách thông báo mới và các live Toast popup trượt vào màn hình khi có thông báo mới.
+- **Sự kiện kích hoạt thông báo:**
+  - *Đặt lịch khám:* Gửi thông báo đến bệnh nhân và tất cả các lễ tân.
+  - *Thay đổi trạng thái lịch khám (Check-in, Hoàn thành, Hủy, Vắng mặt):* Gửi thông báo real-time cho cả bệnh nhân và bác sĩ tương ứng.
+  - *Yêu cầu nghỉ của bác sĩ:* Gửi yêu cầu nghỉ lên admin chờ duyệt, gửi thông báo kết quả duyệt (chấp nhận/từ chối) về cho bác sĩ.
+  - *Chat:* Gửi toast thông báo khi nhận tin nhắn mới từ đối phương (lọc không hiện toast khi người dùng tự gửi).
+- **Socket Real-time Data Sync:** Khi có event socket như `appointment:created` hoặc `appointment:status-changed`, hệ thống tự động invalidates cache React Query trên frontend giúp danh sách lịch hẹn và dashboard cập nhật tức thì không cần F5.
+
+**4.9 Tìm kiếm thông minh với Elasticsearch**
+- Hỗ trợ Elasticsearch phiên bản `8.11.3` cho tìm kiếm Full-text search (Doctors, Specialties, Blogs, Users) hỗ trợ tìm kiếm gần đúng (Fuzziness).
+- **Nguyên tắc MySQL là Source of Truth**: Dữ liệu lưu chính ở MySQL, đồng bộ bất đồng bộ sang ES khi thêm/sửa/xóa.
+- **Cơ chế Fallback an toàn**: Nếu Elasticsearch offline hoặc lỗi, hệ thống tự động fallback về truy vấn Prisma/MySQL `LIKE` mà không gây gián đoạn dịch vụ.
+- Dropdown tìm kiếm tại Trang chủ cho phép tìm kiếm đa chức năng (Bác sĩ, Bài viết, Chuyên khoa). Thanh tìm kiếm trong trang quản lý của Admin và Lễ tân cũng được tích hợp ES.
+- Bộ lọc ngày khám trên trang `/bac-si` và `/chuyen-khoa` hoạt động real-time kết hợp với api slots thực của bác sĩ.
+
+  
+  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANUlEQVR4nO3OMQ2AABAAsSPBCj7fEl5YGfHAiAU2QtIq6DIzW7UHAMBfnGt1V8fXEwAAXrse4eAF6m0KxEoAAAAASUVORK5CYII=)  
  **5. Tính năng Chat**  
  **Widget Chat (Public & Patient Portal)**  
  **2 loại hội thoại:**  
