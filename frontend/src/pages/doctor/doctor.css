@@ -1214,10 +1214,10 @@
 
 .doctor-leave-shift-options button {
   min-height: 48px;
-  border: 2px solid var(--border);
+  border: 2px solid rgba(73, 188, 226, 0.24);
   border-radius: 12px;
-  background: #ffffff;
-  color: #475467;
+  background: #eefbff;
+  color: #087c99;
   font-weight: 700;
   font-size: 0.95rem;
   cursor: pointer;
@@ -1229,15 +1229,17 @@
 }
 
 .doctor-leave-shift-options button:hover:not(.is-disabled) {
-  border-color: var(--cyan);
-  background: #f4fbfd;
+  border-color: rgba(0, 146, 184, 0.42);
+  background: #dff7ff;
 }
 
 .doctor-leave-shift-options button.is-active {
-  background: var(--cyan);
-  border-color: var(--cyan);
+  background: #0898b8;
+  border-color: #0898b8;
   color: #ffffff;
   font-weight: 700;
+  box-shadow: 0 8px 18px rgba(0, 146, 184, 0.24);
+  transform: translateY(-1px);
 }
 
 .doctor-leave-shift-options button.is-disabled {
@@ -1252,6 +1254,26 @@
   justify-content: flex-end;
   gap: 10px;
   margin-top: 8px;
+}
+
+.doctor-leave-actions button[type="submit"].button-primary {
+  background: #0898b8;
+  border-color: #0898b8;
+  color: #ffffff;
+  box-shadow: 0 8px 18px rgba(0, 146, 184, 0.2);
+}
+
+.doctor-leave-actions button[type="submit"].button-primary:hover:not(:disabled) {
+  background: #06728c;
+  border-color: #06728c;
+  color: #ffffff;
+}
+
+.doctor-leave-actions button[type="submit"].button-primary:disabled {
+  background: #b8eaf5;
+  border-color: #b8eaf5;
+  color: #087c99;
+  box-shadow: none;
 }
 
 .doctor-chat-header-bar {

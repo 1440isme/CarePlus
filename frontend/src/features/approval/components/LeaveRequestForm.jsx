@@ -392,14 +392,20 @@ export default function LeaveRequestForm({
                   !selectedDate ||
                   !selectedShift ||
                   reason.trim().length < 5
-                    ? "#CBD5E1"
-                    : "var(--cyan)",
+                    ? "#DFF7FF"
+                    : "#0898B8",
                 border: "none",
                 borderRadius: "8px",
                 padding: "10px 24px",
                 fontSize: "0.95rem",
                 fontWeight: "700",
-                color: "#ffffff",
+                color:
+                  isSubmitting ||
+                  !selectedDate ||
+                  !selectedShift ||
+                  reason.trim().length < 5
+                    ? "#087C99"
+                    : "#FFFFFF",
                 cursor:
                   isSubmitting ||
                   !selectedDate ||
@@ -408,6 +414,13 @@ export default function LeaveRequestForm({
                     ? "not-allowed"
                     : "pointer",
                 transition: "background 0.2s ease",
+                boxShadow:
+                  isSubmitting ||
+                  !selectedDate ||
+                  !selectedShift ||
+                  reason.trim().length < 5
+                    ? "none"
+                    : "0 8px 18px rgba(0, 146, 184, 0.2)",
               }}
             >
               {isSubmitting ? "Đang gửi..." : "Gửi yêu cầu nghỉ"}
