@@ -75,7 +75,7 @@ export default function DoctorListPage() {
   // Generate virtual slots based on clinic settings rules
   const slots = useMemo(
     () => flattenSlotGroups(buildVirtualSlots(bookingRulesResponse?.data)).map(s => ({
-      time: s.startTime,
+      time: `${s.startTime}-${s.endTime}`,
       avail: true, // simplified availability check
     })),
     [bookingRulesResponse?.data]

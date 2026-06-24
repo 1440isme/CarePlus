@@ -66,7 +66,14 @@ async function testBookingFlow() {
     workingDate.setDate(workingDate.getDate() + 3); // 3 days in the future (compensate for UTC shift)
     workingDate.setHours(0, 0, 0, 0);
 
-    // Delete existing schedule for doctor on this day to avoid unique constraint violations
+    // Delete existing appointments and schedules for doctor on this day to avoid unique constraint and foreign key violations
+    await prisma.appointment.deleteMany({
+      where: {
+        doctorId: doctor.id,
+        appointmentDate: workingDate,
+      },
+    });
+
     await prisma.schedule.deleteMany({
       where: {
         doctorId: doctor.id,
@@ -174,7 +181,11 @@ async function testBookingFlow() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    // Let's delete any schedule on today to avoid conflicts
+    // Let's delete any schedule and appointments on today to avoid conflicts
+    await prisma.appointment.deleteMany({
+      where: { doctorId: doctor.id, appointmentDate: today },
+    });
+
     await prisma.schedule.deleteMany({
       where: { doctorId: doctor.id, workingDate: today },
     });

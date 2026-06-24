@@ -73,8 +73,9 @@ class AppointmentService {
       // 3. Verify Patient Relative Profile if forSelf === false
       let relativeName = null;
       let patientProfileId = null;
+      let profile = null;
       if (bookingData.forSelf === false) {
-        const profile = await this.patientProfileRepository.findProfileByIdAndUserId(
+        profile = await this.patientProfileRepository.findProfileByIdAndUserId(
           bookingData.patientProfileId,
           patientId
         );
@@ -147,6 +148,11 @@ class AppointmentService {
       const appointment = await this.appointmentRepository.createAppointmentWithTransaction({
         code,
         patientId,
+        patientName: bookingData.forSelf === false ? (profile?.fullName || relativeName) : user.name,
+        patientPhone: bookingData.forSelf === false ? (profile?.phone || null) : user.phone,
+        patientGender: bookingData.forSelf === false ? (profile?.gender || null) : user.gender,
+        patientDob: bookingData.forSelf === false ? (profile?.dateOfBirth || null) : user.dateOfBirth,
+        patientAddress: bookingData.forSelf === false ? (profile?.address || null) : user.address,
         patientProfileId,
         doctorId: doctor.id,
         specialtyId: doctor.specialtyId,
@@ -223,22 +229,10 @@ class AppointmentService {
   async createReceptionistAppointment(currentUser, bookingData) {
     try {
       let patientId = bookingData.patientId;
-      let user;
+      let user = null;
 
       // 1. Get and check patient user status
-      if (!patientId && (bookingData.email || bookingData.phone)) {
-        if (bookingData.email) {
-          user = await this.userRepository.findUserByEmail(bookingData.email.trim());
-        }
-        if (!user && bookingData.phone) {
-          user = await this.prisma.user.findFirst({
-            where: { phone: bookingData.phone.trim(), role: 'PATIENT' }
-          });
-        }
-        if (user) {
-          patientId = user.id;
-        }
-      } else if (patientId) {
+      if (patientId) {
         user = await this.userRepository.findUserById(patientId);
       }
 
@@ -285,7 +279,7 @@ class AppointmentService {
             statusCode: 400,
           });
         }
-        relativeName = profile.fullName;
+        relativeName = bookingData.name?.trim() || profile.fullName;
         patientProfileId = profile.id;
       }
 
@@ -341,12 +335,12 @@ class AppointmentService {
       // 6. Perform booking transaction
       const appointment = await this.appointmentRepository.createAppointmentWithTransaction({
         code,
-        patientId,
-        patientName: user ? null : bookingData.name.trim(),
-        patientPhone: user ? null : bookingData.phone.trim(),
-        patientGender: user ? null : (bookingData.gender || null),
-        patientDob: user ? null : (bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : null),
-        patientAddress: user ? null : (bookingData.address?.trim() || null),
+        patientId: patientId || null,
+        patientName: bookingData.name?.trim() || null,
+        patientPhone: bookingData.phone?.trim() || null,
+        patientGender: bookingData.gender || null,
+        patientDob: bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : null,
+        patientAddress: bookingData.address?.trim() || null,
         patientProfileId,
         doctorId: doctor.id,
         specialtyId: doctor.specialtyId,
@@ -362,7 +356,7 @@ class AppointmentService {
         forSelf: bookingData.forSelf,
         relativeName,
         consultationFee: doctor.price,
-        patientEmail: user ? user.email : (bookingData.email?.trim() || null),
+        patientEmail: bookingData.email?.trim() || (user ? user.email : null),
         reason: bookingData.reason,
         note: bookingData.note,
       });
@@ -585,16 +579,10 @@ class AppointmentService {
         const searchTrim = query.search.trim();
         where.OR = [
           { code: { contains: searchTrim } },
+          { patientName: { contains: searchTrim } },
           { relativeName: { contains: searchTrim } },
-          {
-            patient: {
-              OR: [
-                { name: { contains: searchTrim } },
-                { email: { contains: searchTrim } },
-                { phone: { contains: searchTrim } },
-              ],
-            },
-          },
+          { patientPhone: { contains: searchTrim } },
+          { patientEmail: { contains: searchTrim } },
         ];
       }
 
@@ -1139,25 +1127,10 @@ class AppointmentService {
       const searchTrim = query.search.trim();
       where.OR = [
         { code: { contains: searchTrim } },
+        { patientName: { contains: searchTrim } },
         { relativeName: { contains: searchTrim } },
-        {
-          patient: {
-            OR: [
-              { name: { contains: searchTrim } },
-              { email: { contains: searchTrim } },
-              { phone: { contains: searchTrim } },
-            ],
-          },
-        },
-        {
-          patientProfile: {
-            OR: [
-              { fullName: { contains: searchTrim } },
-              { email: { contains: searchTrim } },
-              { phone: { contains: searchTrim } },
-            ],
-          },
-        },
+        { patientPhone: { contains: searchTrim } },
+        { patientEmail: { contains: searchTrim } },
       ];
     }
 

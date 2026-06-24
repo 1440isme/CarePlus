@@ -83,7 +83,7 @@ export default function PatientDashboard() {
   const monthlyData = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const months = [0, 1, 2, 3, 4, 5]; // T1 -> T6
-    
+
     const counts = months.map(m => {
       return appointmentsList.filter(appt => {
         if (!appt.appointmentDate) return false;
@@ -118,7 +118,7 @@ export default function PatientDashboard() {
   // Sinh danh sách dữ liệu lượt khám theo chuyên khoa
   const specialtyData = useMemo(() => {
     const validAppts = appointmentsList.filter(appt => appt.status !== 'CANCELLED');
-    
+
     // Fallback về mock data của Figma gốc nếu DB trống
     if (validAppts.length === 0) {
       return [
@@ -137,7 +137,7 @@ export default function PatientDashboard() {
 
     const total = validAppts.length;
     const colors = ['#49BCE2', '#FFC10E', '#A78BFA', '#34D399', '#EC4899'];
-    
+
     return Object.keys(map).map((name, index) => {
       const count = map[name];
       const percentage = Math.round((count / total) * 100);
@@ -308,7 +308,7 @@ export default function PatientDashboard() {
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="flex flex-col gap-2">
               {[
                 { label: 'Mã lịch', value: <code className="font-mono text-xs bg-gray-50 px-1.5 py-0.5 rounded border border-gray-150">{selectedAppointment.code}</code> },
@@ -319,11 +319,13 @@ export default function PatientDashboard() {
                 { label: 'Người khám', value: selectedAppointment.patientName },
                 { label: 'Quan hệ', value: selectedAppointment.forSelf ? 'Bản thân' : (selectedAppointment.patientProfile?.relationship || 'Người thân') },
                 { label: 'Giá khám tham khảo', value: `${(selectedAppointment.consultationFee || 0).toLocaleString('vi-VN')} đ` },
-                { label: 'Trạng thái', value: (
-                  <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedAppointment.status).bg}`}>
-                    {getStatusConfig(selectedAppointment.status).label}
-                  </span>
-                )},
+                {
+                  label: 'Trạng thái', value: (
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 text-xs font-semibold rounded-full border ${getStatusConfig(selectedAppointment.status).bg}`}>
+                      {getStatusConfig(selectedAppointment.status).label}
+                    </span>
+                  )
+                },
               ].map(row => (
                 <div key={row.label} className="flex justify-between items-center py-2 border-b border-gray-50 text-sm">
                   <span className="text-gray-500">{row.label}</span>

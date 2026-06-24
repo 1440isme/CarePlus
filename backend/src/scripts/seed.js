@@ -369,6 +369,26 @@ async function seed() {
       const createdBy = appt.bookingChannel === 'ONLINE' ? appt.patientId : 'u5'; // u5 is receptionist
       const bookingSource = appt.bookingChannel === 'ONLINE' ? 'PATIENT_WEB' : 'RECEPTIONIST';
 
+      // Look up user info
+      let user = null;
+      if (appt.patientId) {
+        user = usersData.find(u => u.id === appt.patientId);
+      }
+
+      let pName = appt.patientName || (user ? user.name : null);
+      let pPhone = appt.patientPhone || (user ? user.phone : null);
+      let pGender = appt.patientGender || (user ? user.gender : null);
+      let pDob = appt.patientDob || (user ? user.dateOfBirth : null);
+      let pAddress = appt.patientAddress || (user ? user.address : null);
+
+      if (appt.patientProfileId === 'pp_leminhd') {
+        pName = 'Lê Minh D';
+        pPhone = '0923456789';
+        pGender = 'MALE';
+        pDob = new Date('2018-05-10');
+        pAddress = null;
+      }
+
       // Update slot status to BOOKED
       await prisma.timeSlot.update({
         where: { id: slotId },
@@ -381,6 +401,11 @@ async function seed() {
           id: appt.id,
           code: appt.code,
           patientId: appt.patientId,
+          patientName: pName,
+          patientPhone: pPhone,
+          patientGender: pGender,
+          patientDob: pDob,
+          patientAddress: pAddress,
           patientProfileId: appt.patientProfileId || null,
           doctorId: appt.doctorId,
           specialtyId: appt.specialtyId,

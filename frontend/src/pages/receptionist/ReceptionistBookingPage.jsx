@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
+import { Heart, Bone, Baby, Sparkles, Activity, HeartPulse, Stethoscope, Ear } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
@@ -12,6 +13,28 @@ import {
 import { useSearchPatients, useBookAppointmentByReceptionist } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+
+const specialtyIconMap = {
+  Heart: <Heart className="w-5 h-5" />,
+  Bone: <Bone className="w-5 h-5" />,
+  Baby: <Baby className="w-5 h-5" />,
+  Sparkles: <Sparkles className="w-5 h-5" />,
+  Activity: <Activity className="w-5 h-5" />,
+  HeartPulse: <HeartPulse className="w-5 h-5" />,
+  Stethoscope: <Stethoscope className="w-5 h-5" />,
+  Ear: <Ear className="w-5 h-5" />,
+};
+
+const colorClasses = [
+  'bg-red-50 text-red-600',
+  'bg-blue-50 text-blue-600',
+  'bg-green-50 text-green-600',
+  'bg-purple-50 text-purple-600',
+  'bg-amber-50 text-amber-600',
+  'bg-pink-50 text-pink-600',
+  'bg-cyan-50 text-cyan-600',
+  'bg-indigo-50 text-indigo-600',
+];
 
 export default function ReceptionistBookingPage() {
   const [step, setStep] = useState(1);
@@ -81,20 +104,7 @@ export default function ReceptionistBookingPage() {
     return dates;
   }, []);
 
-  // Specialty emojis mapping
-  const getSpecialtyEmoji = (slug) => {
-    const mapping = {
-      'tim-mach': '🫀',
-      'nhi-khoa': '👶',
-      'da-lieu': '🧴',
-      'noi-khoa': '🧠',
-      'co-xuong-khop': '🦴',
-      'tai-mui-hong': '👂',
-      'tieu-hoa': '🧪',
-      'san-phu-khoa': '🤰'
-    };
-    return mapping[slug] || '🩺';
-  };
+
 
   // Format date display (e.g. 14/06/2026)
   const formatDisplayDate = (dateStr) => {
@@ -188,10 +198,10 @@ export default function ReceptionistBookingPage() {
       if (!bookingData.name.trim()) {
         newErrors.name = 'Họ tên bệnh nhân không được để trống';
       }
-      if (!bookingData.phone.trim()) {
-        newErrors.phone = 'Số điện thoại không được để trống';
-      } else if (!/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(bookingData.phone.trim())) {
-        newErrors.phone = 'Số điện thoại không hợp lệ';
+      if (bookingData.phone.trim()) {
+        if (!/^(0|\+84)(3|5|7|8|9)\d{8}$/.test(bookingData.phone.trim())) {
+          newErrors.phone = 'Số điện thoại không hợp lệ';
+        }
       }
       if (bookingData.email.trim()) {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingData.email.trim())) {
@@ -464,8 +474,9 @@ export default function ReceptionistBookingPage() {
               />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {specialtiesList.map((spec) => {
+                {specialtiesList.map((spec, idx) => {
                   const isSelected = bookingData.specialty?.id === spec.id;
+                  const colorClass = colorClasses[idx % colorClasses.length];
                   return (
                     <button
                       key={spec.id}
@@ -476,7 +487,9 @@ export default function ReceptionistBookingPage() {
                         : 'border-gray-200 hover:border-[#49BCE2]/50 hover:bg-gray-50'
                         }`}
                     >
-                      <span className="text-2xl">{getSpecialtyEmoji(spec.slug)}</span>
+                      <div className={`w-10 h-10 rounded-lg ${colorClass} flex items-center justify-center mb-1`}>
+                        {specialtyIconMap[spec.icon] || <Stethoscope className="w-5 h-5" />}
+                      </div>
                       <span className={`text-sm font-semibold leading-tight ${isSelected ? 'text-[#49BCE2]' : 'text-gray-700'}`}>
                         {spec.name}
                       </span>
@@ -843,7 +856,7 @@ export default function ReceptionistBookingPage() {
 
                 <div>
                   <label htmlFor="patientPhoneInput" className="block text-xs font-medium text-gray-600 mb-1.5">
-                    Số điện thoại<Req />
+                    Số điện thoại
                   </label>
                   <input
                     id="patientPhoneInput"
@@ -865,7 +878,9 @@ export default function ReceptionistBookingPage() {
 
               {/* Email */}
               <div>
-                <label htmlFor="patientEmailInput" style={lbl}>Email tài khoản</label>
+                <label htmlFor="patientEmailInput" className="block text-xs font-medium text-gray-600 mb-1.5">
+                  Email tài khoản
+                </label>
                 <input
                   id="patientEmailInput"
                   type="email"
@@ -878,10 +893,7 @@ export default function ReceptionistBookingPage() {
                       setValidationErrors(prev => ({ ...prev, email: null }));
                     }
                   }}
-                  style={{
-                    ...inp,
-                    ...(validationErrors.email ? { borderColor: '#EF4444', backgroundColor: '#FEF2F2' } : {})
-                  }}
+                  className={inputCls(validationErrors.email)}
                 />
               </div>
 
@@ -1069,12 +1081,6 @@ export default function ReceptionistBookingPage() {
                 <span className="text-sm font-semibold text-green-600">✓ Đã xác nhận</span>
               </div>
             </div>
-
-            {successBookingData.email && (
-              <p className="text-xs text-gray-400 mb-6">
-                📧 Email xác nhận đã được gửi đến <span className="font-medium text-gray-600">{successBookingData.email}</span>.
-              </p>
-            )}
 
             {/* Actions */}
             <div className="flex flex-col sm:flex-row gap-3 justify-center">

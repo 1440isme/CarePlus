@@ -98,8 +98,8 @@ function toAppointmentDto(appointment) {
   // Generate friendly patient/relative name
   dto.patientName = appointment.patientProfile?.fullName 
     || appointment.relativeName 
-    || appointment.patient?.name 
     || appointment.patientName
+    || appointment.patient?.name 
     || 'Bệnh nhân';
 
   // Generate friendly patient/relative date of birth
