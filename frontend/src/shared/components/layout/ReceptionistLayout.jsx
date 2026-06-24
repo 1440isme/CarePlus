@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
 import { APP_ROUTES } from '../../constants/routes.js';
+import NotificationBellDropdown from '../../../features/notification/components/NotificationBellDropdown.jsx';
+import { useConversations } from '../../../features/chat/hooks/useChat.js';
 
 const navItems = [
   { label: 'Tổng quan', href: APP_ROUTES.receptionistRoot, icon: <Home className="w-4 h-4" />, end: true },
@@ -22,6 +24,10 @@ export default function ReceptionistLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const authUser = useSelector((state) => state.auth.user);
+
+  const { data: convsResponse } = useConversations();
+  const conversations = convsResponse?.data || [];
+  const unreadChatCount = conversations.reduce((acc, c) => acc + (c.unreadCount || 0), 0);
   
   const logoutMutation = useLogout({
     onSuccess: () => {
@@ -78,7 +84,12 @@ export default function ReceptionistLayout() {
                 }`}
               >
                 {item.icon}
-                {item.label}
+                <span className="flex-1 flex items-center justify-between">
+                  {item.label}
+                  {item.label === 'Tin nhắn' && unreadChatCount > 0 && (
+                    <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse mr-2" />
+                  )}
+                </span>
                 {((item.end && location.pathname === item.href) || (!item.end && location.pathname.startsWith(item.href))) && (
                   <ChevronRight className="w-3 h-3 ml-auto" />
                 )}
@@ -130,10 +141,7 @@ export default function ReceptionistLayout() {
           </button>
           <div className="flex-1" />
           <div className="flex items-center gap-4">
-            <button className="p-2 text-gray-400 hover:text-gray-600 relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBellDropdown />
             <button
               onClick={handleLogout}
               disabled={logoutMutation.isPending}

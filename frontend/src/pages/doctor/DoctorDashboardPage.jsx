@@ -219,8 +219,9 @@ export default function DoctorDashboardPage() {
 
           <div className="flex flex-col gap-3">
             {[
-              { label: 'Slot đã đặt', value: totalBookedSlots },
-              { label: 'Slot bị khóa', value: totalLockedSlots },
+              { label: 'Số lịch khám', value: totalBookedSlots },
+              { label: 'Số ca làm việc', value: dashboard?.weeklySchedule?.filter((item) => item.status === 'WORKING').length },
+              { label: 'Số lần nghỉ', value: dashboard?.weeklySchedule?.filter((item) => item.status === 'APPROVED_OFF').length },
               { label: 'Lịch hôm nay', value: dashboard?.todaySchedule?.status ? getStatusLabel(dashboard.todaySchedule.status) : 'Chưa mở lịch', isText: true },
             ].map((row, idx) => (
               <div key={idx} className="flex justify-between items-center py-2.5 border-b border-gray-50 text-sm">

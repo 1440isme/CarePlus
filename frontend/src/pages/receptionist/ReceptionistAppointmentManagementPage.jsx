@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAppointments, useUpdateAppointmentStatus } from '../../features/appointment/hooks/useAppointments.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
@@ -7,6 +7,7 @@ import { useApproveRequest, useRejectRequest } from '../../features/approval/hoo
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { Search, Filter, X, ChevronLeft, ChevronRight } from 'lucide-react';
+import socketService from '../../shared/services/socket.service.js';
 
 function StatusBadge({ status }) {
   const cfg = {
@@ -67,6 +68,24 @@ export default function ReceptionistAppointmentManagementPage() {
     ...(selectedStatus ? { status: selectedStatus } : {}),
   };
 
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (!socketService.socket) return;
+
+    const handleReload = () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    };
+
+    socketService.socket.on('appointment:created', handleReload);
+    socketService.socket.on('appointment:status-changed', handleReload);
+
+    return () => {
+      socketService.socket.off('appointment:created', handleReload);
+      socketService.socket.off('appointment:status-changed', handleReload);
+    };
+  }, [queryClient]);
+
   const appointmentsQuery = useAppointments(appointmentsParams);
   const updateStatusMutation = useUpdateAppointmentStatus();
   const approveMutation = useApproveRequest();
@@ -125,6 +144,12 @@ export default function ReceptionistAppointmentManagementPage() {
       setSelectedStatus(value);
     } else if (filterType === 'search') {
       setSearch(value);
+      if (value.trim()) {
+        setDateMode('all');
+        setSelectedDate('');
+        setStartDate('');
+        setEndDate('');
+      }
     }
   };
 
@@ -158,6 +183,10 @@ export default function ReceptionistAppointmentManagementPage() {
       setSelectedDate('');
       setStartDate(todayStr);
       setEndDate(todayStr);
+    } else if (mode === 'all') {
+      setSelectedDate('');
+      setStartDate('');
+      setEndDate('');
     }
   };
 
@@ -206,6 +235,7 @@ export default function ReceptionistAppointmentManagementPage() {
           {/* Date mode toggle */}
           <div className="inline-flex border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
             {[
+              { key: 'all', label: 'Tất cả' },
               { key: 'today', label: 'Hôm nay' },
               { key: 'tomorrow', label: 'Ngày mai' },
               { key: 'week', label: 'Tuần này' },
@@ -215,11 +245,10 @@ export default function ReceptionistAppointmentManagementPage() {
                 key={btn.key}
                 type="button"
                 onClick={() => handleDateModeChange(btn.key)}
-                className={`px-3 py-2 text-xs font-semibold border-r border-gray-200 last:border-r-0 transition-colors ${
-                  dateMode === btn.key
+                className={`px-3 py-2 text-xs font-semibold border-r border-gray-200 last:border-r-0 transition-colors ${dateMode === btn.key
                     ? 'bg-[#49BCE2] text-white'
                     : 'bg-transparent text-gray-600 hover:bg-gray-100'
-                }`}
+                  }`}
               >
                 {btn.label}
               </button>
@@ -548,7 +577,7 @@ export default function ReceptionistAppointmentManagementPage() {
                       <p className="text-xs text-amber-850 font-semibold leading-relaxed">
                         ⚠️ Bệnh nhân đã gửi yêu cầu hủy lịch này (sát giờ khám). Vui lòng xác nhận duyệt hoặc từ chối yêu cầu.
                       </p>
-                      
+
                       {!isCancelling ? (
                         <div className="flex gap-2">
                           <button
@@ -679,10 +708,10 @@ export default function ReceptionistAppointmentManagementPage() {
                       {(selectedAppointment.status === 'COMPLETED' ||
                         selectedAppointment.status === 'CANCELLED' ||
                         selectedAppointment.status === 'NO_SHOW') && (
-                        <p className="text-center text-xs text-gray-400 py-1">
-                          Lịch hẹn này đã hoàn tất chu kỳ trạng thái.
-                        </p>
-                      )}
+                          <p className="text-center text-xs text-gray-400 py-1">
+                            Lịch hẹn này đã hoàn tất chu kỳ trạng thái.
+                          </p>
+                        )}
                     </>
                   )}
                 </>

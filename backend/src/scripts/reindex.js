@@ -1,3 +1,4 @@
+require('dotenv').config({ path: require('path').join(__dirname, '../../.env') });
 const prisma = require('../infrastructure/database/prisma.client');
 const elasticClient = require('../infrastructure/search/elastic.client');
 
@@ -109,7 +110,9 @@ async function reindex() {
 
     // 5. Fetch and Bulk Index Specialties
     console.log('Fetching specialties from database...');
-    const specialties = await prisma.specialty.findMany({});
+    const specialties = await prisma.specialty.findMany({
+      where: { active: true }
+    });
 
     if (specialties.length > 0) {
       console.log(`Indexing ${specialties.length} specialties...`);
@@ -131,7 +134,7 @@ async function reindex() {
       if (bulkResponse.errors) {
         console.error('Errors occurred during specialty bulk index:', bulkResponse.errors);
       } else {
-        console.log('Successfully indexed all specialties.');
+        console.log('Successfully indexed all active specialties.');
       }
     } else {
       console.log('No specialties found in database.');

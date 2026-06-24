@@ -56,7 +56,11 @@ import AdminClinicInfoPage from '../pages/admin/AdminClinicInfoPage.jsx';
 import AdminSystemSettingsPage from '../pages/admin/AdminSystemSettingsPage.jsx';
 import BlogManagement from '../pages/admin/BlogManagement.jsx';
 
+import { useEffect } from 'react';
+import { useSelector } from 'react-redux';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthBootstrap } from '../features/auth/hooks/useAuthBootstrap.js';
+import socketService from '../shared/services/socket.service.js';
 
 /**
  * Main Application Component relocated to comply with AGENT.md guidelines.
@@ -72,6 +76,63 @@ function LegacyPortalRedirect({ fromPrefix, toPrefix }) {
 
 function App() {
   useAuthBootstrap();
+  const accessToken = useSelector((state) => state.auth.accessToken);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    if (accessToken) {
+      socketService.connect(accessToken);
+
+      const handleStatusChanged = (appointment) => {
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['my-appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+        if (appointment?.id) {
+          queryClient.invalidateQueries({ queryKey: ['appointment-detail', appointment.id] });
+          queryClient.invalidateQueries({ queryKey: ['my-appointment-detail', appointment.id] });
+        }
+      };
+
+      const handleAppointmentCreated = () => {
+        queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['my-appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-appointments'] });
+        queryClient.invalidateQueries({ queryKey: ['doctor-dashboard'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-stats'] });
+      };
+
+      const handleNotificationNew = (notification) => {
+        queryClient.invalidateQueries({ queryKey: ['notifications'] });
+        if (notification?.type === 'CHAT') {
+          queryClient.invalidateQueries({ queryKey: ['chat'] });
+        } else if (notification?.type === 'APPROVAL') {
+          queryClient.invalidateQueries({ queryKey: ['approval-requests'] });
+        }
+      };
+
+      const handleConversationCreated = () => {
+        queryClient.invalidateQueries({ queryKey: ['chat'] });
+      };
+
+      socketService.socket?.on('appointment:status-changed', handleStatusChanged);
+      socketService.socket?.on('appointment:created', handleAppointmentCreated);
+      socketService.socket?.on('notification:new', handleNotificationNew);
+      socketService.socket?.on('conversation:created', handleConversationCreated);
+
+      return () => {
+        if (socketService.socket) {
+          socketService.socket.off('appointment:status-changed', handleStatusChanged);
+          socketService.socket.off('appointment:created', handleAppointmentCreated);
+          socketService.socket.off('notification:new', handleNotificationNew);
+          socketService.socket.off('conversation:created', handleConversationCreated);
+        }
+      };
+    } else {
+      socketService.disconnect();
+    }
+  }, [accessToken, queryClient]);
 
   return (
     <BrowserRouter>

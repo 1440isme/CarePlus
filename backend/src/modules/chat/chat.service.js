@@ -106,7 +106,7 @@ class ChatService {
       if (existing) return existing;
 
       // Create new SUPPORT conversation
-      return prisma.conversation.create({
+      const createdConv = await prisma.conversation.create({
         data: {
           type: 'SUPPORT',
           patientId: userId,
@@ -116,6 +116,15 @@ class ChatService {
         },
         include: includeOptions
       });
+
+      // Emit conversation:created event to receptionists
+      try {
+        socketService.emitToRole('RECEPTIONIST', 'conversation:created', toConversationDto(createdConv, null));
+      } catch (socketErr) {
+        console.error('Failed to emit conversation:created socket event to receptionists:', socketErr.message);
+      }
+
+      return createdConv;
     } else if (type === 'DOCTOR_CONSULTATION') {
       // Verify doctor exists
       const doctor = await prisma.doctor.findUnique({
@@ -143,7 +152,7 @@ class ChatService {
       if (existing) return existing;
 
       // Create new DOCTOR_CONSULTATION conversation
-      return prisma.conversation.create({
+      const createdConv = await prisma.conversation.create({
         data: {
           type: 'DOCTOR_CONSULTATION',
           patientId: userId,
@@ -154,6 +163,17 @@ class ChatService {
         },
         include: includeOptions
       });
+
+      // Emit conversation:created event to the doctor
+      try {
+        if (doctor?.userId) {
+          socketService.emitToUser(doctor.userId, 'conversation:created', toConversationDto(createdConv, doctor.userId));
+        }
+      } catch (socketErr) {
+        console.error('Failed to emit conversation:created socket event:', socketErr.message);
+      }
+
+      return createdConv;
     }
   }
 
@@ -330,22 +350,42 @@ class ChatService {
       createdAt: createdMessage.createdAt
     };
 
+    // Fetch sender user name for premium chat notifications
+    const senderUser = await prisma.user.findUnique({
+      where: { id: senderId },
+      select: { name: true }
+    });
+    const senderName = senderUser?.name || 'Người dùng';
+
     // Emit to conversation room (real-time chat window updates)
     socketService.emitToRoom(`conversation:${conversationId}`, 'chat:message-received', messagePayload);
 
     // Emit to recipient user room or role room (for unread counts & toast notifications)
     if (recipientId) {
+      const isRecipientPatient = recipientId === conversation.patientId;
+      const targetLink = isRecipientPatient
+        ? null
+        : (conversation.type === 'SUPPORT' ? '/portal/le-tan/tin-nhan' : '/portal/bac-si/tin-nhan');
+
       socketService.emitToUser(recipientId, 'notification:new', {
+        id: createdMessage.id,
         type: 'CHAT',
+        title: 'Tin nhắn mới',
+        content: `${senderName}: ${displayMessage}`,
         conversationId,
-        message: displayMessage
+        senderId,
+        link: targetLink
       });
     } else if (conversation.type === 'SUPPORT' && senderRole === 'PATIENT') {
       // Broadcast to all receptionists if SUPPORT chat is unassigned
       socketService.emitToRole('RECEPTIONIST', 'notification:new', {
+        id: createdMessage.id,
         type: 'CHAT',
+        title: 'Tin nhắn hỗ trợ mới',
+        content: `${senderName}: ${displayMessage}`,
         conversationId,
-        message: displayMessage
+        senderId,
+        link: '/portal/le-tan/tin-nhan'
       });
     }
 

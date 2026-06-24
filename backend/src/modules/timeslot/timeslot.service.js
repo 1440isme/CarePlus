@@ -248,7 +248,19 @@ class TimeSlotService {
   }
 
   async _getSystemSetting() {
-    const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
+    let systemSetting = null;
+
+    try {
+      systemSetting = await this.clinicSettingsRepository.getSystemSetting();
+    } catch (error) {
+      if (!this._isMissingClinicSettingColumnError(error)) {
+        throw error;
+      }
+
+      console.warn(
+        '[TimeSlotService] SystemSetting schema is missing new shift columns. Falling back to default shift config.',
+      );
+    }
 
     return systemSetting || {
       slotDurationMinutes: CLINIC_SETTINGS_DEFAULTS.SLOT_DURATION_MINUTES,
@@ -257,6 +269,18 @@ class TimeSlotService {
       afternoonShiftStart: CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_START,
       afternoonShiftEnd: CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_END,
     };
+  }
+
+  _isMissingClinicSettingColumnError(error) {
+    const message = String(error?.message || '');
+
+    return error?.code === 'P2022'
+      || message.includes('SystemSetting')
+      || message.includes('singletonKey')
+      || message.includes('morningShiftStart')
+      || message.includes('morningShiftEnd')
+      || message.includes('afternoonShiftStart')
+      || message.includes('afternoonShiftEnd');
   }
 
   _buildSlotsByScope(scope, systemSetting) {

@@ -72,6 +72,25 @@ class ApprovalRequestService {
         return request;
       });
 
+      // Notify Admin
+      try {
+        const prismaClient = require('../../infrastructure/database/prisma.client');
+        const notificationService = require('../notification/notification.service');
+        prismaClient.user.findMany({ where: { role: 'ADMIN' } }).then(admins => {
+          admins.forEach(admin => {
+            notificationService.createNotification({
+              userId: admin.id,
+              title: 'Yêu cầu duyệt nghỉ mới',
+              content: `Bác sĩ ${doctor.name} đã gửi một yêu cầu nghỉ/đổi lịch mới. Lý do: ${dto.reason.trim()}.`,
+              type: 'APPROVAL',
+              link: '/portal/admin/duyet-yeu-cau'
+            }).catch(err => console.error('Failed to notify admin of approval request:', err.message));
+          });
+        });
+      } catch (notiErr) {
+        console.error('Failed to trigger in-app notification for admin:', notiErr.message);
+      }
+
       return {
         message: 'Tạo yêu cầu nghỉ thành công',
         request: toApprovalRequestDto(createdRequest),
@@ -240,6 +259,28 @@ class ApprovalRequestService {
         return updatedRequest;
       });
 
+      // Notify Doctor
+      try {
+        const prismaClient = require('../../infrastructure/database/prisma.client');
+        const notificationService = require('../notification/notification.service');
+        prismaClient.doctor.findUnique({
+          where: { id: approvedRequest.doctorId },
+          select: { userId: true }
+        }).then(doc => {
+          if (doc && doc.userId) {
+            notificationService.createNotification({
+              userId: doc.userId,
+              title: 'Yêu cầu nghỉ đã được duyệt',
+              content: `Yêu cầu xin nghỉ/đổi lịch của bạn vào ngày ${approvedRequest.date ? approvedRequest.date.toISOString().slice(0, 10).split('-').reverse().join('/') : 'N/A'} đã được ban giám đốc duyệt.`,
+              type: 'APPROVAL',
+              link: '/portal/bac-si/lich-lam-viec'
+            }).catch(err => console.error('Failed to notify doctor of approval:', err.message));
+          }
+        });
+      } catch (notiErr) {
+        console.error('Failed to trigger approval notification:', notiErr.message);
+      }
+
       return {
         message: request.type === APPROVAL_REQUEST_TYPES.CANCELLATION
           ? 'Duyệt yêu cầu hủy lịch thành công'
@@ -272,6 +313,28 @@ class ApprovalRequestService {
 
         return updatedRequest;
       });
+
+      // Notify Doctor
+      try {
+        const prismaClient = require('../../infrastructure/database/prisma.client');
+        const notificationService = require('../notification/notification.service');
+        prismaClient.doctor.findUnique({
+          where: { id: rejectedRequest.doctorId },
+          select: { userId: true }
+        }).then(doc => {
+          if (doc && doc.userId) {
+            notificationService.createNotification({
+              userId: doc.userId,
+              title: 'Yêu cầu nghỉ bị từ chối',
+              content: `Yêu cầu xin nghỉ/đổi lịch của bạn vào ngày ${rejectedRequest.date ? rejectedRequest.date.toISOString().slice(0, 10).split('-').reverse().join('/') : 'N/A'} đã bị từ chối. Lý do: ${rejectedRequest.rejectionReason || 'Không có lý do cụ thể'}.`,
+              type: 'APPROVAL',
+              link: '/portal/bac-si/lich-lam-viec'
+            }).catch(err => console.error('Failed to notify doctor of rejection:', err.message));
+          }
+        });
+      } catch (notiErr) {
+        console.error('Failed to trigger rejection notification:', notiErr.message);
+      }
 
       return {
         message: request.type === APPROVAL_REQUEST_TYPES.CANCELLATION

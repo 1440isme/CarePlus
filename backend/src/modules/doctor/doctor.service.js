@@ -58,23 +58,31 @@ class DoctorService {
       let total;
 
       if (filters.search) {
-        const SearchService = require('../search/search.service');
-        const esResult = await SearchService.searchDoctors({
+        const searchResult = await SearchService.searchDoctors({
           query: filters.search,
           active: filters.active,
-          specialtyId: filters.specialtyId,
           page: filters.page,
-          limit: filters.limit,
+          limit: filters.limit
         });
-        doctors = esResult.data;
-        total = esResult.meta.total;
+
+        // Join with DB to get full data (avatar, user, specialty, etc.)
+        const esIds = searchResult.data.map(d => d.id);
+        if (esIds.length > 0) {
+          const fullDoctors = await this.doctorRepository.findDoctorsByIds(esIds);
+          // Preserve ES score ordering
+          const orderedDoctors = esIds
+            .map(id => fullDoctors.find(d => String(d.id) === String(id)))
+            .filter(Boolean);
+          doctors = orderedDoctors;
+        } else {
+          doctors = [];
+        }
+        total = searchResult.meta.total;
       } else {
-        const [dbDoctors, dbTotal] = await Promise.all([
+        [doctors, total] = await Promise.all([
           this.doctorRepository.findDoctors(filters),
           this.doctorRepository.countDoctors(filters),
         ]);
-        doctors = dbDoctors;
-        total = dbTotal;
       }
 
       return {
@@ -207,10 +215,10 @@ class DoctorService {
         noShowAppointments: appointments.filter((item) => item.status === 'NO_SHOW').length,
         todaySchedule: todaySchedule
           ? {
-              scheduleId: todaySchedule.id,
-              workingDate: formatDateOnly(todaySchedule.workingDate),
-              status: todaySchedule.status,
-            }
+            scheduleId: todaySchedule.id,
+            workingDate: formatDateOnly(todaySchedule.workingDate),
+            status: todaySchedule.status,
+          }
           : null,
         weeklySchedule: weeklySchedules.map((schedule) => ({
           scheduleId: schedule.id,
@@ -323,14 +331,19 @@ class DoctorService {
   _syncDoctorToSearch(doctor) {
     SearchService.indexDocument('doctors', doctor.id, {
       name: doctor.name,
+      specialtyId: doctor.specialtyId,
       specialtyName: doctor.specialtyName,
       description: doctor.description,
       title: doctor.title,
       experience: doctor.experience,
       price: doctor.price,
       rating: doctor.rating,
+      reviewCount: doctor.reviewCount,
+      avatar: doctor.avatar,
+      position: doctor.position,
+      userId: doctor.userId,
       active: doctor.active,
-    }).catch(() => {});
+    }).catch(() => { });
   }
 
   _wrapUnexpectedError(error, code, message) {

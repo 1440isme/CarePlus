@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
 import { APP_ROUTES } from '../../constants/routes.js';
+import NotificationBellDropdown from '../../../features/notification/components/NotificationBellDropdown.jsx';
 import ChatWidget from '../ui/ChatWidget.jsx';
 
 const navItems = [
@@ -137,10 +138,7 @@ export default function PatientLayout() {
           </button>
           <div className="flex-1" />
           <div className="flex items-center gap-4">
-            <button className="p-2 text-gray-400 hover:text-gray-600 relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full" />
-            </button>
+            <NotificationBellDropdown />
             <button
               onClick={handleLogout}
               disabled={logoutMutation.isPending}

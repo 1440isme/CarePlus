@@ -70,7 +70,7 @@ class SearchService {
     if (esAvailable) {
       try {
         const mustQueries = [];
-        
+
         if (query) {
           mustQueries.push({
             multi_match: {
@@ -111,8 +111,8 @@ class SearchService {
         });
 
         const hits = esResponse.hits.hits;
-        const totalHits = typeof esResponse.hits.total === 'object' 
-          ? esResponse.hits.total.value 
+        const totalHits = typeof esResponse.hits.total === 'object'
+          ? esResponse.hits.total.value
           : esResponse.hits.total;
 
         const data = hits.map(hit => ({
@@ -148,7 +148,7 @@ class SearchService {
    */
   static async searchDoctorsFallback({ query, active, specialtyId, page, limit }) {
     const skip = (page - 1) * limit;
-    
+
     // Construct database query criteria
     const whereClause = {};
     if (active !== undefined) {
@@ -294,7 +294,7 @@ class SearchService {
    */
   static async searchBlogsFallback({ query, status, page, limit }) {
     const skip = (page - 1) * limit;
-    
+
     const whereClause = {};
     if (status) {
       whereClause.status = status;
@@ -384,13 +384,7 @@ class SearchService {
               must: mustQueries,
               filter: filterQueries,
             }
-          },
-          highlight: query ? {
-            fields: {
-              name: {},
-              description: {},
-            }
-          } : undefined
+          }
         });
 
         const hits = esResponse.hits.hits;
@@ -401,7 +395,6 @@ class SearchService {
         const data = hits.map(hit => ({
           id: hit._id,
           ...hit._source,
-          highlights: hit.highlight || null,
           score: hit._score,
         }));
 
@@ -431,7 +424,7 @@ class SearchService {
    */
   static async searchSpecialtiesFallback({ query, active, page, limit }) {
     const skip = (page - 1) * limit;
-    
+
     const whereClause = {};
     if (active !== undefined) {
       whereClause.active = active;
@@ -469,8 +462,6 @@ class SearchService {
         active: spec.active,
         createdAt: spec.createdAt,
         updatedAt: spec.updatedAt,
-        highlights: null,
-        score: null,
       })),
       meta: {
         page,

@@ -31,22 +31,25 @@ class SearchController {
 
       const { query, page = 1, limit = 10 } = parsedQuery.data;
 
-      // Run search on Doctors and Blogs concurrently
-      const [doctorsResult, blogsResult] = await Promise.all([
+      // Run search on Doctors, Blogs, and Specialties concurrently
+      const [doctorsResult, blogsResult, specialtiesResult] = await Promise.all([
         SearchService.searchDoctors({ query, page, limit }),
-        SearchService.searchBlogs({ query, page, limit })
+        SearchService.searchBlogs({ query, page, limit }),
+        SearchService.searchSpecialties({ query, active: true, page, limit })
       ]);
 
       return res.status(200).json({
         success: true,
         data: {
           doctors: doctorsResult.data || [],
-          blogs: blogsResult.data || []
+          blogs: blogsResult.data || [],
+          specialties: specialtiesResult.data || []
         },
         meta: {
           query,
           doctorsCount: doctorsResult.meta?.total || 0,
-          blogsCount: blogsResult.meta?.total || 0
+          blogsCount: blogsResult.meta?.total || 0,
+          specialtiesCount: specialtiesResult.meta?.total || 0
         }
       });
     } catch (error) {

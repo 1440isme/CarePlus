@@ -185,6 +185,7 @@ class AppointmentService {
         const socketService = require('../../infrastructure/realtime/socket.service');
         const appointmentDto = toAppointmentDto(appointment);
         socketService.emitToUser(doctor.id, 'appointment:created', appointmentDto);
+        socketService.emitToRole('receptionist', 'appointment:created', appointmentDto);
         socketService.emitToRole('admin', 'appointment:created', appointmentDto);
       } catch (socketErr) {
         console.error('Failed to emit appointment:created socket event:', socketErr.message);
@@ -205,6 +206,34 @@ class AppointmentService {
         time: timeStr,
         fee: doctor.price,
       }).catch((err) => console.error('Failed to send booking success email:', err.message));
+
+      // 8. Create in-app notifications
+      try {
+        const notificationService = require('../notification/notification.service');
+        // Notify patient
+        notificationService.createNotification({
+          userId: user.id,
+          title: 'Đặt lịch hẹn thành công',
+          content: `Lịch hẹn khám của bạn với Bác sĩ ${doctor.name} mã ${appointment.code} đã được đặt thành công vào lúc ${timeStr} ngày ${dateStr}.`,
+          type: 'APPOINTMENT',
+          link: '/benh-nhan/lich-hen'
+        }).catch(err => console.error('Failed to create in-app notification for patient:', err.message));
+
+        // Notify receptionist role users
+        prisma.user.findMany({ where: { role: 'RECEPTIONIST' } }).then(receptionists => {
+          receptionists.forEach(rep => {
+            notificationService.createNotification({
+              userId: rep.id,
+              title: 'Lịch hẹn mới được tạo',
+              content: `Bệnh nhân ${user.name} đã đặt lịch hẹn mới mã ${appointment.code} với Bác sĩ ${doctor.name} vào lúc ${timeStr} ngày ${dateStr}.`,
+              type: 'APPOINTMENT',
+              link: '/portal/le-tan/lich-hen'
+            }).catch(err => console.error('Failed to create in-app notification for receptionist:', err.message));
+          });
+        });
+      } catch (notiErr) {
+        console.error('Failed to trigger in-app notifications:', notiErr.message);
+      }
 
       return toAppointmentDto(appointment);
     } catch (error) {
@@ -380,10 +409,10 @@ class AppointmentService {
 
       // 7. Send success email asynchronously
       const emailRecipient = user ? user.email : (bookingData.email?.trim() || null);
-      if (emailRecipient) {
-        const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
-        const dateStr = appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
+      const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
+      const dateStr = appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
 
+      if (emailRecipient) {
         this.mailService.sendBookingSuccessEmail({
           to: emailRecipient,
           name: user ? user.name : bookingData.name.trim(),
@@ -394,6 +423,22 @@ class AppointmentService {
           time: timeStr,
           fee: doctor.price,
         }).catch((err) => console.error('Failed to send booking success email:', err.message));
+      }
+
+      // 8. Create in-app notifications if user exists
+      if (user) {
+        try {
+          const notificationService = require('../notification/notification.service');
+          notificationService.createNotification({
+            userId: user.id,
+            title: 'Lịch hẹn mới được đặt hộ',
+            content: `Lễ tân đã đặt lịch hẹn khám mã ${appointment.code} với Bác sĩ ${doctor.name} cho bạn vào lúc ${timeStr} ngày ${dateStr}.`,
+            type: 'APPOINTMENT',
+            link: '/benh-nhan/lich-hen'
+          }).catch(err => console.error('Failed to create in-app notification for patient:', err.message));
+        } catch (notiErr) {
+          console.error('Failed to trigger in-app notification:', notiErr.message);
+        }
       }
 
       return toAppointmentDto(appointment);
@@ -826,11 +871,25 @@ class AppointmentService {
         const socketService = require('../../infrastructure/realtime/socket.service');
         const appointmentDto = toAppointmentDto(updatedAppointment);
         socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
-        socketService.emitToUser(updatedAppointment.doctorId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToUser(updatedAppointment.doctor.userId, 'appointment:status-changed', appointmentDto);
         socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
         socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
       } catch (socketErr) {
         console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
+      }
+
+      // Trigger in-app notification to patient when COMPLETED
+      try {
+        const notificationService = require('../notification/notification.service');
+        notificationService.createNotification({
+          userId: updatedAppointment.patientId,
+          title: 'Buổi khám hoàn thành',
+          content: `Chúc mừng bạn đã hoàn thành lịch khám mã ${updatedAppointment.code} với Bác sĩ ${appointment.doctor.name}. Bạn có thể gửi đánh giá cho buổi khám ngay bây giờ.`,
+          type: 'APPOINTMENT',
+          link: '/benh-nhan/lich-hen'
+        }).catch(err => console.error('Failed to notify patient of completed appointment:', err.message));
+      } catch (notiErr) {
+        console.error('Failed to send in-app notification:', notiErr.message);
       }
 
       return toAppointmentDto(updatedAppointment);
@@ -959,7 +1018,7 @@ class AppointmentService {
         const socketService = require('../../infrastructure/realtime/socket.service');
         const appointmentDto = toAppointmentDto(updatedAppointment);
         socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
-        socketService.emitToUser(updatedAppointment.doctorId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToUser(updatedAppointment.doctor.userId, 'appointment:status-changed', appointmentDto);
         socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
         socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
       } catch (socketErr) {
@@ -977,6 +1036,30 @@ class AppointmentService {
         time: `${appointment.startTime} - ${appointment.endTime}`,
         reason: body.reason || 'Hủy theo yêu cầu của bệnh nhân',
       }).catch((err) => console.error('Failed to send booking cancellation email:', err.message));
+
+      // Trigger in-app notifications
+      try {
+        const notificationService = require('../notification/notification.service');
+        // Notify patient
+        notificationService.createNotification({
+          userId: updatedAppointment.patientId,
+          title: 'Hủy lịch hẹn thành công',
+          content: `Lịch hẹn khám mã ${updatedAppointment.code} của bạn đã được hủy thành công.`,
+          type: 'APPOINTMENT',
+          link: '/benh-nhan/lich-hen'
+        }).catch(err => console.error('Failed to notify patient of cancellation:', err.message));
+
+        // Notify doctor
+        notificationService.createNotification({
+          userId: appointment.doctor.userId,
+          title: 'Lịch hẹn bị hủy',
+          content: `Lịch hẹn khám mã ${updatedAppointment.code} của bệnh nhân ${appointment.patient.name} đã bị hủy bởi bệnh nhân.`,
+          type: 'APPOINTMENT',
+          link: '/portal/bac-si/lich-hen'
+        }).catch(err => console.error('Failed to notify doctor of cancellation:', err.message));
+      } catch (notiErr) {
+        console.error('Failed to send in-app notification:', notiErr.message);
+      }
 
       return toAppointmentDto(updatedAppointment);
     } catch (error) {
@@ -1088,11 +1171,46 @@ class AppointmentService {
         const socketService = require('../../infrastructure/realtime/socket.service');
         const appointmentDto = toAppointmentDto(updatedAppointment);
         socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
-        socketService.emitToUser(updatedAppointment.doctorId, 'appointment:status-changed', appointmentDto);
+        socketService.emitToUser(updatedAppointment.doctor.userId, 'appointment:status-changed', appointmentDto);
         socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
         socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
       } catch (socketErr) {
         console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
+      }
+
+      // Trigger in-app notifications on status change
+      try {
+        const notificationService = require('../notification/notification.service');
+        const getStatusLabel = (status) => {
+          switch(status) {
+            case 'CONFIRMED': return 'Đã xác nhận';
+            case 'CHECKED_IN': return 'Đã Check-in';
+            case 'COMPLETED': return 'Đã hoàn thành';
+            case 'CANCELLED': return 'Đã hủy';
+            case 'NO_SHOW': return 'Không đến khám (No-show)';
+            default: return status;
+          }
+        };
+
+        // Notify patient
+        notificationService.createNotification({
+          userId: updatedAppointment.patientId,
+          title: 'Trạng thái lịch hẹn thay đổi',
+          content: `Lịch hẹn khám mã ${updatedAppointment.code} của bạn đã được cập nhật sang trạng thái: ${getStatusLabel(newStatus)}.`,
+          type: 'APPOINTMENT',
+          link: '/benh-nhan/lich-hen'
+        }).catch(err => console.error('Failed to notify patient of status update:', err.message));
+
+        // Notify doctor
+        notificationService.createNotification({
+          userId: appointment.doctor.userId,
+          title: 'Trạng thái lịch hẹn thay đổi',
+          content: `Lịch hẹn khám mã ${updatedAppointment.code} của bệnh nhân ${appointment.patient.name} đã được cập nhật sang trạng thái: ${getStatusLabel(newStatus)}.`,
+          type: 'APPOINTMENT',
+          link: '/portal/bac-si/lich-hen'
+        }).catch(err => console.error('Failed to notify doctor of status update:', err.message));
+      } catch (notiErr) {
+        console.error('Failed to trigger in-app notification on status change:', notiErr.message);
       }
 
       return toAppointmentDto(updatedAppointment);

@@ -141,7 +141,7 @@ export default function PatientPersonalInfoPage() {
 
   if (!accessToken) {
     return (
-      <div className="max-w-[560px] font-sans">
+      <div className="max-w-[560px] mx-auto font-sans">
         <div className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm">
           <h2 className="text-base font-bold text-gray-800 mb-2">Thông tin cá nhân</h2>
           <p className="text-sm text-gray-500 mb-4">
@@ -157,7 +157,7 @@ export default function PatientPersonalInfoPage() {
 
   if (meQuery.isLoading) {
     return (
-      <div className="max-w-[560px] font-sans">
+      <div className="max-w-[560px] mx-auto font-sans">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-xl font-bold text-gray-800">Thông tin cá nhân</h2>
         </div>
@@ -174,7 +174,7 @@ export default function PatientPersonalInfoPage() {
 
   if (meQuery.isError || !user) {
     return (
-      <div className="max-w-[560px] font-sans">
+      <div className="max-w-[560px] mx-auto font-sans">
         <div className="bg-white border border-gray-200 rounded-lg p-6 text-center shadow-sm">
           <h2 className="text-base font-bold text-gray-800 mb-2">Thông tin cá nhân</h2>
           <p className="text-sm text-gray-500 mb-4">
@@ -193,7 +193,7 @@ export default function PatientPersonalInfoPage() {
   }
 
   return (
-    <div className="max-w-[560px] font-sans">
+    <div className="max-w-[560px] mx-auto font-sans">
       {isEditing ? (
         <>
           <div className="flex items-center justify-between mb-5">

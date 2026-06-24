@@ -323,9 +323,6 @@ export default function DoctorDetailPage() {
                                   {isToday ? 'Hôm nay' : option.weekday}
                                 </span>
                                 <span className="text-lg font-bold mt-0.5">{option.day.split('/')[0]}</span>
-                                <span className={`text-[10px] ${isSelected ? 'text-cyan-100' : 'text-gray-400'}`}>
-                                  Th{Number(option.day.split('/')[1])}
-                                </span>
                               </button>
                             );
                           })}
@@ -346,15 +343,18 @@ export default function DoctorDetailPage() {
                                   {slotGroups.morning.map(slot => {
                                     const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
                                     const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
+                                    const isNotPatient = isAuthenticated && role && role !== 'PATIENT';
                                     return (
                                       <button
                                         key={slot.startTime}
                                         type="button"
-                                        disabled={isBooked}
+                                        disabled={isBooked || isNotPatient}
                                         onClick={() => handleBook(doctor.id, slotTimeStr)}
                                         className={`py-2 px-3 text-xs rounded-xl text-center font-medium border transition-all ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                                            : isNotPatient
+                                            ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
                                         }`}
                                       >
@@ -377,15 +377,18 @@ export default function DoctorDetailPage() {
                                   {slotGroups.afternoon.map(slot => {
                                     const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
                                     const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
+                                    const isNotPatient = isAuthenticated && role && role !== 'PATIENT';
                                     return (
                                       <button
                                         key={slot.startTime}
                                         type="button"
-                                        disabled={isBooked}
+                                        disabled={isBooked || isNotPatient}
                                         onClick={() => handleBook(doctor.id, slotTimeStr)}
                                         className={`py-2 px-3 text-xs rounded-xl text-center font-medium border transition-all ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                                            : isNotPatient
+                                            ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
                                         }`}
                                       >
@@ -560,8 +563,13 @@ export default function DoctorDetailPage() {
                     
                     <button
                       type="button"
+                      disabled={isAuthenticated && role && role !== 'PATIENT'}
                       onClick={() => setActiveTab('lich')}
-                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2"
+                      className={`w-full py-3 text-white rounded-xl text-xs font-bold transition-colors flex items-center justify-center gap-2 ${
+                        isAuthenticated && role && role !== 'PATIENT'
+                          ? 'bg-gray-300 cursor-not-allowed'
+                          : 'bg-amber-500 hover:bg-amber-600 cursor-pointer'
+                      }`}
                     >
                       <Calendar className="w-4 h-4" />
                       Đặt lịch ngay
@@ -569,8 +577,13 @@ export default function DoctorDetailPage() {
                     
                     <button
                       type="button"
+                      disabled={isAuthenticated && role && role !== 'PATIENT'}
                       onClick={handleChatWithDoctor}
-                      className="w-full py-2.5 border border-cyan-400 text-cyan-600 hover:bg-cyan-50 rounded-xl text-xs font-bold cursor-pointer transition-colors flex items-center justify-center gap-2"
+                      className={`w-full py-2.5 border text-xs font-bold transition-colors flex items-center justify-center gap-2 rounded-xl ${
+                        isAuthenticated && role && role !== 'PATIENT'
+                          ? 'border-gray-200 text-gray-400 bg-gray-50 cursor-not-allowed'
+                          : 'border-cyan-400 text-cyan-600 hover:bg-cyan-50 cursor-pointer'
+                      }`}
                     >
                       <MessageSquare className="w-4 h-4" />
                       Nhắn tin với bác sĩ
