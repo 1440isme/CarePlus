@@ -790,6 +790,29 @@
           }
         }
       ]
+    },
+    {
+      "name": "AI Assistant",
+      "item": [
+        {
+          "name": "Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"CarePlus có chuyên khoa tim mạch không?\"\n}"
+            },
+            "url": "{{baseUrl}}/ai-assistant/chat",
+            "description": "Public CarePlus AI chat endpoint. Only supports CarePlus/public-safe questions, refuses out-of-scope or sensitive requests, and does not diagnose diseases."
+          }
+        }
+      ]
     }
   ],
   "variable": [

@@ -18,6 +18,7 @@ const appointmentRoutes = require('./modules/appointment/appointment.routes');
 const reviewRoutes = require('./modules/review/review.routes');
 const chatRoutes = require('./modules/chat/chat.routes');
 const notificationRoutes = require('./modules/notification/notification.routes');
+const aiAssistantRoutes = require('./modules/ai-assistant/ai-assistant.routes');
 
 // Load environment variables
 dotenv.config();
@@ -155,6 +156,7 @@ app.use('/api/v1/search', searchRoutes);
 app.use('/api/v1/reviews', reviewRoutes);
 app.use('/api/v1/chat', chatRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/ai-assistant', aiAssistantRoutes);
 
 // Global 404 Route handler
 app.use((req, res, next) => {
