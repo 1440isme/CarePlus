@@ -6,7 +6,7 @@ import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import {
-  buildVirtualSlots,
+  buildVirtualSlotsForSchedules,
   filterSlotGroupsBySchedules,
   mergePersistedSlots,
 } from '../../features/timeslot/virtual-slot.service.js';
@@ -315,7 +315,7 @@ export default function ReceptionistBookingPage() {
       return { morning: [], afternoon: [] };
     }
     return mergePersistedSlots(
-      filterSlotGroupsBySchedules(buildVirtualSlots(systemSettingsResponse?.data), schedules),
+      filterSlotGroupsBySchedules(buildVirtualSlotsForSchedules(systemSettingsResponse?.data, schedules), schedules),
       slotData.slots || [],
     );
   }, [slotData, systemSettingsResponse?.data]);

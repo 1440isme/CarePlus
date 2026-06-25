@@ -8,7 +8,7 @@ import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import {
-  buildVirtualSlots,
+  buildVirtualSlotsForSchedules,
   filterSlotGroupsBySchedules,
   mergePersistedSlots,
 } from '../../features/timeslot/virtual-slot.service.js';
@@ -119,7 +119,7 @@ export default function DoctorDetailPage() {
     }
 
     return mergePersistedSlots(
-      filterSlotGroupsBySchedules(buildVirtualSlots(bookingRulesResponse?.data), schedules),
+      filterSlotGroupsBySchedules(buildVirtualSlotsForSchedules(bookingRulesResponse?.data, schedules), schedules),
       slotData.slots || [],
     );
   }, [slotData, bookingRulesResponse?.data]);

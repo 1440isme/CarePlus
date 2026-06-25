@@ -3,7 +3,7 @@ import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import { Search, Heart, MapPin, Star, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDoctorList } from '../../features/doctor/index.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
-import { buildVirtualSlots, flattenSlotGroups, filterSlotGroupsBySchedules, mergePersistedSlots } from '../../features/timeslot/virtual-slot.service.js';
+import { buildVirtualSlotsForSchedules, flattenSlotGroups, filterSlotGroupsBySchedules, mergePersistedSlots } from '../../features/timeslot/virtual-slot.service.js';
 import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
@@ -24,7 +24,7 @@ function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
     if (schedules.length === 0) return { morning: [], afternoon: [] };
 
     return mergePersistedSlots(
-      filterSlotGroupsBySchedules(buildVirtualSlots(bookingRulesData), schedules),
+      filterSlotGroupsBySchedules(buildVirtualSlotsForSchedules(bookingRulesData, schedules), schedules),
       slotData?.slots || [],
     );
   }, [tsData, bookingRulesData]);
