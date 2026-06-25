@@ -434,7 +434,6 @@ export default function AdminScheduleManagementPage() {
                     required
                     placeholder="mm/dd/yyyy"
                   />
-                  <Calendar className="w-4 h-4 text-gray-400" aria-hidden="true" />
                 </span>
               </label>
 
@@ -450,7 +449,6 @@ export default function AdminScheduleManagementPage() {
                     required
                     placeholder="mm/dd/yyyy"
                   />
-                  <Calendar className="w-4 h-4 text-gray-400" aria-hidden="true" />
                 </span>
               </label>
             </div>
