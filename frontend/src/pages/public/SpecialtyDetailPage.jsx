@@ -4,13 +4,91 @@ import { ChevronRight, Heart, MapPin, Star, Calendar, Clock } from 'lucide-react
 import { useDoctorList } from '../../features/doctor/index.js';
 import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
-import { buildVirtualSlots, flattenSlotGroups } from '../../features/timeslot/virtual-slot.service.js';
+import { buildVirtualSlotsForSchedules, filterSlotGroupsBySchedules, mergePersistedSlots } from '../../features/timeslot/virtual-slot.service.js';
+import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { useClinicInfo } from '../../features/admin/clinic-settings/hooks/useClinicInfo.js';
 
 function formatPrice(value) {
   return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+}
+
+// ── Per-doctor slot widget ────────────────────────────────────────────────────
+function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
+  const { data: tsData, isLoading } = useTimeSlots({ doctorId, date: selectedDate });
+
+  const slotGroups = useMemo(() => {
+    const slotData = tsData?.data;
+    const schedules = slotData?.schedules || [];
+    if (schedules.length === 0) return { morning: [], afternoon: [] };
+
+    return mergePersistedSlots(
+      filterSlotGroupsBySchedules(buildVirtualSlotsForSchedules(bookingRulesData, schedules), schedules),
+      slotData?.slots || [],
+    );
+  }, [tsData, bookingRulesData]);
+
+  const allSlots = useMemo(() => {
+    return [
+      ...(slotGroups.morning || []),
+      ...(slotGroups.afternoon || []),
+    ];
+  }, [slotGroups]);
+
+  const availableCount = useMemo(() => {
+    return allSlots.filter(s => !['BOOKED', 'EXPIRED'].includes(s.status)).length;
+  }, [allSlots]);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (allSlots.length === 0) {
+    return (
+      <div className="py-4 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+        Bác sĩ chưa có lịch khám ngày này
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+        LỊCH KHÁM CÒN TRỐNG ({availableCount} khung)
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 mb-4">
+        {allSlots.slice(0, 8).map(slot => {
+          const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
+          const slotTime = `${slot.startTime}-${slot.endTime}`;
+          return (
+            <button
+              key={slot.startTime}
+              type="button"
+              disabled={isBooked}
+              onClick={() => onBook(doctorId, slotTime)}
+              className={`py-1.5 px-1 text-[11px] rounded-lg text-center font-medium border transition-all shadow-sm whitespace-nowrap ${
+                isBooked
+                  ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                  : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer'
+              }`}
+            >
+              {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-xs text-gray-500">
+        Chọn giờ và đặt <span className="text-green-600 font-bold">(Phí đặt lịch 0đ)</span>
+      </div>
+    </>
+  );
 }
 
 export default function SpecialtyDetailPage() {
@@ -69,14 +147,7 @@ export default function SpecialtyDetailPage() {
   const clinicInfo = clinicResponse?.data;
   const doctors = doctorListResponse?.data || [];
 
-  // Generate virtual slots based on rules
-  const slots = useMemo(
-    () => flattenSlotGroups(buildVirtualSlots(bookingRulesResponse?.data)).map(s => ({
-      time: `${s.startTime}-${s.endTime}`,
-      avail: true,
-    })),
-    [bookingRulesResponse?.data]
-  );
+
 
   const handleBook = (doctorId, slotTime) => {
     navigate(`/dat-lich?doctorId=${doctorId}&date=${selectedDate}&slot=${encodeURIComponent(slotTime)}`);
@@ -225,30 +296,12 @@ export default function SpecialtyDetailPage() {
                           <span>Lịch khám ngày {dateLabels[selectedDate] || selectedDate}</span>
                         </div>
 
-                        {slots.length > 0 ? (
-                          <>
-                            <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">LỊCH KHÁM CÒN TRỐNG</div>
-                            <div className="grid grid-cols-4 gap-2 mb-4">
-                              {slots.slice(0, 8).map(slot => (
-                                <button 
-                                  key={slot.time}
-                                  type="button"
-                                  onClick={() => handleBook(doctor.id, slot.time)}
-                                  className="py-1.5 px-2 text-xs rounded-lg text-center font-medium border border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 transition-all shadow-sm"
-                                >
-                                  {slot.time}
-                                </button>
-                              ))}
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              Chọn giờ và đặt <span className="text-green-600 font-bold">(Phí đặt lịch 0đ)</span>
-                            </div>
-                          </>
-                        ) : (
-                          <div className="py-4 text-center text-xs text-gray-400">
-                            Bác sĩ chưa mở lịch vào ngày này. Vui lòng chọn ngày khác.
-                          </div>
-                        )}
+                        <DoctorSlots
+                          doctorId={doctor.id}
+                          selectedDate={selectedDate}
+                          onBook={handleBook}
+                          bookingRulesData={bookingRulesResponse?.data}
+                        />
                       </div>
 
                       <div className="border-t border-gray-150 pt-4 mt-6 flex flex-col gap-2">
