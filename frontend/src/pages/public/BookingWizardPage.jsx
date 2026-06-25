@@ -69,6 +69,7 @@ export default function BookingWizardPage() {
 
   const ErrorBanner = () => {
     if (!stepError) return null;
+    const isLoginError = typeof stepError === 'string' && stepError.toLowerCase().includes('đăng nhập');
     return (
       <div style={{
         backgroundColor: '#FEE2E2',
@@ -82,9 +83,39 @@ export default function BookingWizardPage() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
+        gap: '12px',
         animation: 'fadeIn 0.2s ease-out'
       }}>
-        <span>⚠️ {stepError}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span>⚠️ {stepError}</span>
+          {isLoginError && (
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.setItem('pending_booking', JSON.stringify({
+                  specialty: bookingData.specialty,
+                  doctor: bookingData.doctor,
+                  date: bookingData.date,
+                  timeSlot: bookingData.timeSlot,
+                  step: 3
+                }));
+                navigate('/dang-nhap?redirect=/dat-lich');
+              }}
+              style={{
+                background: primary,
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                padding: '4px 10px',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: '0.8rem',
+              }}
+            >
+              Đăng nhập ngay
+            </button>
+          )}
+        </div>
         <button
           type="button"
           onClick={() => setStepError(null)}
@@ -283,14 +314,27 @@ export default function BookingWizardPage() {
           date: parsed.date,
           timeSlot: parsed.timeSlot,
         }));
-        setStep(parsed.step || 1);
+        if (isAuthenticated) {
+          setStep(parsed.step || 1);
+        } else {
+          setStep(2);
+          setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
+        }
       } catch (err) {
         console.error('Failed to parse pending booking state', err);
       } finally {
         sessionStorage.removeItem('pending_booking');
       }
     }
-  }, []);
+  }, [isAuthenticated]);
+
+  // Protect step 3 and 4: prevent unauthenticated users from entering
+  useEffect(() => {
+    if (!isAuthenticated && (step === 3 || step === 4)) {
+      setStep(2);
+      setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
+    }
+  }, [step, isAuthenticated]);
 
   // Handle query parameters (?doctorId=...&date=...&slot=...) on mount/load
   useEffect(() => {
@@ -500,20 +544,8 @@ export default function BookingWizardPage() {
         if (isAuthenticated) {
           setStep(3);
         } else {
-          // Save state to sessionStorage and redirect to login
-          const queryDoctorId = searchParams.get('doctorId');
-          const doc = doctorsQuery.data?.data?.find(d => String(d.id) === String(queryDoctorId));
-          const spec = specialtiesQuery.data?.data?.find(s => s.id === doc?.specialtyId);
-          const queryDate = searchParams.get('date') || new Date().toLocaleDateString('sv').slice(0, 10);
-          
-          sessionStorage.setItem('pending_booking', JSON.stringify({
-            specialty: spec || null,
-            doctor: doc || null,
-            date: queryDate,
-            timeSlot: matchedSlot,
-            step: 3
-          }));
-          navigate('/dang-nhap?redirect=/dat-lich');
+          setStep(2);
+          setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
         }
       }
     }
@@ -539,15 +571,7 @@ export default function BookingWizardPage() {
       }
       // Authenticity Check before going to Step 3
       if (!isAuthenticated) {
-        // Save pending booking in session storage
-        sessionStorage.setItem('pending_booking', JSON.stringify({
-          specialty: bookingData.specialty,
-          doctor: bookingData.doctor,
-          date: bookingData.date,
-          timeSlot: bookingData.timeSlot,
-          step: 3
-        }));
-        navigate('/dang-nhap?redirect=/dat-lich');
+        setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
       } else {
         setStep(3);
       }

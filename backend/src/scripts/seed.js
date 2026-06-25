@@ -21,6 +21,7 @@ async function seed() {
 
     // 1. Clear database tables in correct order
     console.log('Clearing existing data...');
+    await prisma.notification.deleteMany({});
     await prisma.review.deleteMany({});
     await prisma.message.deleteMany({});
     await prisma.conversation.deleteMany({});
@@ -98,37 +99,37 @@ async function seed() {
     const doctorsData = [
       {
         id: "d1", userId: "u3", title: "ThS.BS", name: "Nguyễn Minh Anh", specialtyId: "s2", specialtyName: "Tim mạch",
-        experience: 8, price: 300000, rating: 4.8, reviewCount: 124, position: "Bác sĩ điều trị", active: true,
+        experience: 18, price: 300000, rating: 4.9, reviewCount: 124, position: "Bác sĩ điều trị", active: true,
         avatar: "https://images.unsplash.com/photo-1612531386530-97286d97c2d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80",
-        description: "ThS.BS Nguyễn Minh Anh có hơn 8 năm kinh nghiệm trong lĩnh vực tim mạch. Tốt nghiệp Đại học Y Hà Nội, hoàn thành chương trình thạc sĩ tại Pháp. Chuyên sâu về điều trị tăng huyết áp, rối loạn nhịp tim và suy tim."
+        description: "ThS.BS Nguyễn Minh Anh có hơn 18 năm kinh nghiệm trong lĩnh vực tim mạch. Tốt nghiệp Đại học Y Hà Nội, hoàn thành chương trình thạc sĩ tại Pháp. Chuyên sâu về điều trị tăng huyết áp, rối loạn nhịp tim và suy tim."
       },
       {
         id: "d2", userId: "u4", title: "BS.CKII", name: "Trần Quốc Huy", specialtyId: "s1", specialtyName: "Cơ Xương Khớp",
-        experience: 12, price: 350000, rating: 4.9, reviewCount: 208, position: "Trưởng khoa", active: true,
+        experience: 12, price: 350000, rating: 4.7, reviewCount: 208, position: "Trưởng khoa", active: true,
         avatar: "https://images.unsplash.com/photo-1612531385446-f7e6d131e1d0?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80",
         description: "BS.CKII Trần Quốc Huy là chuyên gia hàng đầu về cơ xương khớp với 12 năm kinh nghiệm. Đã điều trị thành công cho hàng nghìn bệnh nhân mắc bệnh thoái hóa khớp, viêm khớp dạng thấp."
       },
       {
         id: "d3", userId: "u_d3", title: "BS", name: "Lê Thảo Vy", specialtyId: "s4", specialtyName: "Nhi khoa",
-        experience: 6, price: 250000, rating: 4.7, reviewCount: 89, position: "Bác sĩ điều trị", active: true,
+        experience: 8, price: 250000, rating: 4.8, reviewCount: 89, position: "Bác sĩ điều trị", active: true,
         avatar: "https://images.unsplash.com/photo-1659353888906-adb3e0041693?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80",
-        description: "BS Lê Thảo Vy là bác sĩ nhi khoa tận tâm với 6 năm kinh nghiệm. Chuyên về chăm sóc sức khỏe trẻ em, tư vấn dinh dưỡng và phát triển cho trẻ từ sơ sinh đến tuổi vị thành niên."
+        description: "BS Lê Thảo Vy là bác sĩ nhi khoa tận tâm với 8 năm kinh nghiệm. Chuyên về chăm sóc sức khỏe trẻ em, tư vấn dinh dưỡng và phát triển cho trẻ từ sơ sinh đến tuổi vị thành niên."
       },
       {
         id: "d4", userId: "u_d4", title: "TS.BS", name: "Phạm Hoàng Nam", specialtyId: "s6", specialtyName: "Tiêu hóa",
-        experience: 15, price: 400000, rating: 4.9, reviewCount: 312, position: "Trưởng khoa", active: true,
+        experience: 25, price: 400000, rating: 5.0, reviewCount: 312, position: "Trưởng khoa", active: true,
         avatar: "https://images.unsplash.com/photo-1645066928295-2506defde470?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80",
-        description: "TS.BS Phạm Hoàng Nam là tiến sĩ y học với 15 năm kinh nghiệm trong lĩnh vực tiêu hóa. Chuyên sâu về nội soi tiêu hóa, điều trị viêm loét dạ dày, bệnh gan và các rối loạn tiêu hóa phức tạp."
+        description: "TS.BS Phạm Hoàng Nam là tiến sĩ y học với 25 năm kinh nghiệm trong lĩnh vực tiêu hóa. Chuyên sâu về nội soi tiêu hóa, điều trị viêm loét dạ dày, bệnh gan và các rối loạn tiêu hóa phức tạp."
       },
       {
         id: "d5", userId: "u_d5", title: "BS.CKI", name: "Nguyễn Thu Hương", specialtyId: "s5", specialtyName: "Da liễu",
-        experience: 9, price: 280000, rating: 4.6, reviewCount: 156, position: "Bác sĩ điều trị", active: true,
+        experience: 12, price: 280000, rating: 4.7, reviewCount: 156, position: "Bác sĩ điều trị", active: true,
         avatar: "https://images.unsplash.com/photo-1740153204572-5ab53aa9e901?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80",
-        description: "BS.CKI Nguyễn Thu Hương là chuyên gia da liễu với 9 năm kinh nghiệm. Chuyên điều trị các bệnh da liễu như mụn, chàm, vảy nến và tư vấn chăm sóc da chuyên sâu."
+        description: "BS.CKI Nguyễn Thu Hương là chuyên gia da liễu với 12 năm kinh nghiệm. Chuyên điều trị các bệnh da liễu như mụn, chàm, vảy nến và tư vấn chăm sóc da chuyên sâu."
       },
       {
         id: "d6", userId: "u_d6", title: "ThS.BS", name: "Vũ Đức Thành", specialtyId: "s8", specialtyName: "Nội tổng quát",
-        experience: 10, price: 200000, rating: 4.5, reviewCount: 98, position: "Bác sĩ điều trị", active: true,
+        experience: 10, price: 200000, rating: 4.6, reviewCount: 98, position: "Bác sĩ điều trị", active: true,
         avatar: "https://images.unsplash.com/photo-1612531386530-97286d97c2d2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&w=400&q=80",
         description: "ThS.BS Vũ Đức Thành có 10 năm kinh nghiệm trong lĩnh vực nội khoa tổng quát. Chuyên khám tầm soát sức khỏe định kỳ, phát hiện sớm và điều trị các bệnh mãn tính."
       }
@@ -197,7 +198,8 @@ async function seed() {
     // 8. Generate working schedules and time slots according to user's schedule rules
     console.log('Generating working schedules and time slots...');
     const start = new Date('2026-06-01');
-    const end = new Date('2026-06-28');
+    const end = new Date();
+    end.setDate(end.getDate() + 30);
 
     const unavailableMap = {
       "d1-2026-06-10": ["09:30", "10:00"],
@@ -432,7 +434,59 @@ async function seed() {
     }
     console.log('Appointments created successfully.');
 
-    // 10. Create Blog Posts
+    // 10. Create Reviews
+    console.log('Creating reviews...');
+    const mockReviews = [
+      { id: 'rv1', appointmentId: 'a1', rating: 5, comment: 'Bác sĩ rất tận tâm, giải thích rõ ràng và chi tiết. Tôi rất hài lòng với buổi khám.', dateStr: '2026-06-10' },
+      { id: 'rv2', appointmentId: 'a2', rating: 4, comment: 'Khám nhanh, chuyên nghiệp. Bác sĩ có kinh nghiệm và thái độ tốt.', dateStr: '2026-06-08' },
+      { id: 'rv3', appointmentId: 'a3', rating: 5, comment: 'Bác sĩ giỏi, chẩn đoán chính xác và tư vấn rất cụ thể. Sẽ quay lại lần sau.', dateStr: '2026-06-05' },
+      { id: 'rv4', appointmentId: 'a4', rating: 4, comment: 'Hài lòng với dịch vụ. Chờ đợi hơi lâu nhưng bác sĩ khám kỹ.', dateStr: '2026-06-03' },
+      { id: 'rv5', appointmentId: 'a5', rating: 5, comment: 'Xuất sắc! Bác sĩ rất kiên nhẫn lắng nghe và đưa ra phác đồ điều trị phù hợp.', dateStr: '2026-06-01' },
+      { id: 'rv6', appointmentId: 'a6', rating: 4, comment: 'Tốt, sẽ giới thiệu cho bạn bè. Bác sĩ có chuyên môn cao.', dateStr: '2026-05-28' },
+      { id: 'rv7', appointmentId: 'a7', rating: 3, comment: 'Khám ổn, tuy nhiên cần thêm thời gian giải thích cho bệnh nhân.', dateStr: '2026-05-25' },
+      { id: 'rv8', appointmentId: 'a20', rating: 5, comment: 'Bác sĩ rất giỏi, tư vấn chi tiết và nhiệt tình.', dateStr: '2026-06-12' },
+    ];
+
+    for (const rv of mockReviews) {
+      const appt = await prisma.appointment.findUnique({ where: { id: rv.appointmentId } });
+      if (appt) {
+        await prisma.review.create({
+          data: {
+            id: rv.id,
+            appointmentId: rv.appointmentId,
+            doctorId: appt.doctorId,
+            patientId: appt.patientId || 'u1',
+            patientName: appt.patientName || 'Bệnh nhân',
+            rating: rv.rating,
+            comment: rv.comment,
+            createdAt: new Date(rv.dateStr),
+            updatedAt: new Date(rv.dateStr)
+          }
+        });
+      }
+    }
+    console.log('Reviews created.');
+
+    // 11. Update Doctor Ratings based on actual reviews
+    console.log('Updating doctor ratings and review counts...');
+    const dbDoctors = await prisma.doctor.findMany({});
+    for (const doc of dbDoctors) {
+      const reviews = await prisma.review.findMany({ where: { doctorId: doc.id } });
+      if (reviews.length > 0) {
+        const totalRating = reviews.reduce((sum, r) => sum + r.rating, 0);
+        const average = Math.round((totalRating / reviews.length) * 10) / 10;
+        await prisma.doctor.update({
+          where: { id: doc.id },
+          data: {
+            rating: average,
+            reviewCount: reviews.length
+          }
+        });
+      }
+    }
+    console.log('Doctor ratings and review counts updated.');
+
+    // 12. Create Blog Posts
     console.log('Creating blog posts...');
     await prisma.blogPost.createMany({
       data: [
@@ -492,7 +546,7 @@ async function seed() {
     });
     console.log('Blog posts created.');
 
-    // 11. Create Approval Requests
+    // 13. Create Approval Requests
     console.log('Creating approval requests...');
     await prisma.approvalRequest.createMany({
       data: [
@@ -536,6 +590,7 @@ async function seed() {
     console.log('- Admin: admin@careplus.vn');
     console.log('- Receptionist: letan@careplus.vn');
     console.log('- Patient: nguyenvana@email.com');
+    console.log('- Doctor: bsminhanh@careplus.vn');
     console.log('=============================================');
   } catch (err) {
     console.error('Seeding database failed:', err);
