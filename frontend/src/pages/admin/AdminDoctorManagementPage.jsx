@@ -1,7 +1,7 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, Plus, Loader2 } from 'lucide-react';
-import { useDoctorList } from '../../features/doctor/index.js';
+import { Search, Plus, X, Edit2, Save, Loader2 } from 'lucide-react';
+import { useDoctorDetail, useDoctorList, useUpdateDoctorByAdmin, useUpdateDoctorPrice } from '../../features/doctor/index.js';
 import { useAdminSpecialties } from '../../features/admin/specialties/hooks/useAdminSpecialties.js';
 import { APP_ROUTES } from '../../shared/constants/routes.js';
 
@@ -23,11 +23,293 @@ function getMetaValue(meta, key, fallback) {
   return meta?.[key] ?? fallback;
 }
 
+function DetailRow({ label, value }) {
+  return (
+    <div className="flex items-start justify-between gap-4 border-b border-gray-100 py-3 last:border-b-0">
+      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">{label}</span>
+      <span className="max-w-[58%] text-right text-sm font-medium text-gray-800">{value || '--'}</span>
+    </div>
+  );
+}
+
+function Field({ label, error, children }) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-xs font-semibold text-gray-600">{label}</span>
+      {children}
+      {error ? <span className="mt-1 block text-xs text-red-500">{error}</span> : null}
+    </label>
+  );
+}
+
+function buildDoctorFormValues(doctor) {
+  return {
+    name: doctor?.user?.name || doctor?.name || '',
+    title: doctor?.title || '',
+    experience: doctor?.experience ?? 0,
+    price: doctor?.price ?? 0,
+    position: doctor?.position || '',
+    description: doctor?.description || '',
+    active: doctor?.active !== false,
+  };
+}
+
+function AdminDoctorDetailDrawer({ doctor, onClose }) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [feedback, setFeedback] = useState('');
+  const [formValues, setFormValues] = useState(() => buildDoctorFormValues(doctor));
+  const [errors, setErrors] = useState({});
+  const detailQuery = useDoctorDetail(doctor?.id);
+  const updateDoctorMutation = useUpdateDoctorByAdmin();
+  const updatePriceMutation = useUpdateDoctorPrice();
+  const detailDoctor = detailQuery.data?.data || doctor;
+
+  useEffect(() => {
+    setIsEditing(false);
+    setFeedback('');
+    setErrors({});
+    setFormValues(buildDoctorFormValues(detailDoctor));
+  }, [detailDoctor?.id]);
+
+  useEffect(() => {
+    if (!isEditing) {
+      setFormValues(buildDoctorFormValues(detailDoctor));
+    }
+  }, [detailDoctor, isEditing]);
+
+  if (!doctor) {
+    return null;
+  }
+
+  const inputClass = 'w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 outline-none transition focus:border-[#49BCE2] focus:ring-2 focus:ring-[#49BCE2]/20';
+  const disabledInputClass = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400';
+  const avatarUrl = detailDoctor?.user?.avatarUrl || detailDoctor?.avatar;
+  const doctorName = detailDoctor?.user?.name || detailDoctor?.name || 'Bác sĩ';
+
+  const validateForm = () => {
+    const nextErrors = {};
+    if (!formValues.name.trim()) nextErrors.name = 'Vui lòng nhập họ tên.';
+    if (!formValues.title.trim()) nextErrors.title = 'Vui lòng nhập học hàm / học vị.';
+    if (!formValues.position.trim()) nextErrors.position = 'Vui lòng nhập chức vụ.';
+    if (!formValues.description.trim()) nextErrors.description = 'Vui lòng nhập giới thiệu.';
+    if (Number(formValues.experience) < 0) nextErrors.experience = 'Kinh nghiệm phải từ 0 trở lên.';
+    if (Number(formValues.price) < 0) nextErrors.price = 'Giá khám phải từ 0 trở lên.';
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
+
+  const handleChange = (event) => {
+    const { name, value, type, checked } = event.target;
+    setFeedback('');
+    setErrors((current) => ({ ...current, [name]: undefined }));
+    setFormValues((current) => ({
+      ...current,
+      [name]: type === 'checkbox' ? checked : value,
+    }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    if (!validateForm()) return;
+
+    const response = await updateDoctorMutation.mutateAsync({
+      doctorId: detailDoctor.id,
+      name: formValues.name.trim(),
+      title: formValues.title.trim(),
+      experience: Number(formValues.experience),
+      position: formValues.position.trim(),
+      description: formValues.description.trim(),
+      active: Boolean(formValues.active),
+    });
+
+    if (Number(formValues.price) !== Number(detailDoctor.price ?? 0)) {
+      await updatePriceMutation.mutateAsync({
+        doctorId: detailDoctor.id,
+        price: Number(formValues.price),
+      });
+    }
+
+    setFeedback(response?.data?.message || response?.message || 'Cập nhật hồ sơ bác sĩ thành công.');
+    setIsEditing(false);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-900/35" role="presentation" onClick={onClose}>
+      <aside
+        className="h-full w-full max-w-[560px] overflow-y-auto bg-white shadow-2xl"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Chi tiết bác sĩ"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400">Hồ sơ bác sĩ</p>
+            <h2 className="text-lg font-bold text-gray-900">Chi tiết bác sĩ</h2>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full p-2 text-gray-400 transition hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Đóng"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="space-y-5 px-6 py-5">
+          <section className="overflow-hidden rounded-2xl border border-gray-200 bg-white">
+            <div className="h-1.5 bg-[#49BCE2]" />
+            <div className="flex items-center gap-4 p-5">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#49BCE2] text-lg font-bold text-white">
+                {avatarUrl ? <img src={avatarUrl} alt="" className="h-full w-full object-cover" /> : doctorName.charAt(0)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <h3 className="truncate text-base font-bold text-gray-900">
+                  {detailDoctor?.title ? `${detailDoctor.title} ` : ''}{doctorName}
+                </h3>
+                <p className="mt-1 text-sm font-medium text-[#1587a8]">{detailDoctor?.specialtyName || 'Chưa phân khoa'}</p>
+                <span className={`mt-2 inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${detailDoctor?.active !== false ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-600'}`}>
+                  {detailDoctor?.active !== false ? 'Hoạt động' : 'Tạm ẩn'}
+                </span>
+              </div>
+              {!isEditing ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFeedback('');
+                    setErrors({});
+                    setIsEditing(true);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Chỉnh sửa
+                </button>
+              ) : null}
+            </div>
+          </section>
+
+          {detailQuery.isLoading ? (
+            <div className="rounded-xl border border-gray-100 bg-gray-50 p-4 text-sm text-gray-500">Đang tải chi tiết...</div>
+          ) : null}
+
+          {feedback ? (
+            <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3 text-sm font-medium text-green-700">{feedback}</div>
+          ) : null}
+
+          {!isEditing ? (
+            <>
+              <section className="rounded-2xl border border-gray-200 bg-white p-5">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-400">Thông tin chuyên môn</p>
+                <DetailRow label="Họ tên" value={`${detailDoctor?.title || ''} ${doctorName}`.trim()} />
+                <DetailRow label="Chuyên khoa" value={detailDoctor?.specialty?.name || detailDoctor?.specialtyName} />
+                <DetailRow label="Chức vụ" value={detailDoctor?.position} />
+                <DetailRow label="Kinh nghiệm" value={`${detailDoctor?.experience ?? 0} năm`} />
+                <DetailRow label="Giá khám" value={formatCurrency(detailDoctor?.price)} />
+                <DetailRow label="Đánh giá" value={`${Number(detailDoctor?.rating || 0).toFixed(1)} (${detailDoctor?.reviewCount || 0} lượt)`} />
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-5">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-400">Thông tin tài khoản</p>
+                <DetailRow label="Email" value={detailDoctor?.user?.email} />
+                <DetailRow label="Số điện thoại" value={detailDoctor?.user?.phone} />
+                <DetailRow label="Ngày tạo" value={detailDoctor?.createdAt ? new Date(detailDoctor.createdAt).toLocaleDateString('vi-VN') : '--'} />
+                <DetailRow label="Cập nhật" value={detailDoctor?.updatedAt ? new Date(detailDoctor.updatedAt).toLocaleDateString('vi-VN') : '--'} />
+              </section>
+
+              <section className="rounded-2xl border border-gray-200 bg-white p-5">
+                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-400">Giới thiệu</p>
+                <p className="whitespace-pre-line text-sm leading-6 text-gray-600">{detailDoctor?.description || 'Chưa cập nhật giới thiệu.'}</p>
+              </section>
+            </>
+          ) : (
+            <form className="space-y-4 rounded-2xl border border-gray-200 bg-white p-5" onSubmit={handleSubmit}>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Họ và tên" error={errors.name}>
+                  <input name="name" value={formValues.name} onChange={handleChange} className={inputClass} />
+                </Field>
+                <Field label="Học hàm / học vị" error={errors.title}>
+                  <input name="title" value={formValues.title} onChange={handleChange} className={inputClass} />
+                </Field>
+                <Field label="Số năm kinh nghiệm" error={errors.experience}>
+                  <input name="experience" type="number" value={formValues.experience} onChange={handleChange} className={inputClass} />
+                </Field>
+                <Field label="Giá khám" error={errors.price}>
+                  <input name="price" type="number" value={formValues.price} onChange={handleChange} className={inputClass} />
+                </Field>
+              </div>
+
+              <Field label="Chức vụ" error={errors.position}>
+                <input name="position" value={formValues.position} onChange={handleChange} className={inputClass} />
+              </Field>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Field label="Email">
+                  <input value={detailDoctor?.user?.email || ''} disabled className={disabledInputClass} />
+                </Field>
+                <Field label="Chuyên khoa">
+                  <input value={detailDoctor?.specialtyName || ''} disabled className={disabledInputClass} />
+                </Field>
+              </div>
+
+              <Field label="Giới thiệu" error={errors.description}>
+                <textarea name="description" rows={5} value={formValues.description} onChange={handleChange} className={inputClass} />
+              </Field>
+
+              <label className="flex items-center justify-between rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                <span>
+                  <span className="block text-sm font-semibold text-gray-800">Trạng thái hoạt động</span>
+                  <span className="text-xs text-gray-500">Tắt để tạm ẩn bác sĩ khỏi danh sách đặt lịch.</span>
+                </span>
+                <input name="active" type="checkbox" checked={formValues.active} onChange={handleChange} className="h-5 w-5 accent-[#49BCE2]" />
+              </label>
+
+              {updateDoctorMutation.error || updatePriceMutation.error ? (
+                <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600">
+                  {updateDoctorMutation.error?.message || updatePriceMutation.error?.message || 'Không thể cập nhật hồ sơ bác sĩ.'}
+                </p>
+              ) : null}
+
+              <div className="flex items-center justify-end gap-3 border-t border-gray-100 pt-4">
+                <button
+                  type="button"
+                  disabled={updateDoctorMutation.isPending || updatePriceMutation.isPending}
+                  onClick={() => {
+                    setFormValues(buildDoctorFormValues(detailDoctor));
+                    setErrors({});
+                    setFeedback('');
+                    updateDoctorMutation.reset();
+                    updatePriceMutation.reset();
+                    setIsEditing(false);
+                  }}
+                  className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600 transition hover:bg-gray-50 disabled:opacity-60"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  disabled={updateDoctorMutation.isPending || updatePriceMutation.isPending}
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#49BCE2] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#3ca4c5] disabled:opacity-60"
+                >
+                  {updateDoctorMutation.isPending || updatePriceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {updateDoctorMutation.isPending || updatePriceMutation.isPending ? 'Đang lưu...' : 'Lưu thay đổi'}
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </aside>
+    </div>
+  );
+}
+
 export default function AdminDoctorManagementPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [active, setActive] = useState('');
   const [specialtyId, setSpecialtyId] = useState('');
+  const [selectedDoctor, setSelectedDoctor] = useState(null);
 
   const doctorParams = useMemo(() => ({
     page,
@@ -205,12 +487,13 @@ export default function AdminDoctorManagementPage() {
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <Link
+                          <button
+                            type="button"
                             className="text-sm font-medium text-[#49BCE2] hover:text-[#3ca4c5] transition"
-                            to={`/bac-si/${doctor.id}`}
+                            onClick={() => setSelectedDoctor(doctor)}
                           >
                             Xem hồ sơ
-                          </Link>
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -254,6 +537,10 @@ export default function AdminDoctorManagementPage() {
           ) : null}
         </div>
       </div>
+      <AdminDoctorDetailDrawer
+        doctor={selectedDoctor}
+        onClose={() => setSelectedDoctor(null)}
+      />
     </div>
   );
 }
