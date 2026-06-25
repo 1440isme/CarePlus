@@ -2,26 +2,56 @@ import { useEffect, useRef, useState } from 'react';
 import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, X, Hospital, Minus, Camera, Send, Headphones, Stethoscope } from 'lucide-react';
-import { useConversations, useConversationMessages, useCreateConversation, useSendMessage, CHAT_QUERY_KEYS } from '../../../features/chat/index.js';
+import {
+  MessageCircle,
+  X,
+  Camera,
+  Send,
+  Headphones,
+  Stethoscope,
+  Hospital,
+} from 'lucide-react';
+import {
+  CHAT_QUERY_KEYS,
+  useConversations,
+  useConversationMessages,
+  useCreateConversation,
+  useSendMessage,
+} from '../../../features/chat/index.js';
+import {
+  AI_ASSISTANT_CONVERSATION_ID,
+  useAIAssistantChat,
+} from '../../../features/ai-assistant/index.js';
 import socketService from '../../services/socket.service.js';
 import axiosInstance from '../../services/axios.instance.js';
 
 const PRIMARY_COLOR = '#49BCE2';
 const SUPPORT_COLOR = '#F97316';
 const DOCTOR_COLOR = '#7C3AED';
+const EMPTY_CONVERSATIONS = [];
+
+function renderConversationIcon(type, className) {
+  if (type === 'SUPPORT') {
+    return <Headphones className={className} />;
+  }
+
+  if (type === 'AI_ASSISTANT') {
+    return <Hospital className={className} />;
+  }
+
+  return <Stethoscope className={className} />;
+}
 
 export default function ChatWidget() {
   const queryClient = useQueryClient();
+  const aiChat = useAIAssistantChat();
 
-  // Auth state
   const authUser = useSelector((state) => state.auth.user);
   const accessToken = useSelector((state) => state.auth.accessToken);
   const isAuthenticated = useSelector((state) => state.auth.isAuthenticated);
   const role = useSelector((state) => state.auth.role);
   const isPatient = role === 'PATIENT';
 
-  // UI state
   const [isOpen, setIsOpen] = useState(false);
   const [activeConvId, setActiveConvId] = useState(null);
   const [tempPartnerInfo, setTempPartnerInfo] = useState(null);
@@ -33,37 +63,33 @@ export default function ChatWidget() {
   const fileInputRef = useRef(null);
   const typingTimeoutRef = useRef(null);
 
-  // 1. Fetch conversations (only if authenticated and patient)
   const { data: convsResponse } = useConversations({
-    enabled: isAuthenticated && isPatient
+    enabled: isAuthenticated && isPatient,
   });
-  const conversations = convsResponse?.data || [];
+  const conversations = convsResponse?.data ?? EMPTY_CONVERSATIONS;
 
   const conversationsRef = useRef(conversations);
   useEffect(() => {
     conversationsRef.current = conversations;
   }, [conversations]);
 
-  // Active conversation details
-  const activeConversation = conversations.find(c => c.id === activeConvId);
+  const isAIAssistantActive = activeConvId === AI_ASSISTANT_CONVERSATION_ID;
+  const activeConversation = conversations.find((conversation) => conversation.id === activeConvId);
 
-  // 2. Fetch messages in active conversation (only if widget is open)
   const { data: messagesResponse } = useConversationMessages(activeConvId, {}, {
-    enabled: !!activeConvId && isAuthenticated && isPatient && isOpen
+    enabled: !!activeConvId && !isAIAssistantActive && isAuthenticated && isPatient && isOpen,
   });
   const messages = messagesResponse?.data || [];
 
-  // 3. Mutations
   const createConversationMutation = useCreateConversation();
   const sendMessageMutation = useSendMessage({
     onSuccess: () => {
       setInputText('');
       queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.messages(activeConvId) });
       queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
-    }
+    },
   });
 
-  // Connect socket
   useEffect(() => {
     if (isAuthenticated && accessToken && isPatient) {
       socketService.connect(accessToken);
@@ -72,171 +98,197 @@ export default function ChatWidget() {
     }
   }, [isAuthenticated, accessToken, isPatient]);
 
-  // Join/leave conversation room
   useEffect(() => {
-    if (activeConvId && isAuthenticated && isPatient && isOpen) {
+    if (activeConvId && !isAIAssistantActive && isAuthenticated && isPatient && isOpen) {
       socketService.joinConversation(activeConvId);
     }
+
     return () => {
-      if (activeConvId) {
+      if (activeConvId && !isAIAssistantActive) {
         socketService.leaveConversation(activeConvId);
       }
     };
-  }, [activeConvId, isAuthenticated, isPatient, isOpen]);
+  }, [activeConvId, isAIAssistantActive, isAuthenticated, isPatient, isOpen]);
 
-  // Listen for socket events
   useEffect(() => {
-    if (!isAuthenticated || !isPatient) return;
+    if (!isAuthenticated || !isPatient) {
+      return undefined;
+    }
 
-    const unsubscribeMessage = socketService.onMessageReceived((msg) => {
-      if (msg.conversationId === activeConvId && isOpen) {
+    const unsubscribeMessage = socketService.onMessageReceived((message) => {
+      if (message.conversationId === activeConvId && isOpen && !isAIAssistantActive) {
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.messages(activeConvId) });
       }
       queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
     });
 
-    const unsubscribeNotification = socketService.onNotification((notif) => {
-      if (notif.type === 'CHAT') {
+    const unsubscribeNotification = socketService.onNotification((notification) => {
+      if (notification.type === 'CHAT') {
         queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
-        if (notif.conversationId === activeConvId && isOpen) {
+        if (notification.conversationId === activeConvId && isOpen && !isAIAssistantActive) {
           queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.messages(activeConvId) });
         }
       }
     });
 
-    const unsubscribeTyping = socketService.onTypingStateChange(({ conversationId, userId, isTyping }) => {
-      if (conversationId === activeConvId && userId !== authUser?.id && isOpen) {
-        setIsTyping(isTyping);
+    const unsubscribeTyping = socketService.onTypingStateChange(({ conversationId, userId, isTyping: nextTypingState }) => {
+      if (
+        conversationId === activeConvId
+        && userId !== authUser?.id
+        && isOpen
+        && !isAIAssistantActive
+      ) {
+        setIsTyping(nextTypingState);
       }
     });
 
-    const unsubscribeMessagesRead = () => {
+    const handleMessagesRead = () => {
       queryClient.invalidateQueries({ queryKey: CHAT_QUERY_KEYS.conversations() });
     };
-    socketService.socket?.on('chat:messages-read', unsubscribeMessagesRead);
+
+    socketService.socket?.on('chat:messages-read', handleMessagesRead);
 
     return () => {
       unsubscribeMessage();
       unsubscribeNotification();
       unsubscribeTyping();
-      socketService.socket?.off('chat:messages-read', unsubscribeMessagesRead);
+      socketService.socket?.off('chat:messages-read', handleMessagesRead);
     };
-  }, [activeConvId, isAuthenticated, isPatient, authUser?.id, queryClient, isOpen]);
+  }, [activeConvId, authUser?.id, isAIAssistantActive, isAuthenticated, isOpen, isPatient, queryClient]);
 
-  // Handle custom event to start/open chat with doctor
   useEffect(() => {
-    const handleOpenDoctorChat = async (e) => {
-      const { doctorId, doctorName } = e.detail;
-      console.log('[ChatWidget] Received open-doctor-chat event:', { doctorId, doctorName });
+    const handleOpenDoctorChat = async (event) => {
+      const { doctorId, doctorName } = event.detail;
 
-      if (isAuthenticated && isPatient) {
+      if (!(isAuthenticated && isPatient)) {
         setIsOpen(true);
-        const currentConvs = conversationsRef.current;
-        console.log('[ChatWidget] Current conversations in Ref:', currentConvs);
+        setActiveConvId(AI_ASSISTANT_CONVERSATION_ID);
+        return;
+      }
 
-        const existing = currentConvs.find(
-          c => c.type === 'DOCTOR_CONSULTATION' && String(c.doctor?.id) === String(doctorId)
-        );
+      setIsOpen(true);
+      const currentConversations = conversationsRef.current;
+      const existingConversation = currentConversations.find(
+        (conversation) =>
+          conversation.type === 'DOCTOR_CONSULTATION'
+          && String(conversation.doctor?.id) === String(doctorId),
+      );
 
-        if (existing) {
-          console.log('[ChatWidget] Found existing doctor conversation room:', existing.id);
-          setActiveConvId(existing.id);
-        } else {
-          console.log('[ChatWidget] Creating new doctor conversation room for doctorId:', doctorId);
-          setTempPartnerInfo({ name: doctorName, role: 'Bác sĩ', type: 'DOCTOR_CONSULTATION' });
-          
-          try {
-            const res = await createConversationMutation.mutateAsync({
-              type: 'DOCTOR_CONSULTATION',
-              doctorId: String(doctorId)
-            });
-            console.log('[ChatWidget] Created conversation success response:', res);
-            
-            if (res?.data?.id) {
-              setActiveConvId(res.data.id);
-              setTempPartnerInfo(null);
-            } else if (res?.id) {
-              setActiveConvId(res.id);
-              setTempPartnerInfo(null);
-            } else {
-              console.error('[ChatWidget] Response missing ID:', res);
-            }
-          } catch (err) {
-            console.error('[ChatWidget] Failed to create doctor consultation chat:', err);
-          }
+      if (existingConversation) {
+        setActiveConvId(existingConversation.id);
+        return;
+      }
+
+      setTempPartnerInfo({ name: doctorName, role: 'Bác sĩ', type: 'DOCTOR_CONSULTATION' });
+
+      try {
+        const response = await createConversationMutation.mutateAsync({
+          type: 'DOCTOR_CONSULTATION',
+          doctorId: String(doctorId),
+        });
+
+        const conversationId = response?.data?.id || response?.id || null;
+        if (conversationId) {
+          setActiveConvId(conversationId);
+          setTempPartnerInfo(null);
         }
+      } catch {
+        setTempPartnerInfo(null);
       }
     };
 
     window.addEventListener('open-doctor-chat', handleOpenDoctorChat);
     return () => window.removeEventListener('open-doctor-chat', handleOpenDoctorChat);
-  }, [createConversationMutation, queryClient, isAuthenticated, isPatient]);
+  }, [createConversationMutation, isAuthenticated, isPatient]);
 
-  // Scroll to bottom on new messages
   useEffect(() => {
-    if (isOpen) {
-      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (!isOpen) {
+      return;
     }
-  }, [messages.length, activeConvId, isOpen]);
 
-  // Set default active conversation if none selected and widget is open
-  useEffect(() => {
-    if (isOpen && conversations.length > 0 && !activeConvId) {
-      setActiveConvId(conversations[0].id);
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [aiChat.messages.length, isOpen, messages.length, activeConvId]);
+
+  const totalUnread = conversations.reduce((sum, conversation) => sum + (conversation.unreadCount || 0), 0);
+
+  const handleInputChange = (event) => {
+    setInputText(event.target.value);
+
+    if (!activeConvId || isAIAssistantActive) {
+      return;
     }
-  }, [conversations, activeConvId, isOpen]);
-
-  // Calculate unread count
-  const totalUnread = conversations.reduce((sum, c) => sum + (c.unreadCount || 0), 0);
-
-  const handleInputChange = (e) => {
-    setInputText(e.target.value);
-    if (!activeConvId) return;
 
     socketService.emitTyping(activeConvId, true);
 
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     typingTimeoutRef.current = setTimeout(() => {
       socketService.emitTyping(activeConvId, false);
     }, 2000);
   };
 
-  const handleSendText = (e) => {
-    if (e) e.preventDefault();
-    if (!inputText.trim() || !activeConvId) return;
+  const handleSendText = async (event) => {
+    if (event) {
+      event.preventDefault();
+    }
 
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    const message = inputText.trim();
+
+    if (!message) {
+      return;
+    }
+
+    if (isAIAssistantActive) {
+      setInputText('');
+      await aiChat.sendMessage(message);
+      return;
+    }
+
+    if (!activeConvId) {
+      return;
+    }
+
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+
     socketService.emitTyping(activeConvId, false);
 
     sendMessageMutation.mutate({
       conversationId: activeConvId,
-      message: inputText.trim(),
-      messageType: 'TEXT'
+      message,
+      messageType: 'TEXT',
     });
   };
 
   const handleCreateSupportChat = async () => {
-    const existing = conversations.find((c) => c.type === 'SUPPORT');
-    if (existing) {
-      setActiveConvId(existing.id);
+    const existingConversation = conversations.find((conversation) => conversation.type === 'SUPPORT');
+    if (existingConversation) {
+      setActiveConvId(existingConversation.id);
       return;
     }
 
     try {
-      const res = await createConversationMutation.mutateAsync({ type: 'SUPPORT' });
-      setActiveConvId(res.data.id);
-    } catch (err) {
-      console.error('Failed to create support chat:', err);
+      const response = await createConversationMutation.mutateAsync({ type: 'SUPPORT' });
+      setActiveConvId(response.data.id);
+    } catch {
+      return undefined;
     }
+
+    return undefined;
   };
 
   const handleFileUploadClick = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
-    if (!file || !activeConvId) return;
+  const handleFileChange = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file || !activeConvId || isAIAssistantActive) {
+      return;
+    }
 
     const formData = new FormData();
     formData.append('image', file);
@@ -244,63 +296,92 @@ export default function ChatWidget() {
 
     setIsUploading(true);
     try {
-      const res = await axiosInstance.post('/upload/image', formData, {
+      const response = await axiosInstance.post('/upload/image', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          'Content-Type': 'multipart/form-data',
+        },
       });
 
-      if (res.data?.success && res.data?.data?.url) {
+      if (response.data?.success && response.data?.data?.url) {
         sendMessageMutation.mutate({
           conversationId: activeConvId,
-          message: res.data.data.url,
-          messageType: 'FILE'
+          message: response.data.data.url,
+          messageType: 'FILE',
         });
       }
-    } catch (error) {
+    } catch {
       alert('Không thể tải tệp lên. Vui lòng thử lại.');
-      console.error('[ChatWidget] Upload file error:', error);
     } finally {
       setIsUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
-  const getPartnerName = (conv) => {
-    if (!conv) return tempPartnerInfo?.name || 'Đang tải...';
-    if (conv.type === 'SUPPORT') {
-      return conv.receptionist?.name || 'Lễ tân hỗ trợ';
+  const getPartnerName = (conversation) => {
+    if (!conversation) {
+      return tempPartnerInfo?.name || 'Đang tải...';
     }
-    return conv.doctor?.name ? `${conv.doctor.title} ${conv.doctor.name}` : 'Bác sĩ tư vấn';
-  };
-
-  const getPartnerRole = (conv) => {
-    if (!conv) return tempPartnerInfo?.role || 'Bác sĩ';
-    return conv.type === 'SUPPORT' ? 'Chăm sóc khách hàng' : 'Bác sĩ';
-  };
-
-  const getPartnerInitials = (conv) => {
-    const name = getPartnerName(conv);
-    const parts = name.split(' ');
-    if (parts.length >= 2) {
-      return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+    if (conversation.type === 'SUPPORT') {
+      return 'Lễ tân CarePlus';
     }
-    return name.slice(0, 2).toUpperCase();
+    return conversation.doctor?.name ? `${conversation.doctor.title} ${conversation.doctor.name}` : 'Bác sĩ tư vấn';
   };
 
-  const colorFor = (type) => type === 'SUPPORT' ? SUPPORT_COLOR : DOCTOR_COLOR;
-  const IconFor = (type) => type === 'SUPPORT' ? Headphones : Stethoscope;
+  const getPartnerRole = (conversation) => {
+    if (!conversation) {
+      return tempPartnerInfo?.role || 'Bác sĩ';
+    }
+    return conversation.type === 'SUPPORT' ? 'Chăm sóc khách hàng' : 'Bác sĩ';
+  };
 
-  // Do not render chat widget for non-patient roles (doctor, receptionist, admin)
-  if (isAuthenticated && role !== 'PATIENT') {
+  const openSupportConversation = async () => {
+    const existingConversation = conversations.find((conversation) => conversation.type === 'SUPPORT');
+    if (existingConversation) {
+      setActiveConvId(existingConversation.id);
+      return;
+    }
+
+    if (!(isAuthenticated && isPatient)) {
+      return;
+    }
+
+    await handleCreateSupportChat();
+  };
+
+  const colorFor = (type) => {
+    if (type === 'SUPPORT') {
+      return SUPPORT_COLOR;
+    }
+    if (type === 'AI_ASSISTANT') {
+      return PRIMARY_COLOR;
+    }
+    return DOCTOR_COLOR;
+  };
+
+  if (isAuthenticated && role && role !== 'PATIENT') {
     return null;
   }
 
+  const activeType = isAIAssistantActive
+    ? 'AI_ASSISTANT'
+    : activeConversation?.type || tempPartnerInfo?.type || 'DOCTOR_CONSULTATION';
+  const activeColor = colorFor(activeType);
+  const isSendingDisabled = !inputText.trim()
+    || isUploading
+    || sendMessageMutation.isPending
+    || aiChat.isLoading;
+
   return (
     <div className="fixed bottom-4 right-4 z-[999] flex flex-col items-end">
-      {/* Floating Toggle Button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          if (!isOpen && !activeConvId) {
+            setActiveConvId(AI_ASSISTANT_CONVERSATION_ID);
+          }
+          setIsOpen((currentOpen) => !currentOpen);
+        }}
         style={{
           width: 52,
           height: 52,
@@ -313,34 +394,35 @@ export default function ChatWidget() {
           justifyContent: 'center',
           boxShadow: '0 4px 14px rgba(0,0,0,0.22)',
           transition: 'transform 0.15s, background 0.15s',
-          position: 'relative'
+          position: 'relative',
         }}
         className="hover:scale-108"
       >
         {isOpen ? <X className="w-5 h-5 text-white" /> : <MessageCircle className="w-5 h-5 text-white" />}
         {!isOpen && totalUnread > 0 && (
-          <div style={{
-            position: 'absolute',
-            top: -4,
-            right: -4,
-            width: 18,
-            height: 18,
-            borderRadius: '50%',
-            background: '#EF4444',
-            color: '#fff',
-            fontSize: 10,
-            fontWeight: 700,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            border: '2px solid #fff'
-          }}>
+          <div
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              width: 18,
+              height: 18,
+              borderRadius: '50%',
+              background: '#EF4444',
+              color: '#fff',
+              fontSize: 10,
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              border: '2px solid #fff',
+            }}
+          >
             {totalUnread}
           </div>
         )}
       </button>
 
-      {/* Chat Popup Panel using SupportWidget two-column UI */}
       {isOpen && (
         <div
           style={{
@@ -349,256 +431,447 @@ export default function ChatWidget() {
             bottom: 24,
             zIndex: 1000,
             width: 520,
-            height: 500,
+            height: 460,
             display: 'flex',
             background: '#fff',
-            borderRadius: 12,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-            border: '1px solid #E5E5E5',
+            borderRadius: 14,
+            boxShadow: '0 10px 30px rgba(15, 23, 42, 0.16)',
+            border: '1px solid #D9E2EC',
             overflow: 'hidden',
             animation: 'slideIn 0.2s ease-out',
           }}
           className="max-[600px]:!right-2 max-[600px]:!left-2 max-[600px]:!w-auto max-[600px]:!bottom-20 max-[600px]:!h-[70vh]"
         >
-          <style>{`@keyframes slideIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}`}</style>
+          <style>{'@keyframes slideIn{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:translateX(0)}}'}</style>
 
-          {!isAuthenticated || !isPatient ? (
-            /* Guest / Non-Patient Login State */
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-white">
-              <div className="w-16 h-16 bg-[#49BCE2]/10 rounded-full flex items-center justify-center mb-4">
-                <MessageCircle className="w-8 h-8 text-[#49BCE2]" />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-900 mb-2">Tư vấn trực tuyến</h4>
-              <p className="text-sm text-gray-600 mb-6 leading-relaxed">
-                Vui lòng đăng nhập tài khoản bệnh nhân để trò chuyện trực tiếp với bác sĩ hoặc bộ phận CSKH của CarePlus.
-              </p>
-              <Link
-                to={`/dang-nhap?redirect=${window.location.pathname}`}
-                className="px-6 py-2.5 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-lg font-medium transition text-sm"
-                onClick={() => setIsOpen(false)}
-              >
-                Đăng nhập ngay
-              </Link>
+          <div
+            style={{
+              width: 162,
+              borderRight: '1px solid #E5E7EB',
+              display: 'flex',
+              flexDirection: 'column',
+              background: '#F6F7F9',
+              flexShrink: 0,
+            }}
+          >
+            <div
+              style={{
+                padding: '14px 10px 12px',
+                fontSize: 12,
+                fontWeight: 700,
+                color: '#A0AEC0',
+                letterSpacing: 0.3,
+                borderBottom: '1px solid #ECEFF3',
+              }}
+            >
+              HỘP THOẠI
             </div>
-          ) : (
-            /* Logged In Two-Column UI */
-            <>
-              {/* Left Column: Conversation Sidebar list */}
-              <div style={{ width: 170, borderRight: '1px solid #F0F0F0', display: 'flex', flexDirection: 'column', background: '#FAFAFA', flexShrink: 0 }}>
-                <div style={{ padding: '12px 10px', fontSize: 11, fontWeight: 700, color: '#aaa', letterSpacing: 0.5, borderBottom: '1px solid #F0F0F0' }}>HỘI THOẠI</div>
-                
-                {/* CSKH Creation Shortcut */}
-                <button
-                  onClick={handleCreateSupportChat}
-                  className="mx-2 my-2 py-1.5 px-2 bg-gradient-to-r from-[#49BCE2] to-[#3ca4c5] text-white text-[11px] font-bold rounded-lg shadow-sm hover:from-[#3ca4c5] hover:to-[#2d95b0] transition flex items-center justify-center gap-1 cursor-pointer"
-                >
-                  <Headphones className="w-3 h-3" />
-                  <span>Chat với Lễ tân</span>
-                </button>
 
-                {/* Conversation Items List */}
-                <div style={{ flex: 1, overflowY: 'auto' }}>
-                  {conversations.map((c) => {
-                    const Ic = IconFor(c.type);
-                    const col = colorFor(c.type);
-                    const isActive = c.id === activeConvId;
-                    return (
-                      <button
-                        key={c.id}
-                        onClick={() => { setActiveConvId(c.id); }}
+            <div style={{ padding: '0' }}>
+              <button
+                onClick={() => setActiveConvId(AI_ASSISTANT_CONVERSATION_ID)}
+                style={{
+                  width: '100%',
+                  padding: '12px 12px 12px 10px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  background: isAIAssistantActive ? '#DDEAF4' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                  borderLeft: isAIAssistantActive ? `2px solid ${PRIMARY_COLOR}` : '2px solid transparent',
+                  textAlign: 'left',
+                }}
+              >
+                <div style={{ position: 'relative', flexShrink: 0 }}>
+                  <div
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: '50%',
+                      background: PRIMARY_COLOR,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {renderConversationIcon('AI_ASSISTANT', 'w-3.5 h-3.5 text-white')}
+                  </div>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: -1,
+                      right: -1,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: '#4ADE80',
+                      border: '1.5px solid #fff',
+                    }}
+                  />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: '#334155',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    CarePlus AI
+                  </div>
+                  <div style={{ fontSize: 10, color: '#9AA4B2' }}>Trợ lý AI</div>
+                </div>
+              </button>
+            </div>
+
+            <div style={{ flex: 1, overflowY: 'auto' }}>
+              {(() => {
+                const supportConversation = conversations.find((conversation) => conversation.type === 'SUPPORT');
+                const isSupportActive = !isAIAssistantActive && !!supportConversation && supportConversation.id === activeConvId;
+
+                return (
+                  <button
+                    onClick={() => { void openSupportConversation(); }}
+                    style={{
+                      width: '100%',
+                      padding: '12px 12px 12px 10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      background: isSupportActive ? '#FFF1E8' : 'transparent',
+                      border: 'none',
+                      cursor: isAuthenticated && isPatient ? 'pointer' : 'default',
+                      borderLeft: isSupportActive ? `2px solid ${SUPPORT_COLOR}` : '2px solid transparent',
+                      textAlign: 'left',
+                    }}
+                    disabled={!(isAuthenticated && isPatient) && !supportConversation}
+                  >
+                    <div style={{ position: 'relative', flexShrink: 0 }}>
+                      <div
                         style={{
-                          width: '100%',
-                          padding: '10px 10px',
+                          width: 34,
+                          height: 34,
+                          borderRadius: '50%',
+                          background: SUPPORT_COLOR,
                           display: 'flex',
                           alignItems: 'center',
-                          gap: 8,
-                          background: isActive ? '#EBF7FD' : 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          borderLeft: isActive ? `3px solid ${col}` : '3px solid transparent',
-                          textAlign: 'left'
+                          justifyContent: 'center',
                         }}
                       >
-                        <div style={{ position: 'relative', flexShrink: 0 }}>
-                          <div style={{ width: 30, height: 30, borderRadius: '50%', background: col, display: 'flex', alignItems: 'center', justifycontent: 'center', display: 'flex', justifyContent: 'center' }}>
-                            <Ic className="w-3.5 h-3.5 text-white m-auto" />
-                          </div>
-                          <div style={{ position: 'absolute', bottom: -1, right: -1, width: 8, height: 8, borderRadius: '50%', background: '#4ADE80', border: '1.5px solid #fff' }} />
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ fontSize: 11, fontWeight: 600, color: '#333', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {getPartnerName(c)}
-                          </div>
-                          <div style={{ fontSize: 9, color: '#aaa' }}>{getPartnerRole(c)}</div>
-                        </div>
-                        {c.unreadCount > 0 && (
-                          <div style={{ width: 16, height: 16, borderRadius: '50%', background: '#EF4444', color: '#fff', fontSize: 9, fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            {c.unreadCount}
-                          </div>
-                        )}
-                      </button>
-                    );
-                  })}
+                        {renderConversationIcon('SUPPORT', 'w-3.5 h-3.5 text-white')}
+                      </div>
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: -1,
+                          right: -1,
+                          width: 8,
+                          height: 8,
+                          borderRadius: '50%',
+                          background: '#4ADE80',
+                          border: '1.5px solid #fff',
+                        }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 600,
+                          color: '#334155',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {supportConversation ? getPartnerName(supportConversation) : 'Lễ tân CarePlus'}
+                      </div>
+                      <div style={{ fontSize: 10, color: '#9AA4B2' }}>
+                        {supportConversation ? getPartnerRole(supportConversation) : 'Chăm sóc khách hàng'}
+                      </div>
+                    </div>
+                  </button>
+                );
+              })()}
+            </div>
+          </div>
+
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            {(isAIAssistantActive || activeConvId) ? (
+              <>
+                <div
+                  style={{
+                    background: activeColor,
+                    padding: '12px 16px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    flexShrink: 0,
+                  }}
+                >
+                  <div
+                    style={{
+                      width: 36,
+                      height: 36,
+                      background: 'rgba(255,255,255,0.2)',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                    }}
+                  >
+                    {renderConversationIcon(activeType, 'w-4 h-4 text-white')}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>
+                      {isAIAssistantActive ? 'CarePlus AI' : getPartnerName(activeConversation)}
+                    </div>
+                    <div
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: 10,
+                        color: 'rgba(255,255,255,0.85)',
+                      }}
+                    >
+                      <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ADE80' }} />
+                      {isAIAssistantActive
+                        ? (aiChat.isLoading ? 'Đang trả lời...' : 'Đang online')
+                        : (isTyping ? 'Bác sĩ đang nhập...' : 'Đang online')}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsOpen(false)}
+                    style={{
+                      background: 'rgba(255,255,255,0.16)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      width: 28,
+                      height: 28,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span
+                      style={{
+                        color: '#FFFFFF',
+                        fontSize: 16,
+                        lineHeight: 1,
+                        fontWeight: 700,
+                        transform: 'translateY(-1px)',
+                      }}
+                    >
+                      -
+                    </span>
+                  </button>
                 </div>
-              </div>
 
-              {/* Right Column: Active Conversation Messages & Input */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                {activeConvId ? (
-                  (() => {
-                    const activeType = activeConversation?.type || tempPartnerInfo?.type || 'DOCTOR_CONSULTATION';
-                    const activeColor = colorFor(activeType);
-                    const ActiveIcon = IconFor(activeType);
+                <div
+                  style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '14px 16px 12px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 12,
+                    background: '#FFFFFF',
+                  }}
+                >
+                  {(isAIAssistantActive ? aiChat.messages : messages).map((message) => {
+                    const isOutgoing = isAIAssistantActive
+                      ? message.role === 'user'
+                      : message.senderId === authUser?.id;
+
                     return (
-                      <>
-                        {/* Active Header */}
-                        <div style={{ background: activeColor, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                          <div style={{ width: 32, height: 32, background: 'rgba(255,255,255,0.2)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                            <ActiveIcon className="w-4 h-4 text-white" />
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: '#fff' }}>{getPartnerName(activeConversation)}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'rgba(255,255,255,0.85)' }}>
-                              <div style={{ width: 5, height: 5, borderRadius: '50%', background: '#4ADE80' }} />
-                              {isTyping ? 'Bác sĩ đang nhập...' : 'Đang online'}
-                            </div>
-                          </div>
-                          <button onClick={() => setIsOpen(false)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                            <Minus className="w-3.5 h-3.5 text-white" />
-                          </button>
-                        </div>
-
-                        {/* Messages Body */}
-                        <div style={{ flex: 1, overflowY: 'auto', padding: '12px 10px', display: 'flex', flexDirection: 'column', gap: 10, background: '#F9FAFB' }}>
-                          {messages.map((message) => {
-                            const isOutgoing = message.senderId === authUser.id;
-                            return (
-                              <div
-                                key={message.id}
-                                style={{
-                                  display: 'flex',
-                                  flexDirection: isOutgoing ? 'row-reverse' : 'row',
-                                  gap: 7,
-                                  alignItems: 'flex-end'
-                                }}
-                              >
-                                {!isOutgoing && (
-                                  <div style={{ width: 26, height: 26, borderRadius: '50%', background: activeColor, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                    <ActiveIcon className="w-3.5 h-3.5 text-white" />
-                                  </div>
-                                )}
-                                <div style={{ maxWidth: '72%' }}>
-                                  <div
-                                    style={{
-                                      padding: '8px 11px',
-                                      borderRadius: isOutgoing ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
-                                      background: isOutgoing ? activeColor : '#fff',
-                                      color: isOutgoing ? '#fff' : '#333',
-                                      fontSize: 13,
-                                      lineHeight: 1.5,
-                                      border: isOutgoing ? 'none' : '1px solid #E5E5E5',
-                                      boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
-                                    }}
-                                  >
-                                    {message.messageType === 'FILE' ? (
-                                      <a href={message.message} target="_blank" rel="noopener noreferrer" className="block">
-                                        <img src={message.message} alt="Ảnh đính kèm" className="max-w-full rounded-lg" />
-                                      </a>
-                                    ) : (
-                                      <p className="break-words">{message.message}</p>
-                                    )}
-                                  </div>
-                                  <div style={{ fontSize: 10, color: '#aaa', marginTop: 2, textAlign: isOutgoing ? 'right' : 'left' }}>
-                                    {new Date(message.createdAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-                                  </div>
-                                </div>
-                              </div>
-                            );
-                          })}
-                          <div ref={messagesEndRef} />
-                        </div>
-
-                        {/* Chat Input Bar */}
-                        <div style={{ padding: '8px 10px', borderTop: '1px solid #E5E5E5', display: 'flex', gap: 7, alignItems: 'center', background: '#fff', flexShrink: 0 }}>
-                          <textarea
-                            value={inputText}
-                            onChange={handleInputChange}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleSendText();
-                              }
-                            }}
-                            placeholder={isUploading ? 'Đang tải hình ảnh...' : 'Nhập tin nhắn...'}
-                            rows={1}
-                            disabled={isUploading}
+                      <div
+                        key={message.id}
+                        style={{
+                          display: 'flex',
+                          flexDirection: isOutgoing ? 'row-reverse' : 'row',
+                          gap: 8,
+                          alignItems: 'flex-end',
+                        }}
+                      >
+                        {!isOutgoing && (
+                          <div
                             style={{
-                              flex: 1,
-                              border: '1px solid #ddd',
-                              borderRadius: 8,
-                              padding: '7px 9px',
-                              fontSize: 13,
-                              color: '#333',
-                              outline: 'none',
-                              resize: 'none',
-                              lineHeight: 1.4,
-                              maxHeight: 80,
-                              overflowY: 'auto'
-                            }}
-                          />
-
-                          <input
-                            type="file"
-                            ref={fileInputRef}
-                            style={{ display: 'none' }}
-                            accept="image/*"
-                            onChange={handleFileChange}
-                          />
-
-                          <button
-                            type="button"
-                            onClick={handleFileUploadClick}
-                            disabled={isUploading}
-                            style={{ width: 34, height: 34, borderRadius: '50%', border: 'none', cursor: 'pointer', background: '#F5F5F5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
-                          >
-                            <Camera className="w-4 h-4 text-gray-600" />
-                          </button>
-
-                          <button
-                            onClick={handleSendText}
-                            disabled={!inputText.trim() || isUploading || sendMessageMutation.isPending}
-                            style={{
-                              width: 34,
-                              height: 34,
+                              width: 22,
+                              height: 22,
                               borderRadius: '50%',
-                              border: 'none',
-                              cursor: inputText.trim() ? 'pointer' : 'not-allowed',
-                              background: inputText.trim() ? activeColor : '#E5E5E5',
+                              background: activeColor,
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
                               flexShrink: 0,
-                              transition: 'background 0.15s'
                             }}
                           >
-                            <Send className="w-3.5 h-3.5 text-white" />
-                          </button>
+                            {renderConversationIcon(activeType, 'w-3.5 h-3.5 text-white')}
+                          </div>
+                        )}
+                          <div style={{ maxWidth: '76%' }}>
+                            <div
+                              style={{
+                                padding: '10px 14px',
+                                borderRadius: isOutgoing ? '14px 14px 5px 14px' : '14px 14px 14px 5px',
+                                background: isOutgoing ? activeColor : '#fff',
+                                color: isOutgoing ? '#fff' : '#333',
+                                fontSize: 12,
+                                lineHeight: 1.5,
+                                border: isOutgoing ? 'none' : '1px solid #D7DCE2',
+                                boxShadow: isOutgoing ? 'none' : '0 1px 2px rgba(15, 23, 42, 0.08)',
+                              }}
+                            >
+                            {!isAIAssistantActive && message.messageType === 'FILE' ? (
+                              <a href={message.message} target="_blank" rel="noopener noreferrer" className="block">
+                                <img src={message.message} alt="Ảnh đính kèm" className="max-w-full rounded-lg" />
+                              </a>
+                            ) : (
+                              <p className="break-words whitespace-pre-wrap">
+                                {isAIAssistantActive ? message.content : message.message}
+                              </p>
+                            )}
+                          </div>
+                          <div
+                            style={{
+                              fontSize: 10,
+                              color: '#A3A3A3',
+                              marginTop: 4,
+                              textAlign: isOutgoing ? 'right' : 'left',
+                            }}
+                          >
+                            {new Date(message.createdAt).toLocaleTimeString('vi-VN', {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </div>
                         </div>
-                      </>
+                      </div>
                     );
-                  })()
-                ) : (
-                  /* Empty state when logged in but no active convo is selected */
-                  <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50">
-                    <div className="w-12 h-12 bg-gray-200/50 rounded-full flex items-center justify-center mb-3">
-                      <MessageCircle className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <p className="text-xs text-gray-500">Vui lòng chọn hoặc tạo cuộc hội thoại bên trái để bắt đầu nhắn tin.</p>
-                  </div>
+                  })}
+                  <div ref={messagesEndRef} />
+                </div>
+
+                <div
+                  style={{
+                    padding: '10px 12px',
+                    borderTop: '1px solid #ECEFF3',
+                    display: 'flex',
+                    gap: 7,
+                    alignItems: 'center',
+                    background: '#fff',
+                    flexShrink: 0,
+                  }}
+                >
+                  <textarea
+                    value={inputText}
+                    onChange={handleInputChange}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' && !event.shiftKey) {
+                        event.preventDefault();
+                        void handleSendText();
+                      }
+                    }}
+                    placeholder={isAIAssistantActive
+                      ? (aiChat.isLoading ? 'CarePlus AI đang trả lời...' : 'Nhập câu hỏi về CarePlus...')
+                      : (isUploading ? 'Đang tải hình ảnh...' : 'Nhập tin nhắn...')}
+                    rows={1}
+                    disabled={isAIAssistantActive ? aiChat.isLoading : isUploading}
+                    style={{
+                      flex: 1,
+                      border: '1px solid #ddd',
+                      borderRadius: 8,
+                      padding: '7px 9px',
+                      fontSize: 13,
+                      color: '#333',
+                      outline: 'none',
+                      resize: 'none',
+                      lineHeight: 1.4,
+                      maxHeight: 80,
+                      overflowY: 'auto',
+                    }}
+                  />
+
+                  {!isAIAssistantActive && (
+                    <>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        style={{ display: 'none' }}
+                        accept="image/*"
+                        onChange={handleFileChange}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={handleFileUploadClick}
+                        disabled={isUploading}
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: '50%',
+                          border: 'none',
+                          cursor: 'pointer',
+                          background: '#F5F5F5',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Camera className="w-4 h-4 text-gray-600" />
+                      </button>
+                    </>
+                  )}
+
+                  <button
+                    onClick={(event) => {
+                      void handleSendText(event);
+                    }}
+                    disabled={isSendingDisabled}
+                    style={{
+                      width: 34,
+                      height: 34,
+                      borderRadius: '50%',
+                      border: 'none',
+                      cursor: inputText.trim() ? 'pointer' : 'not-allowed',
+                      background: inputText.trim() ? activeColor : '#E5E5E5',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexShrink: 0,
+                      transition: 'background 0.15s',
+                    }}
+                  >
+                    <Send className="w-3.5 h-3.5 text-white" />
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-gray-50">
+                <div className="w-12 h-12 bg-gray-200/50 rounded-full flex items-center justify-center mb-3">
+                  <MessageCircle className="w-6 h-6 text-gray-400" />
+                </div>
+                <p className="text-xs text-gray-500">Vui lòng chọn hội thoại để bắt đầu nhắn tin.</p>
+                {!isAuthenticated && (
+                  <Link
+                    to={`/dang-nhap?redirect=${window.location.pathname}`}
+                    className="mt-4 px-4 py-2 bg-[#49BCE2] hover:bg-[#3ca4c5] text-white rounded-lg font-medium transition text-sm"
+                    onClick={() => setIsOpen(false)}
+                  >
+                    Đăng nhập
+                  </Link>
                 )}
               </div>
-            </>
-          )}
+            )}
+          </div>
         </div>
       )}
     </div>

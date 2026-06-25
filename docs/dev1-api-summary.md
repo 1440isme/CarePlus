@@ -638,3 +638,61 @@ search, page, limit
 - Error codes: `VALIDATION_ERROR`, `SPECIALTY_NOT_FOUND`, `SPECIALTY_IN_USE`, `DELETE_SPECIALTY_FAILED`
 - Notes:
   - Tài liệu hệ thống hiện coi đây là soft delete theo `active=false`. QA nên xác nhận hành vi thực tế cùng backend nếu cần regression test sâu.
+
+## AI Assistant
+
+### POST `/ai-assistant/chat`
+
+- Auth required: No
+- Role required: None
+- Request body:
+
+```json
+{
+  "message": "CarePlus có chuyên khoa tim mạch không?"
+}
+```
+
+- Request body có thể hỗ trợ thêm `history`:
+
+```json
+{
+  "message": "CarePlus có chuyên khoa tim mạch không?",
+  "history": [
+    {
+      "role": "user",
+      "content": "CarePlus có những chuyên khoa nào?"
+    },
+    {
+      "role": "assistant",
+      "content": "CarePlus hiện có các chuyên khoa công khai như..."
+    }
+  ]
+}
+```
+
+- Success response:
+
+```json
+{
+  "success": true,
+  "data": {
+    "reply": "CarePlus hiện có chuyên khoa Tim mạch..."
+  }
+}
+```
+
+- Error codes: `VALIDATION_ERROR`, `AI_ASSISTANT_CONTEXT_UNAVAILABLE`, `AI_ASSISTANT_FAILED`, `GEMINI_UNAVAILABLE`
+- Notes:
+  - Endpoint public để chatbox góc giao diện có thể hoạt động cho guest.
+  - Request body dùng Zod strict, không nhận field lạ.
+  - `message` giới hạn `1-1000` ký tự.
+  - `history` là optional, tối đa `10` item, mỗi item chỉ nhận `role = user|assistant` và `content <= 1000`.
+  - Có rate limit cơ bản theo IP qua Redis middleware.
+  - Backend chỉ gửi public/safe context sang Gemini: clinic info, booking rules public, specialty active, doctor public, blog published.
+  - Không gửi password, OTP, token, email người dùng khác, hồ sơ bệnh nhân cá nhân, lịch hẹn cá nhân, admin-only data.
+  - Câu hỏi ngoài scope CarePlus hoặc đòi dữ liệu nhạy cảm sẽ bị từ chối lịch sự mà không cần truy xuất dữ liệu riêng tư.
+  - AI không chẩn đoán bệnh hoặc kê đơn. Với triệu chứng nghiêm trọng, response phải khuyên người dùng liên hệ bác sĩ hoặc cơ sở y tế gần nhất.
+  - `GEMINI_API_KEY` chỉ nằm ở backend env; frontend không truy cập trực tiếp Gemini.
+  - Model khuyến nghị hiện tại cho flow `generateContent` là `gemini-2.5-flash`.
+  - Nếu `AI_ASSISTANT_ENABLED=false`, backend trả fallback reply: `CarePlus AI hiện chưa được bật. Vui lòng thử lại sau.`
