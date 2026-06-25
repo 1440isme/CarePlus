@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { Check, ChevronRight, ChevronLeft, Calendar, Clock, User, Users, CheckCircle, Mail, Star, MapPin, Search, AlertCircle, X, Plus, Info, Shield, Phone, Sparkles, Heart, Bone, Baby, Activity, HeartPulse, Stethoscope, Ear } from 'lucide-react';
@@ -118,6 +118,8 @@ export default function BookingWizardPage() {
     }
     return id;
   });
+
+  const hasProcessedQueryParams = useRef(false);
 
   // 1. Fetch Specialties
   const specialtiesQuery = useSpecialties();
@@ -486,12 +488,13 @@ export default function BookingWizardPage() {
   // Select matching slot from query params once slots are loaded and skip directly to Step 3
   const querySlot = searchParams.get('slot');
   useEffect(() => {
-    if (querySlot && slotsList.length > 0 && !bookingData.timeSlot) {
+    if (querySlot && slotsList.length > 0 && !bookingData.timeSlot && !hasProcessedQueryParams.current) {
       const matchedSlot = slotsList.find(s => 
         s.startTime === querySlot || 
         `${s.startTime}-${s.endTime}` === querySlot
       );
       if (matchedSlot && matchedSlot.status === 'AVAILABLE') {
+        hasProcessedQueryParams.current = true;
         handleSelectTimeSlot(matchedSlot);
         
         if (isAuthenticated) {

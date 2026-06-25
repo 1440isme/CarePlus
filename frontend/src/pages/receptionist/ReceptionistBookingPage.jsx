@@ -1,6 +1,7 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, Fragment } from 'react';
 import { Heart, Bone, Baby, Sparkles, Activity, HeartPulse, Stethoscope, Ear } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import '../public/booking-wizard.css';
 import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
 import { useDoctorList } from '../../features/doctor/hooks/useDoctorList.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
@@ -385,53 +386,22 @@ export default function ReceptionistBookingPage() {
     <div className="min-h-screen bg-gray-50 px-4 py-6">
       <div className="max-w-3xl mx-auto space-y-5">
 
-        {/* ── Page Title (hidden on step 5) ─────────────────────────────── */}
+        {/* Stepper Progress bar */}
         {step < 5 && (
-          <div>
-            <h1 className="text-xl font-bold text-gray-800">Đặt lịch khám</h1>
-            <p className="text-sm text-gray-500 mt-0.5">Đăng ký lịch khám và đặt lịch khám hộ bệnh nhân tại quầy</p>
-          </div>
-        )}
-
-        {/* ── Step Indicator (hidden on step 5) ─────────────────────────── */}
-        {step < 5 && (
-          <div className="bg-white border border-gray-200 rounded-xl px-6 py-4 shadow-xs">
-            <div className="flex items-center justify-between">
-              {STEPS.map((s, idx) => {
-                const isCompleted = step > s.num;
-                const isActive = step === s.num;
-                return (
-                  <div key={s.num} className="flex items-center flex-1">
-                    {/* Step node */}
-                    <div className="flex flex-col items-center gap-1">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all ${isCompleted
-                        ? 'bg-[#49BCE2] text-white'
-                        : isActive
-                          ? 'bg-[#49BCE2] text-white ring-4 ring-[#49BCE2]/20'
-                          : 'bg-gray-100 text-gray-400'
-                        }`}>
-                        {isCompleted ? (
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M5 13l4 4L19 7" />
-                          </svg>
-                        ) : (
-                          s.num
-                        )}
-                      </div>
-                      <span className={`text-xs font-medium whitespace-nowrap ${isActive ? 'text-[#49BCE2]' : isCompleted ? 'text-[#49BCE2]' : 'text-gray-400'
-                        }`}>
-                        {s.label}
-                      </span>
+          <div className="booking-stepper">
+            {STEPS.map((s, idx) => (
+              <Fragment key={s.num}>
+                <div className={`step-item ${step === s.num ? 'active' : step > s.num ? 'completed' : ''}`}>
+                  <div className="step-node">
+                    <div className="step-circle">
+                      {step > s.num ? '✓' : s.num}
                     </div>
-                    {/* Connector line */}
-                    {idx < STEPS.length - 1 && (
-                      <div className={`flex-1 h-0.5 mx-2 mb-5 rounded-full transition-all ${step > s.num ? 'bg-[#49BCE2]' : 'bg-gray-200'
-                        }`} />
-                    )}
+                    <div className="step-label">{s.label}</div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+                {idx < STEPS.length - 1 && <div className="step-line"></div>}
+              </Fragment>
+            ))}
           </div>
         )}
 

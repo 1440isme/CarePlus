@@ -29,13 +29,16 @@ function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
     );
   }, [tsData, bookingRulesData]);
 
-  const availableSlots = useMemo(() => {
-    const all = [
+  const allSlots = useMemo(() => {
+    return [
       ...(slotGroups.morning || []),
       ...(slotGroups.afternoon || []),
     ];
-    return all.filter(s => s.status === 'AVAILABLE');
   }, [slotGroups]);
+
+  const availableCount = useMemo(() => {
+    return allSlots.filter(s => !['BOOKED', 'EXPIRED'].includes(s.status)).length;
+  }, [allSlots]);
 
   if (isLoading) {
     return (
@@ -47,10 +50,10 @@ function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
     );
   }
 
-  if (availableSlots.length === 0) {
+  if (allSlots.length === 0) {
     return (
       <div className="py-4 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
-        Bác sĩ chưa có lịch trống ngày này
+        Bác sĩ chưa có lịch khám ngày này
       </div>
     );
   }
@@ -58,19 +61,27 @@ function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
   return (
     <>
       <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
-        LỊCH KHÁM CÒN TRỐNG ({availableSlots.length} khung)
+        LỊCH KHÁM CÒN TRỐNG ({availableCount} khung)
       </div>
-      <div className="grid grid-cols-4 gap-2 mb-3">
-        {availableSlots.slice(0, 8).map(slot => (
-          <button
-            key={slot.startTime}
-            type="button"
-            onClick={() => onBook(doctorId, `${slot.startTime}-${slot.endTime}`)}
-            className="py-1.5 px-1 text-xs rounded-lg text-center font-medium border border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 transition-all shadow-sm"
-          >
-            {slot.startTime}
-          </button>
-        ))}
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 mb-3">
+        {allSlots.slice(0, 8).map(slot => {
+          const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
+          return (
+            <button
+              key={slot.startTime}
+              type="button"
+              disabled={isBooked}
+              onClick={() => onBook(doctorId, `${slot.startTime}-${slot.endTime}`)}
+              className={`py-1.5 px-1 text-[11px] rounded-lg text-center font-medium border transition-all shadow-sm whitespace-nowrap ${
+                isBooked
+                  ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                  : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer'
+              }`}
+            >
+              {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+            </button>
+          );
+        })}
       </div>
       <div className="text-xs text-gray-500">
         Chọn giờ và đặt <span className="text-green-600 font-bold">(Phí đặt lịch 0đ)</span>
@@ -96,7 +107,7 @@ export default function DoctorListPage() {
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      return d.toISOString().slice(0, 10);
+      return d.toLocaleDateString('sv').slice(0, 10);
     });
   }, []);
 
