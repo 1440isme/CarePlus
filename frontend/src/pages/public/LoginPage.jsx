@@ -1,32 +1,24 @@
-import { useSearchParams, useNavigate, Link } from 'react-router-dom';
+import { useSearchParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { Stethoscope } from 'lucide-react';
 import LoginForm from '../../features/auth/components/LoginForm.jsx';
-import { AUTH_ROLE_DEFAULT_ROUTES } from '../../features/auth/types/auth.types.js';
 import { getRememberMePreference } from '../../features/auth/store/auth.storage.js';
-import { APP_ROUTES } from '../../shared/constants/routes.js';
-
-function isSafeInternalRedirect(pathname) {
-  return typeof pathname === 'string'
-    && pathname.startsWith('/')
-    && !pathname.startsWith('//')
-    && !pathname.includes('://');
-}
-
-function getDefaultRouteByRole(role) {
-  return AUTH_ROLE_DEFAULT_ROUTES[role] ?? APP_ROUTES.patientRoot;
-}
+import { resolvePostLoginRedirect } from '../../features/auth/utils/post-login-redirect.js';
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const redirectParam = searchParams.get('redirect');
   const hasResetSuccess = searchParams.get('reset') === 'success';
 
   const handleLoginSuccess = (response) => {
     const role = response?.data?.user?.role;
-    const fallbackPath = getDefaultRouteByRole(role);
-    const nextPath = isSafeInternalRedirect(redirectParam) ? redirectParam : fallbackPath;
+    const nextPath = resolvePostLoginRedirect({
+      role,
+      stateFrom: location.state?.from,
+      redirectParam,
+    });
 
     navigate(nextPath, { replace: true });
   };
