@@ -45,6 +45,7 @@ async function reindex() {
         { index: { _index: 'doctors', _id: doc.id } },
         {
           userId: doc.userId,
+          displayName: [doc.title, doc.name].filter(Boolean).join(' ').trim(),
           title: doc.title,
           name: doc.name,
           specialtyId: doc.specialtyId,
