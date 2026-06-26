@@ -90,12 +90,6 @@ export default function AdminScheduleManagementPage() {
   const startItem = totalItems === 0 ? 0 : ((page - 1) * PAGE_SIZE) + 1;
   const endItem = Math.min(page * PAGE_SIZE, totalItems);
 
-  const totals = schedules.reduce((accumulator, schedule) => ({
-    totalSlots: accumulator.totalSlots + (schedule.totalSlots || 0),
-    availableSlots: accumulator.availableSlots + (schedule.availableSlots || 0),
-    bookedSlots: accumulator.bookedSlots + (schedule.bookedSlots || 0),
-  }), { totalSlots: 0, availableSlots: 0, bookedSlots: 0 });
-
   const specialties = useMemo(
     () => (specialtiesQuery.data?.data ?? []).filter((specialty) => specialty.active !== false),
     [specialtiesQuery.data?.data],
@@ -226,22 +220,6 @@ export default function AdminScheduleManagementPage() {
         </button>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-3 gap-4">
-        <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <div className="text-sm text-gray-500 mb-1">Tổng slot</div>
-          <div className="text-2xl font-bold text-gray-900">{totals.totalSlots}</div>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <div className="text-sm text-gray-500 mb-1">Còn trống</div>
-          <div className="text-2xl font-bold text-gray-900">{totals.availableSlots}</div>
-        </div>
-        <div className="bg-white border border-gray-100 rounded-xl p-5">
-          <div className="text-sm text-gray-500 mb-1">Đã đặt</div>
-          <div className="text-2xl font-bold text-gray-900">{totals.bookedSlots}</div>
-        </div>
-      </div>
-
       {/* Main Card */}
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {/* Filter Bar */}
@@ -317,10 +295,6 @@ export default function AdminScheduleManagementPage() {
                     <th>Chuyên khoa</th>
                     <th>Ca</th>
                     <th>Trạng thái</th>
-                    <th>Tổng slot</th>
-                    <th>Còn trống</th>
-                    <th>Đã đặt</th>
-                    <th>Đã khóa</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -337,10 +311,6 @@ export default function AdminScheduleManagementPage() {
                           {STATUS_LABELS[schedule.status] || schedule.status}
                         </span>
                       </td>
-                      <td>{schedule.totalSlots || 0}</td>
-                      <td>{schedule.availableSlots || 0}</td>
-                      <td>{schedule.bookedSlots || 0}</td>
-                      <td>{schedule.lockedSlots || 0}</td>
                     </tr>
                   ))}
                 </tbody>
