@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import { AUTH_ROLE_DEFAULT_ROUTES } from '../../../features/auth/types/auth.types.js';
 import { APP_ROUTES } from '../../constants/routes.js';
+import { buildRedirectPath } from '../../../features/auth/utils/post-login-redirect.js';
 
 function AuthBootstrapFallback() {
   return (
@@ -82,8 +83,15 @@ export default function RequireRole({ allowedRoles = [], children }) {
   }
 
   if (!accessToken) {
-    const redirectPath = `${location.pathname}${location.search}`;
-    return <Navigate to={`${APP_ROUTES.login}?redirect=${encodeURIComponent(redirectPath)}`} replace />;
+    const redirectPath = buildRedirectPath(location);
+
+    return (
+      <Navigate
+        to={redirectPath ? `${APP_ROUTES.login}?redirect=${encodeURIComponent(redirectPath)}` : APP_ROUTES.login}
+        state={{ from: { pathname: location.pathname, search: location.search } }}
+        replace
+      />
+    );
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
