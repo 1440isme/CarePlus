@@ -341,18 +341,28 @@ export default function DoctorDetailPage() {
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                   {slotGroups.morning.map(slot => {
-                                    const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
-                                    const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
+                                    const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+                                    const isExpired = slot.status === 'EXPIRED' || (() => {
+                                      const now = new Date();
+                                      const [year, month, day] = selectedDate.split('-').map(Number);
+                                      const [hours, minutes] = slot.endTime.split(':').map(Number);
+                                      const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                                      return now > slotEndTime;
+                                    })();
                                     const isNotPatient = isAuthenticated && role && role !== 'PATIENT';
+                                    const isDisabled = isBooked || isExpired || isNotPatient;
+                                    const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
                                     return (
                                       <button
                                         key={slot.startTime}
                                         type="button"
-                                        disabled={isBooked || isNotPatient}
+                                        disabled={isDisabled}
                                         onClick={() => handleBook(doctor.id, slotTimeStr)}
                                         className={`py-2 px-2 text-[11px] rounded-xl text-center font-medium border transition-all whitespace-nowrap ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                                            : isExpired
+                                            ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
                                             : isNotPatient
                                             ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
@@ -375,18 +385,28 @@ export default function DoctorDetailPage() {
                                 </div>
                                 <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                   {slotGroups.afternoon.map(slot => {
-                                    const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
-                                    const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
+                                    const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+                                    const isExpired = slot.status === 'EXPIRED' || (() => {
+                                      const now = new Date();
+                                      const [year, month, day] = selectedDate.split('-').map(Number);
+                                      const [hours, minutes] = slot.endTime.split(':').map(Number);
+                                      const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                                      return now > slotEndTime;
+                                    })();
                                     const isNotPatient = isAuthenticated && role && role !== 'PATIENT';
+                                    const isDisabled = isBooked || isExpired || isNotPatient;
+                                    const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
                                     return (
                                       <button
                                         key={slot.startTime}
                                         type="button"
-                                        disabled={isBooked || isNotPatient}
+                                        disabled={isDisabled}
                                         onClick={() => handleBook(doctor.id, slotTimeStr)}
                                         className={`py-2 px-2 text-[11px] rounded-xl text-center font-medium border transition-all whitespace-nowrap ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                                            : isExpired
+                                            ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
                                             : isNotPatient
                                             ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'

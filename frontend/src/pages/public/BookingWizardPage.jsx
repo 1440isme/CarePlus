@@ -419,12 +419,24 @@ export default function BookingWizardPage() {
   const selectedPatientDetails = useMemo(() => {
     if (bookingData.forSelf) {
       if (!currentUserData) return null;
+
+      let dobStr = '';
+      if (currentUserData.dateOfBirth) {
+        const dob = new Date(currentUserData.dateOfBirth);
+        if (!isNaN(dob.getTime())) {
+          const d = String(dob.getUTCDate()).padStart(2, '0');
+          const m = String(dob.getUTCMonth() + 1).padStart(2, '0');
+          const y = dob.getUTCFullYear();
+          dobStr = `${d}/${m}/${y}`;
+        }
+      }
+
       return {
         fullName: currentUserData.name || '',
         phone: currentUserData.phone || '',
         email: currentUserData.email || '',
         gender: currentUserData.gender === 'MALE' ? 'Nam' : currentUserData.gender === 'FEMALE' ? 'Nữ' : 'Khác',
-        dateOfBirth: currentUserData.dateOfBirth || '',
+        dateOfBirth: dobStr || currentUserData.dateOfBirth || '',
         address: currentUserData.address || '—'
       };
     } else {
@@ -938,17 +950,28 @@ export default function BookingWizardPage() {
                                 <div className="timeslot-shift-group">
                                   <span className="timeslot-shift-label">☀️ Ca sáng</span>
                                   <div className="timeslots-button-grid">
-                                    {morningSlots.map((slot) => (
-                                      <button
-                                        key={slot.id}
-                                        type="button"
-                                        disabled={slot.status !== 'AVAILABLE'}
-                                        className={`timeslot-btn ${bookingData.timeSlot?.id === slot.id ? 'selected' : ''}`}
-                                        onClick={() => handleSelectTimeSlot(slot)}
-                                      >
-                                        {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                                      </button>
-                                    ))}
+                                    {morningSlots.map((slot) => {
+                                      const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+                                      const isExpired = slot.status === 'EXPIRED' || (() => {
+                                        const now = new Date();
+                                        const [year, month, day] = bookingData.date.split('-').map(Number);
+                                        const [hours, minutes] = slot.endTime.split(':').map(Number);
+                                        const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                                        return now > slotEndTime;
+                                      })();
+                                      const isDisabled = isBooked || isExpired;
+                                      return (
+                                        <button
+                                          key={slot.id}
+                                          type="button"
+                                          disabled={isDisabled}
+                                          className={`timeslot-btn ${bookingData.timeSlot?.id === slot.id ? 'selected' : ''} ${isBooked ? 'line-through' : ''}`}
+                                          onClick={() => handleSelectTimeSlot(slot)}
+                                        >
+                                          {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}
@@ -958,17 +981,28 @@ export default function BookingWizardPage() {
                                 <div className="timeslot-shift-group">
                                   <span className="timeslot-shift-label">🌤️ Ca chiều</span>
                                   <div className="timeslots-button-grid">
-                                    {afternoonSlots.map((slot) => (
-                                      <button
-                                        key={slot.id}
-                                        type="button"
-                                        disabled={slot.status !== 'AVAILABLE'}
-                                        className={`timeslot-btn ${bookingData.timeSlot?.id === slot.id ? 'selected' : ''}`}
-                                        onClick={() => handleSelectTimeSlot(slot)}
-                                      >
-                                        {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
-                                      </button>
-                                    ))}
+                                    {afternoonSlots.map((slot) => {
+                                      const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+                                      const isExpired = slot.status === 'EXPIRED' || (() => {
+                                        const now = new Date();
+                                        const [year, month, day] = bookingData.date.split('-').map(Number);
+                                        const [hours, minutes] = slot.endTime.split(':').map(Number);
+                                        const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                                        return now > slotEndTime;
+                                      })();
+                                      const isDisabled = isBooked || isExpired;
+                                      return (
+                                        <button
+                                          key={slot.id}
+                                          type="button"
+                                          disabled={isDisabled}
+                                          className={`timeslot-btn ${bookingData.timeSlot?.id === slot.id ? 'selected' : ''} ${isBooked ? 'line-through' : ''}`}
+                                          onClick={() => handleSelectTimeSlot(slot)}
+                                        >
+                                          {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+                                        </button>
+                                      );
+                                    })}
                                   </div>
                                 </div>
                               )}

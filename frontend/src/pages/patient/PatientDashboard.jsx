@@ -87,9 +87,9 @@ export default function PatientDashboard() {
     const counts = months.map(m => {
       return appointmentsList.filter(appt => {
         if (!appt.appointmentDate) return false;
-        const apptDate = new Date(appt.appointmentDate);
+        const [year, month] = appt.appointmentDate.slice(0, 10).split('-').map(Number);
         const isValid = appt.status !== 'CANCELLED';
-        return isValid && apptDate.getMonth() === m && apptDate.getFullYear() === currentYear;
+        return isValid && (month - 1) === m && year === currentYear;
       }).length;
     });
 
@@ -261,15 +261,17 @@ export default function PatientDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <div className="text-xs text-gray-500 mb-3">Số lượt khám theo tháng</div>
-                <div className="flex items-end gap-1.5 h-[100px] pt-4">
+                <div className="flex items-end gap-1.5 h-[120px] pt-4">
                   {monthlyData.map((d, idx) => (
-                    <div key={idx} className="flex-1 flex flex-col items-center gap-1.5">
-                      <div className="text-[10px] text-gray-400">{d.count > 0 ? d.count : ''}</div>
-                      <div
-                        className={`w-full ${d.count > 0 ? 'bg-[#49BCE2]' : 'bg-gray-200'} rounded-t transition-all duration-300`}
-                        style={{ height: `${d.heightPercent}%`, minHeight: '4px' }}
-                      />
-                      <div className="text-[10px] text-gray-400">{d.label}</div>
+                    <div key={idx} className="flex-1 flex flex-col items-center justify-end h-full">
+                      <div className="text-[10px] text-gray-400 mb-1">{d.count > 0 ? d.count : ''}</div>
+                      <div className="w-full flex-1 flex items-end">
+                        <div
+                          className={`w-full ${d.count > 0 ? 'bg-[#49BCE2]' : 'bg-gray-200'} rounded-t transition-all duration-300`}
+                          style={{ height: `${d.heightPercent}%`, minHeight: '4px' }}
+                        />
+                      </div>
+                      <div className="text-[10px] text-gray-400 mt-1.5">{d.label}</div>
                     </div>
                   ))}
                 </div>

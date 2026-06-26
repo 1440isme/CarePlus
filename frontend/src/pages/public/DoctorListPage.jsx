@@ -37,8 +37,18 @@ function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
   }, [slotGroups]);
 
   const availableCount = useMemo(() => {
-    return allSlots.filter(s => !['BOOKED', 'EXPIRED'].includes(s.status)).length;
-  }, [allSlots]);
+    return allSlots.filter(s => {
+      const isBooked = s.status === 'BOOKED' || s.status === 'LOCKED';
+      const isExpired = s.status === 'EXPIRED' || (() => {
+        const now = new Date();
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const [hours, minutes] = s.endTime.split(':').map(Number);
+        const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        return now > slotEndTime;
+      })();
+      return !isBooked && !isExpired;
+    }).length;
+  }, [allSlots, selectedDate]);
 
   if (isLoading) {
     return (
@@ -65,16 +75,26 @@ function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 mb-3">
         {allSlots.slice(0, 8).map(slot => {
-          const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
+          const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+          const isExpired = slot.status === 'EXPIRED' || (() => {
+            const now = new Date();
+            const [year, month, day] = selectedDate.split('-').map(Number);
+            const [hours, minutes] = slot.endTime.split(':').map(Number);
+            const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+            return now > slotEndTime;
+          })();
+          const isDisabled = isBooked || isExpired;
           return (
             <button
               key={slot.startTime}
               type="button"
-              disabled={isBooked}
+              disabled={isDisabled}
               onClick={() => onBook(doctorId, `${slot.startTime}-${slot.endTime}`)}
               className={`py-1.5 px-1 text-[11px] rounded-lg text-center font-medium border transition-all shadow-sm whitespace-nowrap ${
                 isBooked
                   ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                  : isExpired
+                  ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
                   : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer'
               }`}
             >

@@ -59,10 +59,33 @@ class AppointmentService {
         });
       }
 
-      if (user.noShowCount >= 3) {
+      // Fetch lock configuration from system settings
+      const settings = await this.clinicSettingsRepository.getSystemSetting();
+      const maxNoShow = settings?.maxNoShowBeforeLock ?? 3;
+
+      if (user.noShowCount >= maxNoShow) {
         throw new AppointmentServiceError({
           code: APPOINTMENT_ERROR_CODES.MAX_NO_SHOW_REACHED,
-          message: 'Tài khoản của bạn đã bị tạm khóa chức năng đặt lịch online do vắng mặt quá 3 lần.',
+          message: `Tài khoản của bạn đã bị tạm khóa chức năng đặt lịch online do vắng mặt quá ${maxNoShow} lần.`,
+          statusCode: 403,
+        });
+      }
+
+      // Check max active appointments limit
+      const maxActive = settings?.maxActiveAppointmentsPerUser ?? 5;
+      const activeCount = await this.prisma.appointment.count({
+        where: {
+          patientId,
+          status: {
+            in: ['CONFIRMED', 'CHECKED_IN'],
+          },
+        },
+      });
+
+      if (activeCount >= maxActive) {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.MAX_ACTIVE_APPOINTMENTS_REACHED,
+          message: `Tài khoản của bạn đã đạt số lượng lịch hẹn hoạt động tối đa theo quy định (${maxActive} lịch hẹn). Vui lòng hoàn thành hoặc hủy bớt lịch hẹn cũ để đặt tiếp.`,
           statusCode: 403,
         });
       }
@@ -274,10 +297,33 @@ class AppointmentService {
           });
         }
 
-        if (user.noShowCount >= 3) {
+        // Fetch lock configuration from system settings
+        const settings = await this.clinicSettingsRepository.getSystemSetting();
+        const maxNoShow = settings?.maxNoShowBeforeLock ?? 3;
+
+        if (user.noShowCount >= maxNoShow) {
           throw new AppointmentServiceError({
             code: APPOINTMENT_ERROR_CODES.MAX_NO_SHOW_REACHED,
-            message: 'Tài khoản bệnh nhân đã bị tạm khóa chức năng đặt lịch do vắng mặt quá 3 lần.',
+            message: `Tài khoản bệnh nhân đã bị tạm khóa chức năng đặt lịch do vắng mặt quá ${maxNoShow} lần.`,
+            statusCode: 403,
+          });
+        }
+
+        // Check max active appointments limit
+        const maxActive = settings?.maxActiveAppointmentsPerUser ?? 5;
+        const activeCount = await this.prisma.appointment.count({
+          where: {
+            patientId,
+            status: {
+              in: ['CONFIRMED', 'CHECKED_IN'],
+            },
+          },
+        });
+
+        if (activeCount >= maxActive) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.MAX_ACTIVE_APPOINTMENTS_REACHED,
+            message: `Tài khoản bệnh nhân này đã đạt số lượng lịch hẹn hoạt động tối đa theo quy định (${maxActive} lịch hẹn).`,
             statusCode: 403,
           });
         }
@@ -531,13 +577,18 @@ class AppointmentService {
 
   async getAdminStats(currentUser) {
     try {
-      // Weekly stats: last 7 days
+      // Weekly stats: this week (Monday to Sunday)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
+      const dayOfWeek = today.getDay();
+      const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+      const monday = new Date(today);
+      monday.setDate(today.getDate() - daysSinceMonday);
+
       const days = [];
-      for (let i = 6; i >= 0; i--) {
-        const d = new Date(today);
-        d.setDate(d.getDate() - i);
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
         days.push(d);
       }
 
@@ -1272,6 +1323,10 @@ class AppointmentService {
               fullName: true,
               phone: true,
               relationship: true,
+              gender: true,
+              email: true,
+              dateOfBirth: true,
+              address: true,
             },
           },
         },
@@ -1290,7 +1345,10 @@ class AppointmentService {
         dateOfBirth: p.dateOfBirth ? p.dateOfBirth.toISOString().slice(0, 10) : null,
         status: p.status,
         noShowCount: p.noShowCount,
-        profiles: p.patientProfiles,
+        profiles: p.patientProfiles.map((profile) => ({
+          ...profile,
+          dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.toISOString().slice(0, 10) : null,
+        })),
       }));
     } catch (error) {
       throw this._wrapUnexpectedError(

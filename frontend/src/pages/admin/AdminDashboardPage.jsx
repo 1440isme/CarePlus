@@ -21,13 +21,15 @@ function BarChartSimple({ data }) {
       {data.map((d) => {
         const pct = Math.round((d.count / max) * 100);
         return (
-          <div key={d.fullDate || d.date} className="flex-1 flex flex-col items-center gap-1">
-            <span className="text-[10px] text-gray-400">{d.count}</span>
-            <div
-              className="w-full rounded-t-sm transition-all"
-              style={{ height: `${Math.max(pct, 4)}%`, background: BRAND }}
-            />
-            <span className="text-[9px] text-gray-400 whitespace-nowrap">{d.date}</span>
+          <div key={d.fullDate || d.date} className="flex-1 flex flex-col items-center justify-end h-full">
+            <span className="text-[10px] text-gray-400 mb-1">{d.count}</span>
+            <div className="w-full flex-1 flex items-end">
+              <div
+                className="w-full rounded-t-sm transition-all"
+                style={{ height: `${Math.max(pct, 4)}%`, background: BRAND }}
+              />
+            </div>
+            <span className="text-[9px] text-gray-400 whitespace-nowrap mt-1.5">{d.date}</span>
           </div>
         );
       })}
@@ -182,7 +184,7 @@ export default function AdminDashboardPage() {
         {/* Bar chart */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl p-5">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-gray-900">Lịch hẹn theo ngày (7 ngày gần nhất)</h3>
+            <h3 className="font-semibold text-gray-900">Lịch hẹn theo ngày (Tuần này)</h3>
             <TrendingUp className="w-4 h-4 text-gray-300" />
           </div>
           <p className="text-xs text-gray-400 mb-3">
