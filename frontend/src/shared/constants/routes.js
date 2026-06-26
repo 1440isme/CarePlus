@@ -22,7 +22,7 @@ export const APP_ROUTES = {
 };
 
 export const ROLE_HOME_ROUTES = {
-  PATIENT: APP_ROUTES.patientRoot,
+  PATIENT: APP_ROUTES.home,
   DOCTOR: APP_ROUTES.doctorRoot,
   RECEPTIONIST: APP_ROUTES.receptionistRoot,
   ADMIN: APP_ROUTES.adminRoot,

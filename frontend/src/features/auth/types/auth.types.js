@@ -14,7 +14,7 @@ export const AUTH_API_PATHS = {
 export const AUTH_USER_ROLES = ['PATIENT', 'DOCTOR', 'RECEPTIONIST', 'ADMIN'];
 export const AUTH_USER_STATUSES = ['ACTIVE', 'LOCKED'];
 export const AUTH_ROLE_DEFAULT_ROUTES = {
-  PATIENT: APP_ROUTES.patientRoot,
+  PATIENT: APP_ROUTES.home,
   DOCTOR: APP_ROUTES.doctorRoot,
   RECEPTIONIST: APP_ROUTES.receptionistRoot,
   ADMIN: APP_ROUTES.adminRoot,
