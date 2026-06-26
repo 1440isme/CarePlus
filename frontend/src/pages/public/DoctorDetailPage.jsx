@@ -8,7 +8,7 @@ import { useDoctorDetail } from '../../features/doctor/index.js';
 import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
 import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
 import {
-  buildVirtualSlots,
+  buildVirtualSlotsForSchedules,
   filterSlotGroupsBySchedules,
   mergePersistedSlots,
 } from '../../features/timeslot/virtual-slot.service.js';
@@ -19,14 +19,14 @@ import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { useClinicInfo } from '../../features/admin/clinic-settings/hooks/useClinicInfo.js';
 
 function getDefaultDate(searchParams) {
-  return searchParams.get('date') || new Date().toISOString().slice(0, 10);
+  return searchParams.get('date') || new Date().toLocaleDateString('sv').slice(0, 10);
 }
 
 function buildDateOptions(count = 7) {
   return Array.from({ length: count }).map((_, index) => {
     const date = new Date();
     date.setDate(date.getDate() + index);
-    const value = date.toISOString().slice(0, 10);
+    const value = date.toLocaleDateString('sv').slice(0, 10);
 
     return {
       value,
@@ -119,7 +119,7 @@ export default function DoctorDetailPage() {
     }
 
     return mergePersistedSlots(
-      filterSlotGroupsBySchedules(buildVirtualSlots(bookingRulesResponse?.data), schedules),
+      filterSlotGroupsBySchedules(buildVirtualSlotsForSchedules(bookingRulesResponse?.data, schedules), schedules),
       slotData.slots || [],
     );
   }, [slotData, bookingRulesResponse?.data]);
@@ -307,7 +307,7 @@ export default function DoctorDetailPage() {
                         <div className="flex gap-2 overflow-x-auto pb-2">
                           {dateOptions.map(option => {
                             const isSelected = option.value === selectedDate;
-                            const isToday = option.value === new Date().toISOString().slice(0, 10);
+                            const isToday = option.value === new Date().toLocaleDateString('sv').slice(0, 10);
                             return (
                               <button
                                 key={option.value}
@@ -339,7 +339,7 @@ export default function DoctorDetailPage() {
                                   <span className="text-amber-500 text-sm">☀</span>
                                   <span className="text-sm font-semibold text-gray-700">Buổi sáng</span>
                                 </div>
-                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                   {slotGroups.morning.map(slot => {
                                     const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
                                     const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
@@ -350,7 +350,7 @@ export default function DoctorDetailPage() {
                                         type="button"
                                         disabled={isBooked || isNotPatient}
                                         onClick={() => handleBook(doctor.id, slotTimeStr)}
-                                        className={`py-2 px-3 text-xs rounded-xl text-center font-medium border transition-all ${
+                                        className={`py-2 px-2 text-[11px] rounded-xl text-center font-medium border transition-all whitespace-nowrap ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
                                             : isNotPatient
@@ -358,7 +358,7 @@ export default function DoctorDetailPage() {
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
                                         }`}
                                       >
-                                        {slotTimeStr}
+                                        {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
                                       </button>
                                     );
                                   })}
@@ -373,7 +373,7 @@ export default function DoctorDetailPage() {
                                   <span className="text-orange-500 text-sm">🌤</span>
                                   <span className="text-sm font-semibold text-gray-700">Buổi chiều</span>
                                 </div>
-                                <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
+                                <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                   {slotGroups.afternoon.map(slot => {
                                     const isBooked = ['BOOKED', 'EXPIRED'].includes(slot.status);
                                     const slotTimeStr = `${slot.startTime}-${slot.endTime}`;
@@ -384,7 +384,7 @@ export default function DoctorDetailPage() {
                                         type="button"
                                         disabled={isBooked || isNotPatient}
                                         onClick={() => handleBook(doctor.id, slotTimeStr)}
-                                        className={`py-2 px-3 text-xs rounded-xl text-center font-medium border transition-all ${
+                                        className={`py-2 px-2 text-[11px] rounded-xl text-center font-medium border transition-all whitespace-nowrap ${
                                           isBooked
                                             ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
                                             : isNotPatient
@@ -392,7 +392,7 @@ export default function DoctorDetailPage() {
                                             : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer shadow-sm'
                                         }`}
                                       >
-                                        {slotTimeStr}
+                                        {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
                                       </button>
                                     );
                                   })}
