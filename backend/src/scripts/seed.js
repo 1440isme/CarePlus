@@ -311,15 +311,14 @@ async function seed() {
           // r3 states d3 is off AFTERNOON shift on 2026-06-12 (Approved exception)
           const isD3OffAfternoon = docId === 'd3' && dateStr === '2026-06-12';
 
-          // Generate Morning TimeSlots
+          // Generate Morning TimeSlots (Only if booked by an appointment or locked/unavailable)
           morningHours.forEach((time, idx) => {
-            const matchesShift = rule.shift === 'BOTH' || rule.shift === 'MORNING';
             const hasApptAtTime = appointmentsData.some(a => a.doctorId === docId && a.dateStr === dateStr && a.time === time);
+            const isUnavailable = unavailableMap[`${docId}-${dateStr}`]?.includes(time);
 
-            if (matchesShift || hasApptAtTime) {
+            if (hasApptAtTime || isUnavailable) {
               const endTime = idx === morningHours.length - 1 ? '11:30' : morningHours[idx + 1];
               const slotId = `slot_${docId}_${dateStr}_${time}`;
-              const isUnavailable = unavailableMap[`${docId}-${dateStr}`]?.includes(time);
 
               slotsToCreate.push({
                 id: slotId,
@@ -332,16 +331,15 @@ async function seed() {
             }
           });
 
-          // Generate Afternoon TimeSlots
+          // Generate Afternoon TimeSlots (Only if booked by an appointment or locked/unavailable)
           if (!isD3OffAfternoon) {
             afternoonHours.forEach((time, idx) => {
-              const matchesShift = rule.shift === 'BOTH' || rule.shift === 'AFTERNOON';
               const hasApptAtTime = appointmentsData.some(a => a.doctorId === docId && a.dateStr === dateStr && a.time === time);
+              const isUnavailable = unavailableMap[`${docId}-${dateStr}`]?.includes(time);
 
-              if (matchesShift || hasApptAtTime) {
+              if (hasApptAtTime || isUnavailable) {
                 const endTime = idx === afternoonHours.length - 1 ? '17:00' : afternoonHours[idx + 1];
                 const slotId = `slot_${docId}_${dateStr}_${time}`;
-                const isUnavailable = unavailableMap[`${docId}-${dateStr}`]?.includes(time);
 
                 slotsToCreate.push({
                   id: slotId,

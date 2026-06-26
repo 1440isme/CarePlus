@@ -42,7 +42,7 @@ function normalizeSettings(systemSettings = {}) {
   };
 }
 
-function buildShiftSlots({ shift, start, end, duration }) {
+function buildShiftSlots({ shift, start, end, duration, doctorId, dateStr }) {
   const startMinutes = timeToMinutes(start);
   const endMinutes = timeToMinutes(end);
 
@@ -55,8 +55,12 @@ function buildShiftSlots({ shift, start, end, duration }) {
     const startTime = minutesToTime(cursor);
     const endTime = minutesToTime(cursor + duration);
 
+    const virtualId = doctorId && dateStr
+      ? `virtual_${doctorId}_${dateStr}_${startTime}_${endTime}_${shift === 'morning' ? 'MORNING' : 'AFTERNOON'}`
+      : `${shift}-${startTime}-${endTime}`;
+
     slots.push({
-      id: `${shift}-${startTime}-${endTime}`,
+      id: virtualId,
       shift,
       workingShift: shift === 'morning' ? 'MORNING' : 'AFTERNOON',
       startTime,
@@ -102,18 +106,27 @@ export function buildVirtualSlotsForSchedules(systemSettings = {}, schedules = [
   const morningSchedule = findScheduleForShift(schedules, 'MORNING');
   const afternoonSchedule = findScheduleForShift(schedules, 'AFTERNOON');
 
+  const doctorId = schedules[0]?.doctorId;
+  const dateStr = schedules[0]?.workingDate
+    ? (typeof schedules[0].workingDate === 'string' ? schedules[0].workingDate.slice(0, 10) : new Date(schedules[0].workingDate).toISOString().slice(0, 10))
+    : '';
+
   return {
     morning: buildShiftSlots({
       shift: 'morning',
       start: morningSchedule?.morningShiftStart || settings.morningShiftStart,
       end: morningSchedule?.morningShiftEnd || settings.morningShiftEnd,
       duration,
+      doctorId,
+      dateStr,
     }),
     afternoon: buildShiftSlots({
       shift: 'afternoon',
       start: afternoonSchedule?.afternoonShiftStart || settings.afternoonShiftStart,
       end: afternoonSchedule?.afternoonShiftEnd || settings.afternoonShiftEnd,
       duration,
+      doctorId,
+      dateStr,
     }),
   };
 }
@@ -152,8 +165,7 @@ export function mergePersistedSlots(virtualGroups, persistedSlots = []) {
             isVirtual: false,
           }
         : slot;
-    })
-    .filter((slot) => slot.status !== 'LOCKED');
+    });
 
   return {
     morning: mergeGroup(virtualGroups.morning || []),

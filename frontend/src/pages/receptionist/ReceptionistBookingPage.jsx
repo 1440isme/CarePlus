@@ -110,7 +110,8 @@ export default function ReceptionistBookingPage() {
   // Format date display (e.g. 14/06/2026)
   const formatDisplayDate = (dateStr) => {
     if (!dateStr) return '';
-    const parts = dateStr.split('-');
+    const cleanDateStr = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+    const parts = cleanDateStr.split('-');
     if (parts.length !== 3) return dateStr;
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
   };
@@ -170,7 +171,7 @@ export default function ReceptionistBookingPage() {
       phone: patientUser.phone || '',
       email: patientUser.email || '',
       gender: patientUser.gender || 'MALE',
-      dateOfBirth: patientUser.dateOfBirth || '',
+      dateOfBirth: patientUser.dateOfBirth ? patientUser.dateOfBirth.slice(0, 10) : '',
       address: patientUser.address || '',
     }));
     setPatientSearch('');
@@ -610,7 +611,15 @@ export default function ReceptionistBookingPage() {
                                   <div className="flex flex-wrap gap-2">
                                     {morningSlots.map((slot) => {
                                       const isSlotSel = bookingData.timeSlot?.id === slot.id;
-                                      const isAvailable = slot.status === 'AVAILABLE';
+                                      const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+                                      const isExpired = slot.status === 'EXPIRED' || (() => {
+                                        const now = new Date();
+                                        const [year, month, day] = bookingData.date.split('-').map(Number);
+                                        const [hours, minutes] = slot.endTime.split(':').map(Number);
+                                        const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                                        return now > slotEndTime;
+                                      })();
+                                      const isAvailable = slot.status === 'AVAILABLE' && !isExpired;
                                       return (
                                         <button
                                           key={slot.id}
@@ -621,7 +630,9 @@ export default function ReceptionistBookingPage() {
                                             ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
                                             : isAvailable
                                               ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
-                                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                              : isBooked
+                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                             }`}
                                         >
                                           {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
@@ -639,7 +650,15 @@ export default function ReceptionistBookingPage() {
                                   <div className="flex flex-wrap gap-2">
                                     {afternoonSlots.map((slot) => {
                                       const isSlotSel = bookingData.timeSlot?.id === slot.id;
-                                      const isAvailable = slot.status === 'AVAILABLE';
+                                      const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+                                      const isExpired = slot.status === 'EXPIRED' || (() => {
+                                        const now = new Date();
+                                        const [year, month, day] = bookingData.date.split('-').map(Number);
+                                        const [hours, minutes] = slot.endTime.split(':').map(Number);
+                                        const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+                                        return now > slotEndTime;
+                                      })();
+                                      const isAvailable = slot.status === 'AVAILABLE' && !isExpired;
                                       return (
                                         <button
                                           key={slot.id}
@@ -650,7 +669,9 @@ export default function ReceptionistBookingPage() {
                                             ? 'bg-[#49BCE2] text-white border-[#49BCE2] shadow-sm'
                                             : isAvailable
                                               ? 'bg-white text-gray-700 border-gray-200 hover:border-[#49BCE2] hover:text-[#49BCE2]'
-                                              : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                              : isBooked
+                                                ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through'
+                                                : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
                                             }`}
                                         >
                                           {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
