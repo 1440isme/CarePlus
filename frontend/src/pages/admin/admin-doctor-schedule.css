@@ -540,7 +540,13 @@
 }
 
 .admin-figma-input-icon-wrap input {
-  padding-right: 44px;
+  padding-right: 14px;
+}
+
+.admin-figma-input-icon-wrap input[type="date"]::-webkit-calendar-picker-indicator {
+  margin-right: -4px;
+  padding: 2px;
+  cursor: pointer;
 }
 
 .admin-figma-input-icon-wrap svg {

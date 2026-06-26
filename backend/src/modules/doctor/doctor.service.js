@@ -34,6 +34,10 @@ function getWeekRange(date) {
   return { start, end };
 }
 
+function buildDoctorDisplayName(doctor) {
+  return [doctor.title, doctor.name].filter(Boolean).join(' ').trim();
+}
+
 class DoctorService {
   constructor(doctorRepository, appointmentRepository, scheduleRepository) {
     this.doctorRepository = doctorRepository;
@@ -61,6 +65,7 @@ class DoctorService {
         const searchResult = await SearchService.searchDoctors({
           query: filters.search,
           active: filters.active,
+          specialtyId: filters.specialtyId,
           page: filters.page,
           limit: filters.limit
         });
@@ -330,6 +335,7 @@ class DoctorService {
 
   _syncDoctorToSearch(doctor) {
     SearchService.indexDocument('doctors', doctor.id, {
+      displayName: buildDoctorDisplayName(doctor),
       name: doctor.name,
       specialtyId: doctor.specialtyId,
       specialtyName: doctor.specialtyName,

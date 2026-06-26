@@ -22,6 +22,46 @@ const DOCTOR_INCLUDE = {
   },
 };
 
+function buildDoctorSearchConditions(search) {
+  const normalizedSearch = String(search || '').trim();
+  if (!normalizedSearch) {
+    return [];
+  }
+
+  const tokens = normalizedSearch.split(/\s+/).filter(Boolean);
+  const conditions = [
+    { name: { contains: normalizedSearch } },
+    { specialtyName: { contains: normalizedSearch } },
+    { title: { contains: normalizedSearch } },
+    { position: { contains: normalizedSearch } },
+  ];
+
+  if (tokens.length > 1) {
+    const [titleToken, ...nameTokens] = tokens;
+    const nameSearch = nameTokens.join(' ');
+
+    if (nameSearch) {
+      conditions.push({
+        AND: [
+          { title: { contains: titleToken } },
+          { name: { contains: nameSearch } },
+        ],
+      });
+    }
+
+    conditions.push({
+      AND: tokens.map((token) => ({
+        OR: [
+          { title: { contains: token } },
+          { name: { contains: token } },
+        ],
+      })),
+    });
+  }
+
+  return conditions;
+}
+
 class DoctorRepository extends BaseRepository {
   constructor() {
     super('Doctor');
@@ -148,12 +188,7 @@ class DoctorRepository extends BaseRepository {
     }
 
     if (filters.search) {
-      where.OR = [
-        { name: { contains: filters.search } },
-        { specialtyName: { contains: filters.search } },
-        { title: { contains: filters.search } },
-        { position: { contains: filters.search } },
-      ];
+      where.OR = buildDoctorSearchConditions(filters.search);
     }
 
     return where;

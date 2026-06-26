@@ -323,11 +323,10 @@ class SearchService {
 
         if (query) {
           mustQueries.push({
-            multi_match: {
-              query: query,
-              fields: ['name^3', 'specialtyName^2', 'description', 'title^1.5'],
-              fuzziness: 'AUTO',
-            }
+            bool: {
+              should: this.buildDoctorSearchShouldQueries(query),
+              minimum_should_match: 1,
+            },
           });
         } else {
           mustQueries.push({ match_all: {} });
@@ -353,8 +352,11 @@ class SearchService {
           },
           highlight: query ? {
             fields: {
+              displayName: {},
               name: {},
+              title: {},
               specialtyName: {},
+              position: {},
               description: {},
             }
           } : undefined
@@ -411,12 +413,7 @@ class SearchService {
     }
 
     if (query) {
-      whereClause.OR = [
-        { name: { contains: query } },
-        { specialtyName: { contains: query } },
-        { description: { contains: query } },
-        { title: { contains: query } }
-      ];
+      whereClause.OR = this.buildDoctorSearchConditions(query);
     }
 
     const [doctors, total] = await Promise.all([
@@ -461,6 +458,85 @@ class SearchService {
         totalPages: Math.ceil(total / limit)
       }
     };
+  }
+
+  static buildDoctorSearchConditions(query) {
+    const normalizedQuery = String(query || '').trim();
+    if (!normalizedQuery) {
+      return [];
+    }
+
+    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    const conditions = [
+      { name: { contains: normalizedQuery } },
+      { specialtyName: { contains: normalizedQuery } },
+      { description: { contains: normalizedQuery } },
+      { title: { contains: normalizedQuery } },
+      { position: { contains: normalizedQuery } },
+    ];
+
+    if (tokens.length > 1) {
+      const [titleToken, ...nameTokens] = tokens;
+      const nameQuery = nameTokens.join(' ');
+
+      if (nameQuery) {
+        conditions.push({
+          AND: [
+            { title: { contains: titleToken } },
+            { name: { contains: nameQuery } },
+          ],
+        });
+      }
+
+      conditions.push({
+        AND: tokens.map((token) => ({
+          OR: [
+            { title: { contains: token } },
+            { name: { contains: token } },
+          ],
+        })),
+      });
+    }
+
+    return conditions;
+  }
+
+  static buildDoctorSearchShouldQueries(query) {
+    const normalizedQuery = String(query || '').trim();
+    const tokens = normalizedQuery.split(/\s+/).filter(Boolean);
+    const wildcardFields = ['displayName', 'name', 'title', 'specialtyName', 'position'];
+
+    const shouldQueries = [
+      {
+        multi_match: {
+          query: normalizedQuery,
+          fields: ['displayName^5', 'name^4', 'title^3', 'specialtyName^2', 'position^1.5', 'description'],
+          fuzziness: 'AUTO',
+        },
+      },
+      {
+        multi_match: {
+          query: normalizedQuery,
+          type: 'phrase_prefix',
+          fields: ['displayName^6', 'name^5', 'title^3', 'specialtyName^2', 'position^1.5'],
+        },
+      },
+    ];
+
+    tokens.forEach((token) => {
+      wildcardFields.forEach((field) => {
+        shouldQueries.push({
+          wildcard: {
+            [field]: {
+              value: `*${token}*`,
+              case_insensitive: true,
+            },
+          },
+        });
+      });
+    });
+
+    return shouldQueries;
   }
 
   /**

@@ -1,6 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../shared/hooks/useAuth.js';
 import { APP_ROUTES, ROLE_HOME_ROUTES } from '../shared/constants/routes.js';
+import { buildRedirectPath } from '../features/auth/utils/post-login-redirect.js';
 
 export function GuestOnlyRoute() {
   const { isAuthenticated, role } = useAuth();
@@ -17,7 +18,15 @@ export function ProtectedRoute({ allowedRoles }) {
   const location = useLocation();
 
   if (!isAuthenticated) {
-    return <Navigate to={`${APP_ROUTES.login}?redirect=${encodeURIComponent(location.pathname)}`} replace />;
+    const redirectPath = buildRedirectPath(location);
+
+    return (
+      <Navigate
+        to={redirectPath ? `${APP_ROUTES.login}?redirect=${encodeURIComponent(redirectPath)}` : APP_ROUTES.login}
+        state={{ from: { pathname: location.pathname, search: location.search } }}
+        replace
+      />
+    );
   }
 
   if (allowedRoles && !allowedRoles.includes(role)) {
