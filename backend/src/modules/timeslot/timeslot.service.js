@@ -101,6 +101,8 @@ class TimeSlotService {
         schedules: schedules.map((schedule) => ({
           id: schedule.id,
           scheduleId: schedule.id,
+          doctorId: schedule.doctorId,
+          workingDate: schedule.workingDate instanceof Date ? schedule.workingDate.toISOString().slice(0, 10) : schedule.workingDate,
           workingShift: schedule.workingShift,
           shift: schedule.workingShift,
           status: schedule.status,
@@ -425,7 +427,64 @@ class TimeSlotService {
 
   async lockTimeSlot(slotId, lockClientId) {
     try {
-      const slot = await this.timeSlotRepository.findById(slotId);
+      let slot;
+      let targetSlotId = slotId;
+
+      if (slotId.startsWith('virtual_')) {
+        const parts = slotId.split('_');
+        if (parts.length >= 6) {
+          const doctorId = parts[1];
+          const dateStr = parts[2];
+          const startTime = parts[3];
+          const endTime = parts[4];
+          const workingShift = parts[5];
+          const workingDate = parseDateOnly(dateStr);
+
+          const schedule = await this.scheduleRepository.prisma.schedule.findFirst({
+            where: {
+              doctorId,
+              workingDate,
+              workingShift: {
+                in: [workingShift, 'ALL_DAY'],
+              },
+            },
+          });
+          if (!schedule) {
+            throw new TimeSlotServiceError({
+              code: TIMESLOT_ERROR_CODES.NO_SCHEDULE_FOR_DATE,
+              message: 'Bác sĩ không có lịch làm việc trong ca yêu cầu',
+              statusCode: 404,
+            });
+          }
+
+          const existingSlot = await this.timeSlotRepository.prisma.timeSlot.findFirst({
+            where: {
+              scheduleId: schedule.id,
+              startTime,
+              endTime,
+            },
+          });
+
+          if (existingSlot) {
+            slot = existingSlot;
+            targetSlotId = slot.id;
+          } else {
+            slot = await this.timeSlotRepository.prisma.timeSlot.create({
+              data: {
+                scheduleId: schedule.id,
+                workingShift,
+                startTime,
+                endTime,
+                status: 'AVAILABLE',
+              },
+            });
+            targetSlotId = slot.id;
+          }
+        }
+      } else {
+        slot = await this.timeSlotRepository.findById(slotId);
+      }
+
       if (!slot) {
         throw new TimeSlotServiceError({
           code: TIMESLOT_ERROR_CODES.SLOT_NOT_FOUND,
@@ -442,13 +501,13 @@ class TimeSlotService {
         });
       }
 
-      const key = `lock:slot:${slotId}`;
+      const key = `lock:slot:${targetSlotId}`;
       const existingLock = await redis.get(key);
 
       if (existingLock) {
         if (existingLock === lockClientId) {
           await redis.expire(key, 120);
-          return { slotId, lockClientId, success: true };
+          return { slotId: targetSlotId, lockClientId, success: true };
         } else {
           throw new TimeSlotServiceError({
             code: TIMESLOT_ERROR_CODES.SLOT_ALREADY_LOCKED,
@@ -467,7 +526,7 @@ class TimeSlotService {
         });
       }
 
-      return { slotId, lockClientId, success: true };
+      return { slotId: targetSlotId, lockClientId, success: true };
     } catch (error) {
       if (error instanceof TimeSlotServiceError || (error && error.code && error.statusCode)) {
         throw error;
@@ -482,12 +541,49 @@ class TimeSlotService {
 
   async unlockTimeSlot(slotId, lockClientId) {
     try {
-      const key = `lock:slot:${slotId}`;
+      let targetSlotId = slotId;
+
+      if (slotId.startsWith('virtual_')) {
+        const parts = slotId.split('_');
+        if (parts.length >= 6) {
+          const doctorId = parts[1];
+          const dateStr = parts[2];
+          const startTime = parts[3];
+          const endTime = parts[4];
+          const workingDate = parseDateOnly(dateStr);
+
+          const slot = await this.timeSlotRepository.prisma.timeSlot.findFirst({
+            where: {
+              schedule: {
+                doctorId,
+                workingDate,
+              },
+              startTime,
+              endTime,
+            },
+          });
+          if (slot) {
+            targetSlotId = slot.id;
+          }
+        }
+      }
+
+      const key = `lock:slot:${targetSlotId}`;
       const existingLock = await redis.get(key);
 
       if (existingLock) {
         if (existingLock === lockClientId) {
           await redis.del(key);
+
+          const slot = await this.timeSlotRepository.prisma.timeSlot.findUnique({
+            where: { id: targetSlotId },
+            include: { appointment: true }
+          });
+          if (slot && slot.status === 'AVAILABLE' && !slot.appointment) {
+            await this.timeSlotRepository.prisma.timeSlot.delete({
+              where: { id: targetSlotId }
+            });
+          }
         } else {
           throw new TimeSlotServiceError({
             code: TIMESLOT_ERROR_CODES.SLOT_ALREADY_LOCKED,
@@ -497,7 +593,7 @@ class TimeSlotService {
         }
       }
 
-      return { slotId, lockClientId, success: true };
+      return { slotId: targetSlotId, lockClientId, success: true };
     } catch (error) {
       if (error instanceof TimeSlotServiceError || (error && error.code && error.statusCode)) {
         throw error;
