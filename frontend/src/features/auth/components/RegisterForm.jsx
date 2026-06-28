@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { Eye, EyeOff, Mail, Lock, User, Phone, AlertCircle } from 'lucide-react';
 import { registerSchema } from '../schemas/auth.schema.js';
 import { useRegister } from '../hooks/useRegister.js';
+import { getAuthInputClassName } from './authFieldClassName.js';
 
 export default function RegisterForm({
   defaultValues = {
@@ -67,9 +68,7 @@ export default function RegisterForm({
             type="text"
             placeholder="Nguyễn Văn A"
             autoComplete="name"
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.name ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.name) })}
             {...register('name')}
           />
         </div>
@@ -87,9 +86,7 @@ export default function RegisterForm({
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.email) })}
             {...register('email')}
           />
         </div>
@@ -107,9 +104,7 @@ export default function RegisterForm({
             type="tel"
             placeholder="0901234567"
             autoComplete="tel"
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.phone ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.phone) })}
             {...register('phone')}
           />
         </div>
@@ -127,9 +122,10 @@ export default function RegisterForm({
             type={isPasswordVisible ? 'text' : 'password'}
             placeholder="Tối thiểu 8 ký tự"
             autoComplete="new-password"
-            className={`w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.password ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({
+              hasError: Boolean(errors.password),
+              hasTrailingIcon: true,
+            })}
             {...register('password')}
           />
           <button
@@ -155,9 +151,10 @@ export default function RegisterForm({
             type={isConfirmPasswordVisible ? 'text' : 'password'}
             placeholder="Nhập lại mật khẩu"
             autoComplete="new-password"
-            className={`w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({
+              hasError: Boolean(errors.confirmPassword),
+              hasTrailingIcon: true,
+            })}
             {...register('confirmPassword')}
           />
           <button

@@ -159,6 +159,15 @@ class AuthService {
         });
       }
 
+      if (!user.emailVerified) {
+        throw new AuthServiceError({
+          code: AUTH_ERROR_CODES.EMAIL_NOT_VERIFIED,
+          message: 'Email chưa được xác minh',
+          statusCode: 403,
+          details: [],
+        });
+      }
+
       const jwtSecrets = this._getJwtSecrets();
       const accessTokenJti = randomUUID();
       const refreshTokenJti = randomUUID();
