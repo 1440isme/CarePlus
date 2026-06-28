@@ -155,7 +155,7 @@ export default function HomePage() {
 
   const avgRating = useMemo(() => {
     const doctorsWithRating = favDoctors.filter(d => d.rating > 0);
-    if (!doctorsWithRating.length) return '4.8';
+    if (!doctorsWithRating.length) return '0.0';
     const total = doctorsWithRating.reduce((sum, d) => sum + d.rating, 0);
     return (total / doctorsWithRating.length).toFixed(1);
   }, [favDoctors]);

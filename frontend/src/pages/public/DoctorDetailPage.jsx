@@ -236,7 +236,7 @@ export default function DoctorDetailPage() {
                       <div className="pb-1">
                         <div className="flex items-center gap-1.5 text-amber-500 font-bold">
                           <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-                          <span className="text-sm">{doctor.rating ? Number(doctor.rating).toFixed(1) : '5.0'}</span>
+                          <span className="text-sm">{Number(doctor.rating || 0).toFixed(1)}</span>
                           <span className="text-xs text-gray-400 font-normal">({doctor.reviewCount || 0} đánh giá)</span>
                         </div>
                       </div>
@@ -481,10 +481,10 @@ export default function DoctorDetailPage() {
                         <div className="flex flex-col sm:flex-row gap-6 p-6 bg-gray-50 rounded-2xl border border-gray-150 items-center justify-between">
                           <div className="text-center flex-shrink-0">
                             <div className="text-5xl font-extrabold text-cyan-600 leading-tight">
-                              {doctor.rating ? Number(doctor.rating).toFixed(1) : '5.0'}
+                              {Number(doctor.rating || 0).toFixed(1)}
                             </div>
                             <div className="flex justify-center mt-1">
-                              <StarRow rating={doctor.rating || 5} size={15} />
+                              <StarRow rating={doctor.rating || 0} size={15} />
                             </div>
                             <div className="text-xs text-gray-400 mt-2 font-medium">
                               {doctor.reviewCount || 0} đánh giá thực tế

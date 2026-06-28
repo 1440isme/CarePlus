@@ -299,20 +299,13 @@ export default function DoctorListPage() {
                               alt={doctor.name}
                               className="w-20 h-20 rounded-full object-cover object-top border-2 border-gray-150"
                             />
-                            <button
-                              type="button"
-                              onClick={() => toggleFavorite(doctor.id)}
-                              className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full border border-gray-200 flex items-center justify-center cursor-pointer shadow-sm"
-                            >
-                              <Heart className={`w-3.5 h-3.5 ${isFav ? 'text-red-500 fill-red-500' : 'text-gray-300'}`} />
-                            </button>
                           </div>
                           <div>
                             <h3 className="text-lg font-bold text-gray-900">{doctor.title} {doctor.name}</h3>
                             <div className="text-sm text-cyan-600 font-semibold mt-0.5">{doctor.specialtyName}</div>
                             <div className="flex items-center gap-1 text-xs text-amber-500 font-bold mt-1.5">
                               <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                              <span>{doctor.rating ? Number(doctor.rating).toFixed(1) : '5.0'}</span>
+                              <span>{Number(doctor.rating || 0).toFixed(1)}</span>
                               <span className="text-gray-400 font-normal">({doctor.reviewCount || 0} đánh giá)</span>
                             </div>
                             <div className="text-xs text-gray-500 mt-1">{doctor.position || 'Bác sĩ chuyên khoa'}</div>
