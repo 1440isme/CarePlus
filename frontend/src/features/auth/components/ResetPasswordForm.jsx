@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, Key, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import { resetPasswordSchema } from '../schemas/auth.schema.js';
 import { useResetPassword } from '../hooks/useResetPassword.js';
+import { getAuthInputClassName } from './authFieldClassName.js';
 
 function getResetPasswordErrorMessage(error) {
   switch (error?.code) {
@@ -78,9 +79,7 @@ export default function ResetPasswordForm({
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.email) })}
             {...register('email')}
           />
         </div>
@@ -99,9 +98,7 @@ export default function ResetPasswordForm({
               type="text"
               placeholder="Nhập token đặt lại mật khẩu"
               autoComplete="off"
-              className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                errors.token ? 'border-red-500' : 'border-gray-200'
-              }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.token) })}
               {...register('token')}
             />
           </div>
@@ -120,9 +117,10 @@ export default function ResetPasswordForm({
             type={isNewPasswordVisible ? 'text' : 'password'}
             placeholder="Tối thiểu 6 ký tự"
             autoComplete="new-password"
-            className={`w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.newPassword ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({
+              hasError: Boolean(errors.newPassword),
+              hasTrailingIcon: true,
+            })}
             {...register('newPassword')}
           />
           <button
@@ -148,9 +146,10 @@ export default function ResetPasswordForm({
             type={isConfirmPasswordVisible ? 'text' : 'password'}
             placeholder="Nhập lại mật khẩu mới"
             autoComplete="new-password"
-            className={`w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.confirmPassword ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({
+              hasError: Boolean(errors.confirmPassword),
+              hasTrailingIcon: true,
+            })}
             {...register('confirmPassword')}
           />
           <button

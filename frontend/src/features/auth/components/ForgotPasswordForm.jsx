@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Mail, AlertCircle, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema } from '../schemas/auth.schema.js';
 import { useForgotPassword } from '../hooks/useForgotPassword.js';
+import { getAuthInputClassName } from './authFieldClassName.js';
 
 function getForgotPasswordErrorMessage(error) {
   switch (error?.code) {
@@ -64,9 +65,7 @@ export default function ForgotPasswordForm({ defaultValues = { email: '' }, onSu
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.email) })}
             {...register('email')}
           />
         </div>
