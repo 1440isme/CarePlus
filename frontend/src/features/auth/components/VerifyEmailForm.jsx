@@ -6,6 +6,7 @@ import { Mail, Lock, AlertCircle, CheckCircle } from 'lucide-react';
 import { verifyEmailSchema } from '../schemas/auth.schema.js';
 import { useVerifyEmail } from '../hooks/useVerifyEmail.js';
 import { useResendVerificationOtp } from '../hooks/useResendVerificationOtp.js';
+import { getAuthInputClassName } from './authFieldClassName.js';
 
 function getVerifyErrorMessage(error) {
   switch (error?.code) {
@@ -122,9 +123,7 @@ export default function VerifyEmailForm({ defaultValues = { email: '', otp: '' }
             type="email"
             placeholder="email@example.com"
             autoComplete="email"
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.email ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.email) })}
             {...register('email')}
           />
         </div>
@@ -144,9 +143,7 @@ export default function VerifyEmailForm({ defaultValues = { email: '', otp: '' }
             inputMode="numeric"
             autoComplete="one-time-code"
             maxLength={6}
-            className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-              errors.otp ? 'border-red-500' : 'border-gray-200'
-            }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.otp) })}
             {...register('otp')}
           />
         </div>

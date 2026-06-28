@@ -5,6 +5,7 @@ import { Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, AlertCircle, ArrowRight } from 'lucide-react';
 import { loginSchema } from '../schemas/auth.schema.js';
 import { useLogin } from '../hooks/useLogin.js';
+import { getAuthInputClassName } from './authFieldClassName.js';
 
 function getLoginErrorMessage(error) {
   switch (error?.code) {
@@ -85,9 +86,7 @@ export default function LoginForm({
               type="email"
               placeholder="email@example.com"
               autoComplete="email"
-              className={`w-full pl-10 pr-4 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                errors.email ? 'border-red-500' : 'border-gray-200'
-              }`}
+            className={getAuthInputClassName({ hasError: Boolean(errors.email) })}
               {...register('register_email', { value: '' })} // bypass autocomplete issues if needed or standard register
               {...register('email')}
             />
@@ -111,9 +110,10 @@ export default function LoginForm({
               type={isPasswordVisible ? 'text' : 'password'}
               placeholder="Nhập mật khẩu"
               autoComplete="current-password"
-              className={`w-full pl-10 pr-10 py-3 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                errors.password ? 'border-red-500' : 'border-gray-200'
-              }`}
+            className={getAuthInputClassName({
+              hasError: Boolean(errors.password),
+              hasTrailingIcon: true,
+            })}
               {...register('password')}
             />
             <button
