@@ -120,7 +120,7 @@ export default function RegisterForm({
           <input
             id="register-password"
             type={isPasswordVisible ? 'text' : 'password'}
-            placeholder="Tối thiểu 8 ký tự"
+            placeholder="Tối thiểu 6 ký tự"
             autoComplete="new-password"
             className={getAuthInputClassName({
               hasError: Boolean(errors.password),
