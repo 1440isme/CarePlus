@@ -207,7 +207,7 @@ class AppointmentService {
       try {
         const socketService = require('../../infrastructure/realtime/socket.service');
         const appointmentDto = toAppointmentDto(appointment);
-        socketService.emitToUser(doctor.id, 'appointment:created', appointmentDto);
+        socketService.emitToUser(doctor.userId, 'appointment:created', appointmentDto);
         socketService.emitToRole('receptionist', 'appointment:created', appointmentDto);
         socketService.emitToRole('admin', 'appointment:created', appointmentDto);
       } catch (socketErr) {
@@ -241,6 +241,15 @@ class AppointmentService {
           type: 'APPOINTMENT',
           link: '/benh-nhan/lich-hen'
         }).catch(err => console.error('Failed to create in-app notification for patient:', err.message));
+
+        // Notify doctor
+        notificationService.createNotification({
+          userId: doctor.userId,
+          title: 'Lịch hẹn mới được đặt',
+          content: `Bệnh nhân ${user.name} đã đặt lịch hẹn mới mã ${appointment.code} với bạn vào lúc ${timeStr} ngày ${dateStr}.`,
+          type: 'APPOINTMENT',
+          link: '/portal/bac-si/lich-hen'
+        }).catch(err => console.error('Failed to create in-app notification for doctor:', err.message));
 
         // Notify receptionist role users
         prisma.user.findMany({ where: { role: 'RECEPTIONIST' } }).then(receptionists => {
@@ -447,7 +456,7 @@ class AppointmentService {
       try {
         const socketService = require('../../infrastructure/realtime/socket.service');
         const appointmentDto = toAppointmentDto(appointment);
-        socketService.emitToUser(doctor.id, 'appointment:created', appointmentDto);
+        socketService.emitToUser(doctor.userId, 'appointment:created', appointmentDto);
         socketService.emitToRole('admin', 'appointment:created', appointmentDto);
       } catch (socketErr) {
         console.error('Failed to emit appointment:created socket event:', socketErr.message);
@@ -471,10 +480,21 @@ class AppointmentService {
         }).catch((err) => console.error('Failed to send booking success email:', err.message));
       }
 
-      // 8. Create in-app notifications if user exists
-      if (user) {
-        try {
-          const notificationService = require('../notification/notification.service');
+      // 8. Create in-app notifications
+      try {
+        const notificationService = require('../notification/notification.service');
+        
+        // Notify doctor
+        notificationService.createNotification({
+          userId: doctor.userId,
+          title: 'Lịch hẹn mới được đặt',
+          content: `Lễ tân đã đặt lịch hẹn mới mã ${appointment.code} với bạn cho bệnh nhân ${bookingData.name?.trim() || (user ? user.name : '')} vào lúc ${timeStr} ngày ${dateStr}.`,
+          type: 'APPOINTMENT',
+          link: '/portal/bac-si/lich-hen'
+        }).catch(err => console.error('Failed to create in-app notification for doctor:', err.message));
+
+        // Notify patient if user exists
+        if (user) {
           notificationService.createNotification({
             userId: user.id,
             title: 'Lịch hẹn mới được đặt hộ',
@@ -482,9 +502,9 @@ class AppointmentService {
             type: 'APPOINTMENT',
             link: '/benh-nhan/lich-hen'
           }).catch(err => console.error('Failed to create in-app notification for patient:', err.message));
-        } catch (notiErr) {
-          console.error('Failed to trigger in-app notification:', notiErr.message);
         }
+      } catch (notiErr) {
+        console.error('Failed to trigger in-app notifications:', notiErr.message);
       }
 
       return toAppointmentDto(appointment);

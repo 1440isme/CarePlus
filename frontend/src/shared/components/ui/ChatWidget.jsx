@@ -309,8 +309,8 @@ export default function ChatWidget() {
           messageType: 'FILE',
         });
       }
-    } catch {
-      alert('Không thể tải tệp lên. Vui lòng thử lại.');
+    } catch (err) {
+      alert(err.message || 'Không thể tải tệp lên. Vui lòng thử lại.');
     } finally {
       setIsUploading(false);
       if (fileInputRef.current) {
@@ -598,6 +598,87 @@ export default function ChatWidget() {
                   </button>
                 );
               })()}
+
+              {conversations
+                .filter((conversation) => conversation.type === 'DOCTOR_CONSULTATION')
+                .map((conversation) => {
+                  const isActive = !isAIAssistantActive && conversation.id === activeConvId;
+                  const hasUnread = (conversation.unreadCount || 0) > 0;
+
+                  return (
+                    <button
+                      key={conversation.id}
+                      onClick={() => setActiveConvId(conversation.id)}
+                      style={{
+                        width: '100%',
+                        padding: '12px 12px 12px 10px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                        background: isActive ? '#F5F3FF' : 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        borderLeft: isActive ? `2px solid ${DOCTOR_COLOR}` : '2px solid transparent',
+                        textAlign: 'left',
+                      }}
+                    >
+                      <div style={{ position: 'relative', flexShrink: 0 }}>
+                        <div
+                          style={{
+                            width: 34,
+                            height: 34,
+                            borderRadius: '50%',
+                            background: DOCTOR_COLOR,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {renderConversationIcon('DOCTOR_CONSULTATION', 'w-3.5 h-3.5 text-white')}
+                        </div>
+                        {hasUnread && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: -2,
+                              right: -2,
+                              width: 10,
+                              height: 10,
+                              borderRadius: '50%',
+                              background: '#EF4444',
+                              border: '1.5px solid #fff',
+                            }}
+                          />
+                        )}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: 11,
+                            fontWeight: 600,
+                            color: '#334155',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {getPartnerName(conversation)}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: 10,
+                            color: '#9AA4B2',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                          }}
+                        >
+                          {conversation.doctor?.specialtyName || getPartnerRole(conversation)}
+                        </div>
+                      </div>
+                    </button>
+                  );
+                })}
             </div>
           </div>
 
