@@ -28,7 +28,6 @@ Ba nhóm đầu của Dev 1 hiện đã được triển khai ở mức backend 
 * `backend/src/modules/auth/auth.dto.js`
 * `backend/src/modules/auth/auth.validator.js`
 * `backend/src/modules/auth/auth.types.js`
-* `backend/src/modules/auth/auth.email.js`
 
 ### Middleware và shared
 
@@ -40,6 +39,7 @@ Ba nhóm đầu của Dev 1 hiện đã được triển khai ở mức backend 
 ### Infrastructure và app bootstrap
 
 * `backend/src/infrastructure/cache/redis.client.js`
+* `backend/src/infrastructure/mail/mail.service.js`
 * `backend/src/app.js`
 * `backend/.env.example`
 * `backend/package.json`
@@ -92,8 +92,8 @@ Các key pattern hiện đang dùng:
   * Dùng cho forgot/reset password.
   * TTL: `900` giây.
 * `blacklist:token:{jti}`
-  * Dùng để revoke token khi logout.
-  * TTL: bằng thời gian còn lại của token bị blacklist.
+  * Dùng để revoke refresh token khi logout.
+  * TTL: bằng thời gian còn lại của refresh token bị blacklist.
 * `ratelimit:register:{identifier}`
   * TTL: `60` giây.
 * `ratelimit:login:{identifier}`
@@ -131,11 +131,16 @@ Ghi chú:
 * Đọc header `Authorization: Bearer <accessToken>`.
 * Verify JWT bằng `JWT_SECRET`.
 * Validate payload phải có `userId`, `role`, `jti`.
-* Check Redis blacklist key `blacklist:token:{jti}`.
 * Nếu hợp lệ thì gắn:
   * `req.user.userId`
   * `req.user.role`
   * `req.user.jti`
+
+Ghi chú:
+
+* Theo code hiện tại, `authenticate` không còn gọi Redis để check blacklist access token.
+* Access token hợp lệ sẽ dùng được đến khi tự hết hạn theo TTL JWT.
+* Logout hiện tại chủ yếu revoke refresh token để chặn việc xin access token mới qua endpoint `refresh`.
 
 ### `authorize(...roles)`
 
@@ -202,10 +207,9 @@ TTL blacklist:token:<jti>
 
 ## 9. Những phần còn TODO hoặc cần Dev khác phối hợp
 
-* Chưa tích hợp email sending service thật.
-* `backend/src/modules/auth/auth.email.js` hiện là stub với TODO.
-* Notification hoặc mailer thật có thể cần Dev 3 hoặc task riêng.
-* Chưa có protected route thực tế đang mount `authenticate` hoặc `authorize` để test full middleware flow end-to-end qua Postman.
+* Mail service hạ tầng đã được tích hợp cho verify email OTP và forgot/reset password.
+* Auth hiện không còn dùng `backend/src/modules/auth/auth.email.js`; việc gửi mail đi qua `backend/src/infrastructure/mail/mail.service.js`.
+* Đã có protected route thực tế đang mount `authenticate` hoặc `authorize` ở các module như `user`, `patient-profile`, `clinic-settings`, `specialty`.
 * Frontend auth flow chưa nằm trong file này.
 * Cần rà lại production env secrets trước khi deploy thật.
 

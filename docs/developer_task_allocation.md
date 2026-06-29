@@ -8,7 +8,7 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
 
 | Lập trình viên | Lĩnh vực trọng tâm | Các Module nghiệp vụ chính | Phụ thuộc Hạ tầng |
 | :--- | :--- | :--- | :--- |
-| **Dev 1** | Auth, Profiles & Admin | `auth` (Xác thực), `user` (Người dùng), `patient-profile` (Hồ sơ người thân), `clinic-settings` (Cấu hình) | Redis (token blacklist & rate-limit) |
+| **Dev 1** | Auth, Profiles & Admin | `auth` (Xác thực), `user` (Người dùng), `patient-profile` (Hồ sơ người thân), `clinic-settings` (Cấu hình), `specialty` (Chuyên khoa), `ai-assistant` (Trợ lý AI công khai) | Redis (token blacklist, rate-limit), Mail service, Gemini API |
 | **Dev 2** | Lịch làm việc & Doctor Portal | `schedule` (Lịch làm việc), `timeslot` (Ca khám), `doctor` (Bác sĩ), `approval` (Yêu cầu nghỉ) | MySQL Date/Time functions |
 | **Dev 3** | Đặt lịch & Receptionist Portal | `appointment` (Lịch hẹn), `notification` (Gửi email) | Nodemailer, Redis (để lock ca khám) |
 | **Dev 4** | Chat, Blog & Tìm kiếm | `chat` (Trò chuyện), `review` (Đánh giá), `blog` (Cẩm nang), `upload` (Tải tệp) | Socket.IO, Elasticsearch, Cloudinary |
@@ -23,14 +23,17 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
 *   **Công việc Backend:**
     *   **Middleware Xác thực:** Thiết lập JWT auth với access token ngắn hạn (15 phút) và refresh token dài hạn (7 ngày) lưu trong httpOnly cookie. Đưa các token bị thu hồi vào blacklist trên Redis.
     *   **APIs Xác thực:** Đăng ký, Đăng nhập, Xác minh Email (OTP), Đặt lại mật khẩu.
+    *   **Tích hợp Email Service:** Gửi email OTP xác minh, email reset password và email reset mật khẩu bởi admin qua mail service hạ tầng.
     *   **Hồ sơ bệnh nhân & Người thân:** CRUD hồ sơ người thân, xóa mềm qua `isActive: false`, không giới hạn số lượng hồ sơ active theo user trong nghiệp vụ hiện tại.
     *   **Clinic & System Settings:** Cập nhật thông tin phòng khám và cấu hình hệ thống, bao gồm `maxActiveAppointmentsPerUser` để giới hạn số lịch hẹn active theo user. Admin full config dùng `GET/PATCH /api/v1/clinic-settings/system`; public UI đặt lịch chỉ đọc `GET /api/v1/clinic-settings/booking-rules` DTO gọn.
+    *   **Specialties:** Public list/detail chuyên khoa active và Admin CRUD chuyên khoa. Backend hiện hỗ trợ `slug` optional và `icon` optional string.
     *   **APIs Admin User Management:** Reset số lần vắng mặt (no-show count), khóa/mở khóa tài khoản đặt lịch online, cập nhật thông tin cơ bản user, tạo tài khoản nhân sự.
+    *   **AI Assistant:** Public endpoint `/api/v1/ai-assistant/chat` dùng context an toàn từ clinic info, booking rules, specialties, doctors, blog published để hỗ trợ chatbox công khai.
     *   **Lưu ý business:** Hệ thống không dùng hồ sơ mặc định trong flow đặt lịch hiện tại; nếu route set default còn tồn tại thì không expose frontend.
 *   **Công việc Frontend:**
     *   **Trang xác thực:** Đăng nhập, Đăng ký, Xác minh Email, Quên mật khẩu.
     *   **Patient Portal:** Trang chỉnh sửa thông tin cá nhân, đổi mật khẩu, upload avatar, quản lý hồ sơ người thân (thêm/sửa/xóa mềm người thân, chỉ hiển thị tổng số hồ sơ active, không có UI đặt mặc định).
-    *   **Admin Portal:** Admin Dashboard (các thẻ số liệu KPI), Quản lý người dùng (list/search/filter/pagination, chi tiết, sửa, tạo staff, khóa/mở khóa, reset no-show), Quản lý chuyên khoa, Thông tin phòng khám và Cấu hình hệ thống. Admin Specialty form trong scope hiện tại chỉ nhập Tên, Mô tả, Trạng thái active; `slug` do backend tự sinh từ tên chuyên khoa, `icon` là optional string và chưa có UI icon picker/upload.
+    *   **Admin Portal:** Admin Dashboard (các thẻ số liệu KPI), Quản lý người dùng (list/search/filter/pagination, chi tiết, sửa, tạo staff, khóa/mở khóa, reset no-show), Quản lý chuyên khoa, Thông tin phòng khám và Cấu hình hệ thống. Admin Specialty form tối thiểu cần Tên, Mô tả, Trạng thái active; backend hiện chấp nhận thêm `slug` và `icon` optional string.
 
 ---
 
@@ -39,7 +42,7 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
 
 *   **Công việc Backend:**
     *   **APIs Hồ sơ Bác sĩ:** Xem chi tiết hồ sơ, cấu hình giá khám tham khảo, tính toán điểm đánh giá (rating) trung bình.
-    *   **Sinh lịch làm việc:** Tạo các ca khám 30 phút (`08:00–11:30` và `13:30–17:00`) cho bác sĩ theo ngày cụ thể. Đảm bảo ràng buộc duy nhất `(doctorId, workingDate)` trong database.
+    *   **Sinh lịch làm việc:** Tạo các ca khám 30 phút (`08:00–11:30` và `13:30–17:00`) cho bác sĩ theo ngày cụ thể. Đảm bảo ràng buộc duy nhất `(doctorId, workingDate, workingShift)` trong database.
     *   **Yêu cầu nghỉ (Doctor Leave):** Tạo yêu cầu nghỉ phép (loại `SCHEDULE_EXCEPTION`). Tự động khóa các ca khám (TimeSlots) trong khoảng thời gian chờ duyệt.
     *   **APIs Doctor Dashboard:** Thống kê KPI ngày hôm nay và danh sách timeline lịch hẹn trong ngày.
 *   **Công việc Frontend:**
@@ -62,7 +65,7 @@ Tài liệu này phác thảo việc phân chia công việc giữa **4 Lập tr
         *   Lưu snapshot của `consultationFee` (giá khám tham khảo) và `patientEmail` tại thời điểm đặt.
     *   **Cập nhật trạng thái lịch hẹn:** Check-in, Hoàn thành, Hủy lịch (kiểm tra hạn hủy trước 2 giờ/1 ngày), và vắng mặt (No-show).
     *   **APIs Lễ tân:** Tra cứu bệnh nhân bằng SĐT/Email/Tên, đặt lịch khám hộ bệnh nhân, check-in nhanh, và xem lịch làm việc của bác sĩ.
-    *   **Tích hợp Nodemailer:** Tự động gửi email xác minh tài khoản, xác nhận đặt lịch thành công, thông báo hủy lịch, hoặc cảnh báo khóa tài khoản do no-show.
+    *   **Tích hợp Mail Service:** Tự động gửi email xác minh tài khoản, xác nhận đặt lịch thành công, thông báo hủy lịch, hoặc cảnh báo khóa tài khoản do no-show.
 *   **Công việc Frontend:**
     *   **Bộ công cụ Đặt lịch (Patient Booking Wizard):** 5 bước đặt lịch (Chuyên khoa -> Bác sĩ & Lịch -> Thông tin người khám -> Xác nhận -> Hoàn tất).
     *   **Receptionist Portal:** Dashboard lễ tân, danh sách lịch hẹn hôm nay, bộ đặt lịch khám hộ bệnh nhân, Drawer thao tác nhanh (Check-in, báo vắng mặt, hủy lịch, hoàn thành).
