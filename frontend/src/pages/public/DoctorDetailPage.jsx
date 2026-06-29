@@ -571,11 +571,11 @@ export default function DoctorDetailPage() {
                       </div>
                       <div className="flex justify-between">
                         <span>Thời gian/lượt</span>
-                        <span className="text-gray-800">30 phút</span>
+                        <span className="text-gray-800">{bookingRulesResponse?.data?.slotDurationMinutes || 30} phút</span>
                       </div>
                       <div className="flex justify-between">
                         <span>Đặt trước tối đa</span>
-                        <span className="text-gray-800">7 ngày</span>
+                        <span className="text-gray-800">{bookingRulesResponse?.data?.maxBookingDaysAhead || 7} ngày</span>
                       </div>
                     </div>
                     

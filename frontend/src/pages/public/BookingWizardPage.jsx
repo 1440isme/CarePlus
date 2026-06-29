@@ -15,7 +15,7 @@ import {
 import { usePatientProfiles } from '../../features/patient-profile/hooks/usePatientProfiles.js';
 import { useCreatePatientProfile } from '../../features/patient-profile/hooks/useCreatePatientProfile.js';
 import { useMe } from '../../features/user/hooks/useMe.js';
-import { useBookAppointment } from '../../features/appointment/hooks/useAppointments.js';
+import { useBookAppointment, useMyAppointments } from '../../features/appointment/hooks/useAppointments.js';
 import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
 import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
 import { lockTimeSlot, unlockTimeSlot } from '../../features/timeslot/services/timeslot.service.js';
@@ -140,6 +140,8 @@ export default function BookingWizardPage() {
   });
 
   const [bookingResult, setBookingResult] = useState(null);
+  const [lockedSlotId, setLockedSlotId] = useState(null);
+  const [isTransitioning, setIsTransitioning] = useState(false);
 
   const [lockClientId] = useState(() => {
     let id = sessionStorage.getItem('booking_lock_client_id');
@@ -175,6 +177,10 @@ export default function BookingWizardPage() {
   // 5. Fetch Relative Profiles (for "Người thân")
   const patientProfilesQuery = usePatientProfiles({}, { enabled: isAuthenticated });
   const relativeProfiles = patientProfilesQuery.data?.data || [];
+
+  // Fetch current user appointments for limit checking
+  const myAppointmentsQuery = useMyAppointments({}, { enabled: isAuthenticated });
+  const appointmentsList = myAppointmentsQuery.data?.data || [];
 
   // 6. Book Appointment Mutation
   const bookMutation = useBookAppointment();
@@ -336,6 +342,21 @@ export default function BookingWizardPage() {
     }
   }, [step, isAuthenticated]);
 
+  const lockedSlotIdRef = useRef(lockedSlotId);
+  useEffect(() => {
+    lockedSlotIdRef.current = lockedSlotId;
+  }, [lockedSlotId]);
+
+  useEffect(() => {
+    return () => {
+      if (lockedSlotIdRef.current) {
+        unlockTimeSlot(lockedSlotIdRef.current, lockClientId).catch((err) => {
+          console.error('Failed to unlock slot on unmount:', err);
+        });
+      }
+    };
+  }, [lockClientId]);
+
   // Handle query parameters (?doctorId=...&date=...&slot=...) on mount/load
   useEffect(() => {
     const queryDoctorId = searchParams.get('doctorId');
@@ -362,11 +383,12 @@ export default function BookingWizardPage() {
     }
   }, [searchParams, doctorsQuery.data, specialtiesQuery.data]);
 
-  // Next 7 Days list for Step 2 Date Slider
+  // Next Days list for Step 2 Date Slider (based on system settings)
   const next7Days = useMemo(() => {
     const dates = [];
     const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    for (let i = 0; i < 7; i++) {
+    const limit = systemSettingsResponse?.data?.maxBookingDaysAhead || 7;
+    for (let i = 0; i < limit; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       const dayNum = d.getDate();
@@ -375,7 +397,7 @@ export default function BookingWizardPage() {
       dates.push({ dateStr, dayLabel, dayNum });
     }
     return dates;
-  }, []);
+  }, [systemSettingsResponse?.data?.maxBookingDaysAhead]);
 
   // Filter specialties list based on search query
   const specialtiesList = useMemo(() => {
@@ -414,6 +436,26 @@ export default function BookingWizardPage() {
   ], [slotGroups]);
   const morningSlots = slotGroups.morning || [];
   const afternoonSlots = slotGroups.afternoon || [];
+
+  // Calculate current active appointments count for the selected patient
+  const currentActiveCount = useMemo(() => {
+    if (!isAuthenticated) return 0;
+    
+    // Filter active appointments (CONFIRMED or CHECKED_IN)
+    const activeAppts = appointmentsList.filter(
+      (appt) => appt.status === 'CONFIRMED' || appt.status === 'CHECKED_IN'
+    );
+
+    if (bookingData.forSelf) {
+      // For self
+      return activeAppts.filter((appt) => appt.forSelf === true).length;
+    } else {
+      // For relative
+      return activeAppts.filter(
+        (appt) => appt.patientProfileId === bookingData.patientProfileId
+      ).length;
+    }
+  }, [appointmentsList, bookingData.forSelf, bookingData.patientProfileId, isAuthenticated]);
 
   // Selected patient details (either self or selected relative)
   const selectedPatientDetails = useMemo(() => {
@@ -478,10 +520,11 @@ export default function BookingWizardPage() {
 
   // Handle doctor selection in Step 2
   const handleSelectDoctor = (doctor) => {
-    if (bookingData.timeSlot) {
-      unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+    if (lockedSlotId) {
+      unlockTimeSlot(lockedSlotId, lockClientId).catch((err) => {
         console.error('Failed to unlock previous slot:', err);
       });
+      setLockedSlotId(null);
     }
     setBookingData((prev) => ({
       ...prev,
@@ -493,10 +536,11 @@ export default function BookingWizardPage() {
 
   // Handle date selection in Step 2 date bar
   const handleSelectDate = (dateStr) => {
-    if (bookingData.timeSlot) {
-      unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+    if (lockedSlotId) {
+      unlockTimeSlot(lockedSlotId, lockClientId).catch((err) => {
         console.error('Failed to unlock previous slot:', err);
       });
+      setLockedSlotId(null);
     }
     setBookingData((prev) => ({
       ...prev,
@@ -507,31 +551,24 @@ export default function BookingWizardPage() {
   };
 
   // Handle timeslot click in Step 2
-  const handleSelectTimeSlot = async (timeSlot) => {
+  const handleSelectTimeSlot = (timeSlot) => {
     if (bookingData.timeSlot?.id === timeSlot.id) {
       return;
     }
     setStepError(null);
-    try {
-      await lockTimeSlot(timeSlot.id, lockClientId);
 
-      if (bookingData.timeSlot) {
-        unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
-          console.error('Failed to unlock previous slot:', err);
-        });
-      }
-
-      setBookingData((prev) => ({
-        ...prev,
-        timeSlot
-      }));
-    } catch (err) {
-      const msg = err.response?.data?.error?.message ||
-        err.message ||
-        'Không thể giữ khung giờ khám. Vui lòng thử lại.';
-      setStepError(msg);
-      timeSlotsQuery.refetch();
+    // If we have a previously locked slot and it's different, unlock it
+    if (lockedSlotId && lockedSlotId !== timeSlot.id) {
+      unlockTimeSlot(lockedSlotId, lockClientId).catch((err) => {
+        console.error('Failed to unlock previous slot:', err);
+      });
+      setLockedSlotId(null);
     }
+
+    setBookingData((prev) => ({
+      ...prev,
+      timeSlot
+    }));
   };
 
   // Automatically select the first doctor in Step 2 if none is selected
@@ -544,24 +581,44 @@ export default function BookingWizardPage() {
   // Select matching slot from query params once slots are loaded and skip directly to Step 3
   const querySlot = searchParams.get('slot');
   useEffect(() => {
+    const processQuerySlot = async (matchedSlot) => {
+      hasProcessedQueryParams.current = true;
+      setBookingData((prev) => ({
+        ...prev,
+        timeSlot: matchedSlot
+      }));
+
+      if (isAuthenticated) {
+        try {
+          setIsTransitioning(true);
+          await lockTimeSlot(matchedSlot.id, lockClientId);
+          setLockedSlotId(matchedSlot.id);
+          setStep(3);
+        } catch (err) {
+          const msg = err.response?.data?.error?.message ||
+            err.message ||
+            'Không thể giữ khung giờ khám từ liên kết. Vui lòng chọn lại.';
+          setStepError(msg);
+          setStep(2);
+        } finally {
+          setIsTransitioning(false);
+        }
+      } else {
+        setStep(2);
+        setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
+      }
+    };
+
     if (querySlot && slotsList.length > 0 && !bookingData.timeSlot && !hasProcessedQueryParams.current) {
       const matchedSlot = slotsList.find(s => 
         s.startTime === querySlot || 
         `${s.startTime}-${s.endTime}` === querySlot
       );
       if (matchedSlot && matchedSlot.status === 'AVAILABLE') {
-        hasProcessedQueryParams.current = true;
-        handleSelectTimeSlot(matchedSlot);
-        
-        if (isAuthenticated) {
-          setStep(3);
-        } else {
-          setStep(2);
-          setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
-        }
+        processQuerySlot(matchedSlot);
       }
     }
-  }, [querySlot, slotsList, bookingData.timeSlot, isAuthenticated, searchParams, doctorsQuery.data, specialtiesQuery.data]);
+  }, [querySlot, slotsList, bookingData.timeSlot, isAuthenticated, searchParams, doctorsQuery.data, specialtiesQuery.data, lockClientId]);
 
   // Navigation handlers
   const handleNextStep = () => {
@@ -584,9 +641,33 @@ export default function BookingWizardPage() {
       // Authenticity Check before going to Step 3
       if (!isAuthenticated) {
         setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
-      } else {
-        setStep(3);
+        return;
       }
+
+      // Lock the slot and proceed to Step 3
+      const attemptLockAndProceed = async () => {
+        try {
+          setIsTransitioning(true);
+          if (lockedSlotId !== bookingData.timeSlot.id) {
+            if (lockedSlotId) {
+              await unlockTimeSlot(lockedSlotId, lockClientId).catch(err => console.error(err));
+            }
+            await lockTimeSlot(bookingData.timeSlot.id, lockClientId);
+            setLockedSlotId(bookingData.timeSlot.id);
+          }
+          setStep(3);
+        } catch (err) {
+          const msg = err.response?.data?.error?.message ||
+            err.message ||
+            'Không thể giữ khung giờ khám. Vui lòng thử lại.';
+          setStepError(msg);
+          timeSlotsQuery.refetch();
+        } finally {
+          setIsTransitioning(false);
+        }
+      };
+
+      attemptLockAndProceed();
     } else if (step === 3) {
       const newErrors = {};
       if (!bookingData.forSelf && !bookingData.patientProfileId) {
@@ -601,6 +682,19 @@ export default function BookingWizardPage() {
         setStepError('Vui lòng điền đầy đủ các thông tin bắt buộc màu đỏ phía dưới.');
         return;
       }
+
+      // Check max active appointments limit
+      const maxActiveLimit = systemSettingsResponse?.data?.maxActiveAppointmentsPerUser ?? 5;
+      if (currentActiveCount >= maxActiveLimit) {
+        const patientName = bookingData.forSelf
+          ? 'của bạn'
+          : `của người thân "${selectedPerson?.name || 'được chọn'}"`;
+        setStepError(
+          `Tài khoản ${patientName} đã đạt số lượng lịch hẹn hoạt động tối đa theo quy định (${maxActiveLimit} lịch hẹn). Vui lòng hoàn thành hoặc hủy bớt lịch hẹn cũ để đặt tiếp.`
+        );
+        return;
+      }
+
       setValidationErrors({});
       setStep(4);
     }
@@ -648,10 +742,11 @@ export default function BookingWizardPage() {
   };
 
   const handleResetBooking = () => {
-    if (bookingData.timeSlot) {
-      unlockTimeSlot(bookingData.timeSlot.id, lockClientId).catch((err) => {
+    if (lockedSlotId) {
+      unlockTimeSlot(lockedSlotId, lockClientId).catch((err) => {
         console.error('Failed to unlock slot:', err);
       });
+      setLockedSlotId(null);
     }
     setBookingData({
       specialty: null,
@@ -1043,6 +1138,22 @@ export default function BookingWizardPage() {
             </div>
 
             <ErrorBanner />
+
+            {currentActiveCount >= (systemSettingsResponse?.data?.maxActiveAppointmentsPerUser || 5) && (
+              <div style={{
+                backgroundColor: '#FEF2F2',
+                color: '#EF4444',
+                border: '1.5px solid #FCA5A5',
+                padding: '10px 14px',
+                borderRadius: '8px',
+                marginBottom: '16px',
+                fontSize: '0.85rem',
+                fontWeight: 500,
+                lineHeight: 1.5
+              }}>
+                ⚠️ Bệnh nhân này đã đạt số lượng lịch hẹn hoạt động tối đa theo quy định ({systemSettingsResponse?.data?.maxActiveAppointmentsPerUser || 5} lịch hẹn). Vui lòng hoàn thành hoặc hủy bớt lịch cũ để tiếp tục.
+              </div>
+            )}
 
             {/* Person picker popup */}
             {showPersonPicker && createPortal(
@@ -1533,8 +1644,9 @@ export default function BookingWizardPage() {
                 type="button"
                 className="btn-wizard-next"
                 onClick={handleNextStep}
+                disabled={isTransitioning}
               >
-                Tiếp theo <span>→</span>
+                {isTransitioning ? 'Đang xử lý...' : <>Tiếp theo <span>→</span></>}
               </button>
             )}
           </div>

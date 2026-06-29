@@ -289,132 +289,28 @@ class AppointmentService {
 
   async createReceptionistAppointment(currentUser, bookingData) {
     try {
-      let patientId = bookingData.patientId;
-      let user = null;
-
+      const patientId = bookingData.patientId;
+      
       // 1. Get and check patient user status
+      let user = null;
       if (patientId) {
         user = await this.userRepository.findUserById(patientId);
+        await this._validateReceptionistPatientStatus(user, patientId);
       }
 
-      if (user) {
-        if (user.status === 'LOCKED') {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.PATIENT_LOCKED,
-            message: 'Tài khoản bệnh nhân đang bị khóa.',
-            statusCode: 403,
-          });
-        }
-
-        // Fetch lock configuration from system settings
-        const settings = await this.clinicSettingsRepository.getSystemSetting();
-        const maxNoShow = settings?.maxNoShowBeforeLock ?? 3;
-
-        if (user.noShowCount >= maxNoShow) {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.MAX_NO_SHOW_REACHED,
-            message: `Tài khoản bệnh nhân đã bị tạm khóa chức năng đặt lịch do vắng mặt quá ${maxNoShow} lần.`,
-            statusCode: 403,
-          });
-        }
-
-        // Check max active appointments limit
-        const maxActive = settings?.maxActiveAppointmentsPerUser ?? 5;
-        const activeCount = await this.prisma.appointment.count({
-          where: {
-            patientId,
-            status: {
-              in: ['CONFIRMED', 'CHECKED_IN'],
-            },
-          },
-        });
-
-        if (activeCount >= maxActive) {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.MAX_ACTIVE_APPOINTMENTS_REACHED,
-            message: `Tài khoản bệnh nhân này đã đạt số lượng lịch hẹn hoạt động tối đa theo quy định (${maxActive} lịch hẹn).`,
-            statusCode: 403,
-          });
-        }
-      }
-
-      // 2. Resolve persisted slot or create one lazily from a frontend virtual slot.
+      // 2. Resolve persisted slot or create one lazily
       const timeSlot = await this._resolveBookableTimeSlot(bookingData);
-
-      // 3. Verify Patient Relative Profile if forSelf === false
-      let relativeName = null;
-      let patientProfileId = null;
-      if (bookingData.forSelf === false) {
-        const profile = await this.patientProfileRepository.findProfileByIdAndUserId(
-          bookingData.patientProfileId,
-          patientId
-        );
-        if (!profile) {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.PATIENT_PROFILE_NOT_FOUND,
-            message: 'Không tìm thấy hồ sơ người thân của bệnh nhân này',
-            statusCode: 404,
-          });
-        }
-        if (!profile.isActive) {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.PATIENT_PROFILE_NOT_FOUND,
-            message: 'Hồ sơ người thân đã bị xóa',
-            statusCode: 400,
-          });
-        }
-        relativeName = bookingData.name?.trim() || profile.fullName;
-        patientProfileId = profile.id;
-      }
-
-      // 4. Verify Spam booking rules
       const appointmentDate = timeSlot.schedule.workingDate;
       const doctor = timeSlot.schedule.doctor;
 
-      // Check same day booking for this person (only if patientId is present)
-      if (patientId) {
-        const sameDayBooking = await this.appointmentRepository.findActiveAppointmentOnDate(
-          patientId,
-          patientProfileId,
-          appointmentDate
-        );
-        if (sameDayBooking) {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.SAME_DAY_BOOKING_EXISTS,
-            message: 'Bệnh nhân này đã có lịch hẹn hoạt động trong ngày này.',
-            statusCode: 409,
-          });
-        }
+      // 3. Verify Patient Relative Profile if forSelf === false
+      const { relativeName, patientProfileId } = await this._verifyRelativeProfile(bookingData, patientId);
 
-        // Check active booking with this doctor
-        const activeDoctorBooking = await this.appointmentRepository.findActiveAppointmentWithDoctor(
-          patientId,
-          patientProfileId,
-          doctor.id
-        );
-        if (activeDoctorBooking) {
-          throw new AppointmentServiceError({
-            code: APPOINTMENT_ERROR_CODES.ACTIVE_BOOKING_WITH_DOCTOR_EXISTS,
-            message: 'Bệnh nhân này đã có lịch hẹn hoạt động với bác sĩ này.',
-            statusCode: 409,
-          });
-        }
-      }
+      // 4. Verify Spam booking rules
+      await this._checkBookingConflicts(patientId, patientProfileId, appointmentDate, doctor.id);
 
       // 5. Generate unique Code: CP + 10 digits
-      let code = '';
-      let isCodeUnique = false;
-      while (!isCodeUnique) {
-        const randomDigits = Math.floor(1000000000 + Math.random() * 9000000000).toString();
-        code = `CP${randomDigits}`;
-        const existing = await this.prisma.appointment.findUnique({
-          where: { code },
-          select: { id: true },
-        });
-        if (!existing) {
-          isCodeUnique = true;
-        }
-      }
+      const code = await this._generateUniqueAppointmentCode();
 
       // 6. Perform booking transaction
       const appointment = await this.appointmentRepository.createAppointmentWithTransaction({
@@ -597,18 +493,14 @@ class AppointmentService {
 
   async getAdminStats(currentUser) {
     try {
-      // Weekly stats: this week (Monday to Sunday)
+      // Weekly stats: last 7 days (including today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const dayOfWeek = today.getDay();
-      const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - daysSinceMonday);
 
       const days = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
         days.push(d);
       }
 
@@ -619,7 +511,7 @@ class AppointmentService {
           return this.prisma.appointment.count({
             where: {
               appointmentDate: { gte: d, lt: nextDay },
-              status: { not: 'CANCELLED' },
+              status: 'COMPLETED',
             },
           });
         })
@@ -1166,32 +1058,14 @@ class AppointmentService {
       const currentStatus = appointment.status;
       const newStatus = body.status.trim().toUpperCase();
 
-      // Check valid transitions
-      // CONFIRMED -> CHECKED_IN, CANCELLED, NO_SHOW
-      // CHECKED_IN -> COMPLETED, CANCELLED
-      let isValidTransition = false;
-      if (currentStatus === 'CONFIRMED') {
-        if (['CHECKED_IN', 'CANCELLED', 'NO_SHOW'].includes(newStatus)) {
-          isValidTransition = true;
-        }
-      } else if (currentStatus === 'CHECKED_IN') {
-        if (['COMPLETED', 'CANCELLED'].includes(newStatus)) {
-          isValidTransition = true;
-        }
-      }
+      // 1. Kiểm tra tính hợp lệ của việc chuyển đổi trạng thái
+      this._validateStatusTransition(currentStatus, newStatus);
 
-      if (!isValidTransition) {
-        throw new AppointmentServiceError({
-          code: APPOINTMENT_ERROR_CODES.INVALID_STATUS_TRANSITION,
-          message: `Không thể chuyển trạng thái từ ${currentStatus} sang ${newStatus}`,
-          statusCode: 400,
-        });
-      }
-
-      // Fetch lock configuration from system settings
+      // Lấy cấu hình chặn từ cài đặt hệ thống
       const settings = await this.clinicSettingsRepository.getSystemSetting();
       const maxNoShow = settings?.maxNoShowBeforeLock ?? 3;
 
+      // 2. Thực hiện cập nhật trạng thái trong Transaction
       const { appointment: updatedAppointment, userLocked } = await this.appointmentRepository.updateStatusWithTransaction(
         appointment,
         newStatus,
@@ -1202,87 +1076,8 @@ class AppointmentService {
         }
       );
 
-      const dateStr = appointment.appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
-      const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
-
-      // Email triggers
-      if (newStatus === 'CANCELLED') {
-        this.mailService.sendBookingCancellationEmail({
-          to: appointment.patientEmail,
-          name: appointment.patient.name,
-          code: appointment.code,
-          doctorName: appointment.doctor.name,
-          date: dateStr,
-          time: timeStr,
-          reason: body.reason || 'Được hủy bởi quầy lễ tân',
-        }).catch((err) => console.error('Failed to send booking cancellation email:', err.message));
-      } else if (newStatus === 'NO_SHOW') {
-        if (userLocked) {
-          this.mailService.sendNoShowLockEmail({
-            to: appointment.patientEmail,
-            name: appointment.patient.name,
-            maxNoShow,
-          }).catch((err) => console.error('Failed to send account lock warning email:', err.message));
-        } else {
-          // Send cancellation as fallback notification
-          this.mailService.sendBookingCancellationEmail({
-            to: appointment.patientEmail,
-            name: appointment.patient.name,
-            code: appointment.code,
-            doctorName: appointment.doctor.name,
-            date: dateStr,
-            time: timeStr,
-            reason: 'Bạn đã không có mặt khám đúng giờ hẹn (No-show). Lịch hẹn bị hủy.',
-          }).catch((err) => console.error('Failed to send no-show cancellation email:', err.message));
-        }
-      }
-
-      // Socket realtime event emit
-      try {
-        const socketService = require('../../infrastructure/realtime/socket.service');
-        const appointmentDto = toAppointmentDto(updatedAppointment);
-        socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
-        socketService.emitToUser(updatedAppointment.doctor.userId, 'appointment:status-changed', appointmentDto);
-        socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
-        socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
-      } catch (socketErr) {
-        console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
-      }
-
-      // Trigger in-app notifications on status change
-      try {
-        const notificationService = require('../notification/notification.service');
-        const getStatusLabel = (status) => {
-          switch(status) {
-            case 'CONFIRMED': return 'Đã xác nhận';
-            case 'CHECKED_IN': return 'Đã Check-in';
-            case 'COMPLETED': return 'Đã hoàn thành';
-            case 'CANCELLED': return 'Đã hủy';
-            case 'NO_SHOW': return 'Không đến khám (No-show)';
-            default: return status;
-          }
-        };
-
-        // Notify patient
-        notificationService.createNotification({
-          userId: updatedAppointment.patientId,
-          title: 'Trạng thái lịch hẹn thay đổi',
-          content: `Lịch hẹn khám mã ${updatedAppointment.code} của bạn đã được cập nhật sang trạng thái: ${getStatusLabel(newStatus)}.`,
-          type: 'APPOINTMENT',
-          link: '/benh-nhan/lich-hen'
-        }).catch(err => console.error('Failed to notify patient of status update:', err.message));
-
-        // Notify doctor
-        notificationService.createNotification({
-          userId: appointment.doctor.userId,
-          title: 'Trạng thái lịch hẹn thay đổi',
-          content: `Lịch hẹn khám mã ${updatedAppointment.code} của bệnh nhân ${appointment.patient.name} đã được cập nhật sang trạng thái: ${getStatusLabel(newStatus)}.`,
-          type: 'APPOINTMENT',
-          link: '/portal/bac-si/lich-hen'
-        }).catch(err => console.error('Failed to notify doctor of status update:', err.message));
-      } catch (notiErr) {
-        console.error('Failed to trigger in-app notification on status change:', notiErr.message);
-      }
+      // 3. Xử lý gửi thông báo bất đồng bộ
+      await this._sendAppointmentStatusNotifications(appointment, updatedAppointment, newStatus, userLocked, maxNoShow, body);
 
       return toAppointmentDto(updatedAppointment);
     } catch (error) {
@@ -1521,6 +1316,288 @@ class AppointmentService {
     dto.hasPendingCancellation = !!pendingCancel;
     dto.pendingCancellationRequestId = pendingCancel?.id || null;
     return dto;
+  }
+
+  async _validateReceptionistPatientStatus(user, patientId) {
+    if (!user) return;
+
+    if (user.status === 'LOCKED') {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.PATIENT_LOCKED,
+        message: 'Tài khoản bệnh nhân đang bị khóa.',
+        statusCode: 403,
+      });
+    }
+
+    // Fetch lock configuration from system settings
+    const settings = await this.clinicSettingsRepository.getSystemSetting();
+    const maxNoShow = settings?.maxNoShowBeforeLock ?? 3;
+
+    if (user.noShowCount >= maxNoShow) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.MAX_NO_SHOW_REACHED,
+        message: `Tài khoản bệnh nhân đã bị tạm khóa chức năng đặt lịch do vắng mặt quá ${maxNoShow} lần.`,
+        statusCode: 403,
+      });
+    }
+
+    // Check max active appointments limit
+    const maxActive = settings?.maxActiveAppointmentsPerUser ?? 5;
+    const activeCount = await this.prisma.appointment.count({
+      where: {
+        patientId,
+        status: {
+          in: ['CONFIRMED', 'CHECKED_IN'],
+        },
+      },
+    });
+
+    if (activeCount >= maxActive) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.MAX_ACTIVE_APPOINTMENTS_REACHED,
+        message: `Tài khoản bệnh nhân này đã đạt số lượng lịch hẹn hoạt động tối đa theo quy định (${maxActive} lịch hẹn).`,
+        statusCode: 403,
+      });
+    }
+  }
+
+  async _verifyRelativeProfile(bookingData, patientId) {
+    if (bookingData.forSelf !== false) {
+      return { relativeName: null, patientProfileId: null };
+    }
+
+    const profile = await this.patientProfileRepository.findProfileByIdAndUserId(
+      bookingData.patientProfileId,
+      patientId
+    );
+    if (!profile) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.PATIENT_PROFILE_NOT_FOUND,
+        message: 'Không tìm thấy hồ sơ người thân của bệnh nhân này',
+        statusCode: 404,
+      });
+    }
+    if (!profile.isActive) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.PATIENT_PROFILE_NOT_FOUND,
+        message: 'Hồ sơ người thân đã bị xóa',
+        statusCode: 400,
+      });
+    }
+
+    return {
+      relativeName: bookingData.name?.trim() || profile.fullName,
+      patientProfileId: profile.id,
+    };
+  }
+
+  async _checkBookingConflicts(patientId, patientProfileId, appointmentDate, doctorId) {
+    if (!patientId) return;
+
+    const sameDayBooking = await this.appointmentRepository.findActiveAppointmentOnDate(
+      patientId,
+      patientProfileId,
+      appointmentDate
+    );
+    if (sameDayBooking) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.SAME_DAY_BOOKING_EXISTS,
+        message: 'Bệnh nhân này đã có lịch hẹn hoạt động trong ngày này.',
+        statusCode: 409,
+      });
+    }
+
+    const activeDoctorBooking = await this.appointmentRepository.findActiveAppointmentWithDoctor(
+      patientId,
+      patientProfileId,
+      doctorId
+    );
+    if (activeDoctorBooking) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.ACTIVE_BOOKING_WITH_DOCTOR_EXISTS,
+        message: 'Bệnh nhân này đã có lịch hẹn hoạt động với bác sĩ này.',
+        statusCode: 409,
+      });
+    }
+  }
+
+  async _generateUniqueAppointmentCode() {
+    let code = '';
+    let isCodeUnique = false;
+    while (!isCodeUnique) {
+      const randomDigits = Math.floor(1000000000 + Math.random() * 9000000000).toString();
+      code = `CP${randomDigits}`;
+      const existing = await this.prisma.appointment.findUnique({
+        where: { code },
+        select: { id: true },
+      });
+      if (!existing) {
+        isCodeUnique = true;
+      }
+    }
+    return code;
+  }
+
+  async _sendReceptionistBookingNotifications(appointment, user, bookingData, timeSlot) {
+    const doctor = timeSlot.schedule.doctor;
+    const appointmentDate = timeSlot.schedule.workingDate;
+    
+    // Release Redis lock if lockClientId is provided
+    if (bookingData.lockClientId) {
+      const lockKey = `lock:slot:${timeSlot.id}`;
+      await redis.del(lockKey).catch((err) => {
+        console.error(`Failed to delete Redis lock ${lockKey}:`, err.message);
+      });
+    }
+
+    // Socket realtime event emit
+    try {
+      const socketService = require('../../infrastructure/realtime/socket.service');
+      const appointmentDto = toAppointmentDto(appointment);
+      socketService.emitToUser(doctor.id, 'appointment:created', appointmentDto);
+      socketService.emitToRole('admin', 'appointment:created', appointmentDto);
+    } catch (socketErr) {
+      console.error('Failed to emit appointment:created socket event:', socketErr.message);
+    }
+
+    // Send success email asynchronously
+    const emailRecipient = user ? user.email : (bookingData.email?.trim() || null);
+    const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
+    const dateStr = appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
+
+    if (emailRecipient) {
+      this.mailService.sendBookingSuccessEmail({
+        to: emailRecipient,
+        name: user ? user.name : bookingData.name.trim(),
+        code: appointment.code,
+        doctorName: doctor.name,
+        specialtyName: doctor.specialtyName,
+        date: dateStr,
+        time: timeStr,
+        fee: doctor.price,
+      }).catch((err) => console.error('Failed to send booking success email:', err.message));
+    }
+
+    // Create in-app notifications if user exists
+    if (user) {
+      try {
+        const notificationService = require('../notification/notification.service');
+        notificationService.createNotification({
+          userId: user.id,
+          title: 'Lịch hẹn mới được đặt hộ',
+          content: `Lễ tân đã đặt lịch hẹn khám mã ${appointment.code} với Bác sĩ ${doctor.name} cho bạn vào lúc ${timeStr} ngày ${dateStr}.`,
+          type: 'APPOINTMENT',
+          link: '/benh-nhan/lich-hen'
+        }).catch(err => console.error('Failed to create in-app notification for patient:', err.message));
+      } catch (notiErr) {
+        console.error('Failed to trigger in-app notification:', notiErr.message);
+      }
+    }
+  }
+
+  _validateStatusTransition(currentStatus, newStatus) {
+    let isValidTransition = false;
+    if (currentStatus === 'CONFIRMED') {
+      if (['CHECKED_IN', 'CANCELLED', 'NO_SHOW'].includes(newStatus)) {
+        isValidTransition = true;
+      }
+    } else if (currentStatus === 'CHECKED_IN') {
+      if (['COMPLETED', 'CANCELLED'].includes(newStatus)) {
+        isValidTransition = true;
+      }
+    }
+
+    if (!isValidTransition) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.INVALID_STATUS_TRANSITION,
+        message: `Không thể chuyển trạng thái từ ${currentStatus} sang ${newStatus}`,
+        statusCode: 400,
+      });
+    }
+  }
+
+  async _sendAppointmentStatusNotifications(appointment, updatedAppointment, newStatus, userLocked, maxNoShow, body) {
+    const dateStr = appointment.appointmentDate.toISOString().slice(0, 10).split('-').reverse().join('/');
+    const timeStr = `${appointment.startTime} - ${appointment.endTime}`;
+
+    // 1. Email triggers
+    if (newStatus === 'CANCELLED') {
+      this.mailService.sendBookingCancellationEmail({
+        to: appointment.patientEmail,
+        name: appointment.patient.name,
+        code: appointment.code,
+        doctorName: appointment.doctor.name,
+        date: dateStr,
+        time: timeStr,
+        reason: body.reason || 'Được hủy bởi quầy lễ tân',
+      }).catch((err) => console.error('Failed to send booking cancellation email:', err.message));
+    } else if (newStatus === 'NO_SHOW') {
+      if (userLocked) {
+        this.mailService.sendNoShowLockEmail({
+          to: appointment.patientEmail,
+          name: appointment.patient.name,
+          maxNoShow,
+        }).catch((err) => console.error('Failed to send account lock warning email:', err.message));
+      } else {
+        // Send cancellation as fallback notification
+        this.mailService.sendBookingCancellationEmail({
+          to: appointment.patientEmail,
+          name: appointment.patient.name,
+          code: appointment.code,
+          doctorName: appointment.doctor.name,
+          date: dateStr,
+          time: timeStr,
+          reason: 'Bạn đã không có mặt khám đúng giờ hẹn (No-show). Lịch hẹn bị hủy.',
+        }).catch((err) => console.error('Failed to send no-show cancellation email:', err.message));
+      }
+    }
+
+    // 2. Socket realtime event emit
+    try {
+      const socketService = require('../../infrastructure/realtime/socket.service');
+      const appointmentDto = toAppointmentDto(updatedAppointment);
+      socketService.emitToUser(updatedAppointment.patientId, 'appointment:status-changed', appointmentDto);
+      socketService.emitToUser(updatedAppointment.doctor.userId, 'appointment:status-changed', appointmentDto);
+      socketService.emitToRole('receptionist', 'appointment:status-changed', appointmentDto);
+      socketService.emitToRole('admin', 'appointment:status-changed', appointmentDto);
+    } catch (socketErr) {
+      console.error('Failed to emit appointment:status-changed socket event:', socketErr.message);
+    }
+
+    // 3. Trigger in-app notifications on status change
+    try {
+      const notificationService = require('../notification/notification.service');
+      const getStatusLabel = (status) => {
+        switch(status) {
+          case 'CONFIRMED': return 'Đã xác nhận';
+          case 'CHECKED_IN': return 'Đã Check-in';
+          case 'COMPLETED': return 'Đã hoàn thành';
+          case 'CANCELLED': return 'Đã hủy';
+          case 'NO_SHOW': return 'Không đến khám (No-show)';
+          default: return status;
+        }
+      };
+
+      // Notify patient
+      notificationService.createNotification({
+        userId: updatedAppointment.patientId,
+        title: 'Trạng thái lịch hẹn thay đổi',
+        content: `Lịch hẹn khám mã ${updatedAppointment.code} của bạn đã được cập nhật sang trạng thái: ${getStatusLabel(newStatus)}.`,
+        type: 'APPOINTMENT',
+        link: '/benh-nhan/lich-hen'
+      }).catch(err => console.error('Failed to notify patient of status update:', err.message));
+
+      // Notify doctor
+      notificationService.createNotification({
+        userId: appointment.doctor.userId,
+        title: 'Trạng thái lịch hẹn thay đổi',
+        content: `Lịch hẹn khám mã ${updatedAppointment.code} của bệnh nhân ${appointment.patient.name} đã được cập nhật sang trạng thái: ${getStatusLabel(newStatus)}.`,
+        type: 'APPOINTMENT',
+        link: '/portal/bac-si/lich-hen'
+      }).catch(err => console.error('Failed to notify doctor of status update:', err.message));
+    } catch (notiErr) {
+      console.error('Failed to trigger in-app notification on status change:', notiErr.message);
+    }
   }
 
   _wrapUnexpectedError(error, code, message) {

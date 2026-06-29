@@ -184,11 +184,11 @@ export default function AdminDashboardPage() {
         {/* Bar chart */}
         <div className="lg:col-span-2 bg-white border border-gray-100 rounded-xl p-5">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="font-semibold text-gray-900">Lịch hẹn theo ngày (Tuần này)</h3>
+            <h3 className="font-semibold text-gray-900">Lịch hẹn thành công 7 ngày gần đây</h3>
             <TrendingUp className="w-4 h-4 text-gray-300" />
           </div>
           <p className="text-xs text-gray-400 mb-3">
-            {adminStatsQuery.isLoading ? 'Đang tải...' : 'Số lượng lịch khám mỗi ngày (không tính hủy)'}
+            {adminStatsQuery.isLoading ? 'Đang tải...' : 'Số lượng lịch khám thành công mỗi ngày'}
           </p>
           <BarChartSimple data={chartData} />
         </div>

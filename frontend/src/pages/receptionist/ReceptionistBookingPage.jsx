@@ -90,11 +90,12 @@ export default function ReceptionistBookingPage() {
   // 5. Booking Mutation
   const bookMutation = useBookAppointmentByReceptionist();
 
-  // Next 7 Days list for Step 2
+  // Next Days list for Step 2 (based on system settings)
   const next7Days = useMemo(() => {
     const dates = [];
     const weekdays = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-    for (let i = 0; i < 7; i++) {
+    const limit = systemSettingsResponse?.data?.maxBookingDaysAhead || 7;
+    for (let i = 0; i < limit; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i);
       const dayNum = d.getDate();
@@ -103,7 +104,7 @@ export default function ReceptionistBookingPage() {
       dates.push({ dateStr, dayLabel, dayNum });
     }
     return dates;
-  }, []);
+  }, [systemSettingsResponse?.data?.maxBookingDaysAhead]);
 
 
 
@@ -345,7 +346,7 @@ export default function ReceptionistBookingPage() {
 
   // ─── Shared input class ────────────────────────────────────────────────────
   const inputCls = (hasError) =>
-    `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white font-inherit transition ${hasError
+    `w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white font-inherit transition disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500 ${hasError
       ? 'border-red-400 bg-red-50'
       : 'border-gray-200'
     }`;
@@ -839,6 +840,7 @@ export default function ReceptionistBookingPage() {
                       if (validationErrors.name) setValidationErrors(prev => ({ ...prev, name: null }));
                     }}
                     className={inputCls(validationErrors.name)}
+                    disabled={Boolean(bookingData.patientUser)}
                   />
                   {validationErrors.name && (
                     <p className="text-xs text-red-500 mt-1">{validationErrors.name}</p>
@@ -860,6 +862,7 @@ export default function ReceptionistBookingPage() {
                       if (validationErrors.phone) setValidationErrors(prev => ({ ...prev, phone: null }));
                     }}
                     className={inputCls(validationErrors.phone)}
+                    disabled={Boolean(bookingData.patientUser)}
                   />
                   {validationErrors.phone && (
                     <p className="text-xs text-red-500 mt-1">{validationErrors.phone}</p>
@@ -885,6 +888,7 @@ export default function ReceptionistBookingPage() {
                     }
                   }}
                   className={inputCls(validationErrors.email)}
+                  disabled={Boolean(bookingData.patientUser)}
                 />
               </div>
 
@@ -901,7 +905,8 @@ export default function ReceptionistBookingPage() {
                       setBookingData(prev => ({ ...prev, gender: e.target.value }));
                       setStepError(null);
                     }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500"
+                    disabled={Boolean(bookingData.patientUser)}
                   >
                     <option value="MALE">Nam</option>
                     <option value="FEMALE">Nữ</option>
@@ -923,6 +928,7 @@ export default function ReceptionistBookingPage() {
                       if (validationErrors.dateOfBirth) setValidationErrors(prev => ({ ...prev, dateOfBirth: null }));
                     }}
                     className={inputCls(validationErrors.dateOfBirth)}
+                    disabled={Boolean(bookingData.patientUser)}
                   />
                   {validationErrors.dateOfBirth && (
                     <p className="text-xs text-red-500 mt-1">{validationErrors.dateOfBirth}</p>
@@ -944,7 +950,8 @@ export default function ReceptionistBookingPage() {
                     setBookingData(prev => ({ ...prev, address: e.target.value }));
                     setStepError(null);
                   }}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500"
+                  disabled={Boolean(bookingData.patientUser)}
                 />
               </div>
 
