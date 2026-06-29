@@ -141,7 +141,7 @@ export default function BlogManagement() {
         }
       } catch (err) {
         console.error('File upload failed:', err);
-        setErrorMsg('Không thể upload hình ảnh lên Cloudinary.');
+        setErrorMsg(err.message || 'Không thể upload hình ảnh lên Cloudinary.');
         setUploading(false);
         return;
       } finally {

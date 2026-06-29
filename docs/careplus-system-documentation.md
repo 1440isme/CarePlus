@@ -961,13 +961,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  ***6.8 Quản lý bài viết***  
    
  CRUD blog posts, filter theo status (PUBLISHED/DRAFT/ARCHIVED)  
-***6.9 Email Preview (*** */portal/admin/email-preview* ***)***  
-   
- Preview 4 loại email:  
-- Xác minh tài khoản  
-- Xác nhận đặt lịch  
-- Hủy lịch  
-- Khóa đặt lịch do no-show  
+ ***6.9 [Đã xóa] Email Preview***
  ***6.10 Thông tin phòng khám***  
    
  CRUD: Tên phòng khám, địa chỉ, hotline, email, giờ làm việc, mô tả  
@@ -1222,7 +1216,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
    
   /portal/admin/blog                   → BlogManagement  
    
-  /portal/admin/email-preview          → EmailPreviewPage  
+  /portal/admin/email-preview          → (Đã xóa)  
    
   /portal/admin/phong-kham             → ClinicInfo  
    

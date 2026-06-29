@@ -173,12 +173,28 @@ app.use((req, res, next) => {
 app.use((err, req, res, next) => {
   console.error(err.stack);
   
-  const statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || 500;
+  let code = err.code || 'INTERNAL_SERVER_ERROR';
+  let message = err.message || 'Something went wrong on the server';
+
+  // Handle MulterErrors
+  const multer = require('multer');
+  if (err instanceof multer.MulterError) {
+    statusCode = 400;
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      code = 'FILE_TOO_LARGE';
+      message = 'Kích thước file vượt quá giới hạn cho phép (tối đa 5MB).';
+    } else {
+      code = err.code || 'UPLOAD_ERROR';
+      message = err.message || 'Lỗi tải tệp tin lên.';
+    }
+  }
+
   res.status(statusCode).json({
     success: false,
     error: {
-      code: err.code || 'INTERNAL_SERVER_ERROR',
-      message: err.message || 'Something went wrong on the server',
+      code,
+      message,
       details: err.details || null
     }
   });
