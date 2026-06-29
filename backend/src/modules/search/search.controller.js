@@ -34,7 +34,7 @@ class SearchController {
       // Run search on Doctors, Blogs, and Specialties concurrently
       const [doctorsResult, blogsResult, specialtiesResult] = await Promise.all([
         SearchService.searchDoctors({ query, page, limit }),
-        SearchService.searchBlogs({ query, page, limit }),
+        SearchService.searchBlogs({ query, status: 'PUBLISHED', page, limit }),
         SearchService.searchSpecialties({ query, active: true, page, limit })
       ]);
 

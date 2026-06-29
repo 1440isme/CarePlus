@@ -1,6 +1,7 @@
 packages:
   - 'backend'
   - 'frontend'
+  - 'integration-tests'
 
 allowBuilds:
   '@prisma/engines': true
