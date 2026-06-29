@@ -225,8 +225,8 @@ export default function HomePage() {
     <div className="w-full">
 
       {/* Hero Banner */}
-      <section className="relative bg-gradient-to-br from-cyan-700 via-cyan-600 to-teal-500 text-white overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
+      <section className="relative bg-gradient-to-br from-cyan-700 via-cyan-600 to-teal-500 text-white z-20">
+        <div className="absolute inset-0 opacity-10 overflow-hidden pointer-events-none">
           <div className="absolute top-10 right-20 w-72 h-72 bg-white rounded-full blur-2xl" />
           <div className="absolute bottom-0 left-10 w-48 h-48 bg-white rounded-full blur-xl" />
         </div>
@@ -246,7 +246,7 @@ export default function HomePage() {
             </p>
 
             {/* Debounced Search Bar */}
-            <div className="relative mb-6" onClick={(e) => e.stopPropagation()}>
+            <div className="relative mb-6 z-30" onClick={(e) => e.stopPropagation()}>
               <form onSubmit={handleHeroSearch} className="flex bg-white rounded-2xl shadow-xl overflow-hidden mb-0">
                 <div className="flex-1 flex items-center gap-3 px-4">
                   <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />

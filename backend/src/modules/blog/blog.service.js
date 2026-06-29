@@ -81,7 +81,10 @@ class BlogService {
         // Maintain the ES sorting order (hits order)
         const populatedData = searchResult.data.map(hit => {
           const dbBlog = blogsFromDb.find(b => b.id === hit.id);
-          return dbBlog || { ...hit, author: null };
+          if (!dbBlog) return null;
+          // Enforce status filter at DB level just in case ES is out of sync
+          if (queryStatus && dbBlog.status !== queryStatus) return null;
+          return dbBlog;
         }).filter(Boolean);
 
         return {
