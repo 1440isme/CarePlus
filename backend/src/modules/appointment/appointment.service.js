@@ -425,18 +425,14 @@ class AppointmentService {
 
   async getAdminStats(currentUser) {
     try {
-      // Weekly stats: this week (Monday to Sunday)
+      // Weekly stats: last 7 days (including today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const dayOfWeek = today.getDay();
-      const daysSinceMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - daysSinceMonday);
 
       const days = [];
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(monday);
-        d.setDate(monday.getDate() + i);
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
         days.push(d);
       }
 
@@ -447,7 +443,7 @@ class AppointmentService {
           return this.prisma.appointment.count({
             where: {
               appointmentDate: { gte: d, lt: nextDay },
-              status: { not: 'CANCELLED' },
+              status: 'COMPLETED',
             },
           });
         })
