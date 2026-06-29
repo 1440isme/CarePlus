@@ -211,7 +211,6 @@ function App() {
           <Route path="duyet-yeu-cau" element={<AdminApprovalRequestsPage />} />
           <Route path="nguoi-dung" element={<AdminUsersPage />} />
           <Route path="blog" element={<BlogManagement />} />
-          <Route path="email-preview" element={<PlaceholderPage title="Email Preview" />} />
           <Route path="phong-kham" element={<AdminClinicInfoPage />} />
           <Route path="cai-dat" element={<AdminSystemSettingsPage />} />
         </Route>

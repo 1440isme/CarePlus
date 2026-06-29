@@ -412,22 +412,100 @@ class ApprovalRequestService {
   }
 
   async _markSchedulesApprovedOff(request, dbClient) {
+    const client = dbClient || this.prisma;
+
     if (request.exceptionType === 'ALL_DAY') {
       await this.scheduleRepository.updateScheduleStatusByDoctorAndDate(
         request.doctorId,
         request.date,
         SCHEDULE_STATUSES.APPROVED_OFF,
-        dbClient,
+        client,
       );
       return;
     }
 
+    // It's a SHIFT exception (MORNING or AFTERNOON)
+    const targetShift = request.shift;
+
+    // Check if there is an ALL_DAY schedule for this doctor and date
+    const allDaySchedule = await client.schedule.findFirst({
+      where: {
+        doctorId: request.doctorId,
+        workingDate: request.date,
+        workingShift: 'ALL_DAY',
+      },
+    });
+
+    if (allDaySchedule) {
+      const remainingShift = targetShift === 'MORNING' ? 'AFTERNOON' : 'MORNING';
+
+      // 1. Update the existing ALL_DAY schedule to be the remaining shift and clear old times
+      await client.schedule.update({
+        where: { id: allDaySchedule.id },
+        data: {
+          workingShift: remainingShift,
+          ...(remainingShift === 'AFTERNOON'
+            ? { morningShiftStart: null, morningShiftEnd: null }
+            : { afternoonShiftStart: null, afternoonShiftEnd: null }),
+        },
+      });
+
+      // 2. Create a new schedule for the target shift with status APPROVED_OFF
+      const newSchedule = await client.schedule.create({
+        data: {
+          doctorId: request.doctorId,
+          workingDate: request.date,
+          workingShift: targetShift,
+          status: SCHEDULE_STATUSES.APPROVED_OFF,
+          morningShiftStart: allDaySchedule.morningShiftStart,
+          morningShiftEnd: allDaySchedule.morningShiftEnd,
+          afternoonShiftStart: allDaySchedule.afternoonShiftStart,
+          afternoonShiftEnd: allDaySchedule.afternoonShiftEnd,
+        },
+      });
+
+      // 3. Move the TimeSlots of the exception shift to the new schedule
+      const slotsToMove = await client.timeSlot.findMany({
+        where: {
+          scheduleId: allDaySchedule.id,
+          workingShift: targetShift,
+        },
+        select: { id: true },
+      });
+      const slotIds = slotsToMove.map((s) => s.id);
+
+      if (slotIds.length > 0) {
+        // Update Appointments referencing these slots
+        await client.appointment.updateMany({
+          where: {
+            timeSlotId: { in: slotIds },
+          },
+          data: {
+            scheduleId: newSchedule.id,
+          },
+        });
+
+        // Update TimeSlots themselves
+        await client.timeSlot.updateMany({
+          where: {
+            id: { in: slotIds },
+          },
+          data: {
+            scheduleId: newSchedule.id,
+          },
+        });
+      }
+      return;
+    }
+
+    // Fall back to original behavior if no ALL_DAY schedule exists
+    const workingShifts = this._getRequestedShifts(request.shift);
     await this.scheduleRepository.updateScheduleStatusByDoctorDateAndShifts(
       request.doctorId,
       request.date,
-      [request.shift],
+      workingShifts,
       SCHEDULE_STATUSES.APPROVED_OFF,
-      dbClient,
+      client,
     );
   }
 

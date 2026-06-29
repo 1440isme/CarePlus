@@ -37,7 +37,8 @@ class CloudinaryUploadAdapter {
           })
           .catch(err => {
             console.error('CloudinaryUploadAdapter: upload request failed with error', err);
-            reject(err.message || 'Tải ảnh lên thất bại');
+            const serverErrorMsg = err.response?.data?.error?.message;
+            reject(serverErrorMsg || err.message || 'Tải ảnh lên thất bại');
           });
         });
       });
