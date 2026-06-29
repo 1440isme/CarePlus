@@ -2,6 +2,7 @@ require('dotenv').config();
 
 module.exports = {
   baseUrl: process.env.TEST_BASE_URL || 'http://localhost:5173',
+  apiBaseUrl: process.env.TEST_API_BASE_URL || 'http://localhost:5000/api/v1',
   headless: String(process.env.TEST_HEADLESS || 'true').toLowerCase() === 'true',
   users: {
     admin: {

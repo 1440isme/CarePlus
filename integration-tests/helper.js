@@ -1,6 +1,38 @@
 const { Builder, By, until } = require('selenium-webdriver');
 const chrome = require('selenium-webdriver/chrome');
 const config = require('./config');
+const path = require('path');
+
+let backendEnvLoaded = false;
+let redisClient;
+let prismaClient;
+
+function loadBackendEnv() {
+  if (backendEnvLoaded) {
+    return;
+  }
+
+  require('dotenv').config({ path: path.resolve(__dirname, '../backend/.env') });
+  backendEnvLoaded = true;
+}
+
+function getRedisClient() {
+  if (!redisClient) {
+    loadBackendEnv();
+    redisClient = require('../backend/src/infrastructure/cache/redis.client');
+  }
+
+  return redisClient;
+}
+
+function getPrismaClient() {
+  if (!prismaClient) {
+    loadBackendEnv();
+    prismaClient = require('../backend/src/infrastructure/database/prisma.client');
+  }
+
+  return prismaClient;
+}
 
 /**
  * Initialize a new Chrome Selenium WebDriver instance.
@@ -84,10 +116,152 @@ async function waitForUrl(driver, urlPart, timeout = 20000) {
   }, timeout);
 }
 
+async function clearAndType(driver, locator, value, timeout = 20000) {
+  const element = await driver.wait(until.elementLocated(locator), timeout);
+  await driver.wait(until.elementIsVisible(element), timeout);
+  await element.clear();
+  await element.sendKeys(value);
+  return element;
+}
+
+async function waitForVisible(driver, locator, timeout = 20000) {
+  const element = await driver.wait(until.elementLocated(locator), timeout);
+  await driver.wait(until.elementIsVisible(element), timeout);
+  return element;
+}
+
+function createTestPatient(overrides = {}) {
+  const uniqueSuffix = `${Date.now()}${Math.floor(Math.random() * 1000)}`;
+
+  return {
+    name: overrides.name || `Test Patient ${uniqueSuffix}`,
+    email: overrides.email || `test.patient.${uniqueSuffix}@careplus-e2e.local`,
+    phone: overrides.phone || `09${String(uniqueSuffix).slice(-8)}`,
+    password: overrides.password || 'AuthTest@123',
+    confirmPassword: overrides.confirmPassword || overrides.password || 'AuthTest@123',
+  };
+}
+
+async function apiPost(pathname, payload) {
+  if (typeof fetch !== 'function') {
+    throw new Error('Global fetch is not available in this Node.js runtime');
+  }
+
+  const response = await fetch(`${config.apiBaseUrl}${pathname}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const body = await response.json();
+
+  if (!response.ok || body?.success === false) {
+    const error = new Error(body?.error?.message || `API request failed for ${pathname}`);
+    error.response = body;
+    throw error;
+  }
+
+  return body;
+}
+
+async function waitForRedisValue(key, timeout = 15000, interval = 250) {
+  const redis = getRedisClient();
+  const startedAt = Date.now();
+
+  while (Date.now() - startedAt < timeout) {
+    const value = await redis.get(key);
+    if (value) {
+      return value;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, interval));
+  }
+
+  throw new Error(`Timed out waiting for Redis key: ${key}`);
+}
+
+async function getVerificationOtp(email, timeout = 15000) {
+  return waitForRedisValue(`otp:email-verify:${email.trim().toLowerCase()}`, timeout);
+}
+
+async function getPasswordResetToken(email, timeout = 15000) {
+  return waitForRedisValue(`reset:password:${email.trim().toLowerCase()}`, timeout);
+}
+
+async function registerPatientViaApi(user) {
+  return apiPost('/auth/register', {
+    name: user.name,
+    email: user.email,
+    phone: user.phone,
+    password: user.password,
+  });
+}
+
+async function verifyPatientEmailViaApi(email, otp) {
+  return apiPost('/auth/verify-email', { email, otp });
+}
+
+async function createVerifiedPatientViaApi(user) {
+  await registerPatientViaApi(user);
+  const otp = await getVerificationOtp(user.email);
+  await verifyPatientEmailViaApi(user.email, otp);
+  return user;
+}
+
+async function requestPasswordResetViaApi(email) {
+  return apiPost('/auth/forgot-password', { email });
+}
+
+async function cleanupAuthArtifacts(email) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const redis = getRedisClient();
+
+  await redis.del(
+    `otp:email-verify:${normalizedEmail}`,
+    `ratelimit:resend-otp:${normalizedEmail}`,
+    `reset:password:${normalizedEmail}`,
+  );
+}
+
+async function cleanupUserByEmail(email) {
+  const normalizedEmail = email.trim().toLowerCase();
+  const prisma = getPrismaClient();
+
+  await cleanupAuthArtifacts(normalizedEmail);
+  await prisma.user.deleteMany({
+    where: { email: normalizedEmail },
+  });
+}
+
+async function closeBackendTestClients() {
+  if (redisClient) {
+    await redisClient.quit();
+    redisClient = undefined;
+  }
+
+  if (prismaClient) {
+    await prismaClient.$disconnect();
+    prismaClient = undefined;
+  }
+}
+
 module.exports = {
   createDriver,
   login,
   clickWhenClickable,
   getText,
   waitForUrl,
+  clearAndType,
+  waitForVisible,
+  createTestPatient,
+  getVerificationOtp,
+  getPasswordResetToken,
+  registerPatientViaApi,
+  verifyPatientEmailViaApi,
+  createVerifiedPatientViaApi,
+  requestPasswordResetViaApi,
+  cleanupUserByEmail,
+  closeBackendTestClients,
 };

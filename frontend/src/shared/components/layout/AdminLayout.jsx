@@ -3,7 +3,7 @@ import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useSelector } from 'react-redux';
 import {
   Menu, X, LogOut, User, Bell, Stethoscope, Home, Calendar, Users, Settings,
-  BarChart3, FileText, ClipboardList, UserCheck, Building2, ChevronRight, Mail
+  BarChart3, FileText, ClipboardList, UserCheck, Building2, ChevronRight
 } from 'lucide-react';
 import { useLogout } from '../../../features/auth/hooks/useLogout.js';
 import { APP_ROUTES } from '../../constants/routes.js';
@@ -18,7 +18,6 @@ const navItems = [
   { label: 'Duyệt yêu cầu', href: `${APP_ROUTES.adminRoot}/duyet-yeu-cau`, icon: <UserCheck className="w-4 h-4" /> },
   { label: 'Người dùng', href: `${APP_ROUTES.adminRoot}/nguoi-dung`, icon: <Users className="w-4 h-4" /> },
   { label: 'Bài viết', href: `${APP_ROUTES.adminRoot}/blog`, icon: <FileText className="w-4 h-4" /> },
-  { label: 'Email Preview', href: `${APP_ROUTES.adminRoot}/email-preview`, icon: <Mail className="w-4 h-4" /> },
   { label: 'Thông tin phòng khám', href: `${APP_ROUTES.adminRoot}/phong-kham`, icon: <Building2 className="w-4 h-4" /> },
   { label: 'Cài đặt hệ thống', href: `${APP_ROUTES.adminRoot}/cai-dat`, icon: <Settings className="w-4 h-4" /> },
 ];
