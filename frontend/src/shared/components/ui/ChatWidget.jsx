@@ -376,6 +376,7 @@ export default function ChatWidget() {
   return (
     <div className="fixed bottom-4 right-4 z-[999] flex flex-col items-end">
       <button
+        aria-label="Mở khung chat"
         onClick={() => {
           if (!isOpen && !activeConvId) {
             setActiveConvId(AI_ASSISTANT_CONVERSATION_ID);
