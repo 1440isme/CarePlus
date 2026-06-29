@@ -178,6 +178,7 @@ export default function BookingWizardPage() {
   const patientProfilesQuery = usePatientProfiles({}, { enabled: isAuthenticated });
   const relativeProfiles = patientProfilesQuery.data?.data || [];
 
+
   // Fetch current user appointments for limit checking
   const myAppointmentsQuery = useMyAppointments({}, { enabled: isAuthenticated });
   const appointmentsList = myAppointmentsQuery.data?.data || [];
@@ -278,10 +279,11 @@ export default function BookingWizardPage() {
         address: newRelative.address.trim() || undefined
       });
       const created = response.data || response;
+      const profileId = created.profile?.id || created.id;
       setBookingData((prev) => ({
         ...prev,
         forSelf: false,
-        patientProfileId: created.id
+        patientProfileId: profileId
       }));
       setValidationErrors((prev) => {
         const next = { ...prev };
