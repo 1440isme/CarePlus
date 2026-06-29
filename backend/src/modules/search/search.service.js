@@ -367,12 +367,31 @@ class SearchService {
           ? esResponse.hits.total.value
           : esResponse.hits.total;
 
-        const data = hits.map(hit => ({
+        const rawData = hits.map(hit => ({
           id: hit._id,
           ...hit._source,
           highlights: hit.highlight || null,
           score: hit._score,
         }));
+
+        const doctorIds = rawData.map(h => h.id);
+        const doctorsFromDb = await prisma.doctor.findMany({
+          where: {
+            id: { in: doctorIds },
+            ...(active !== undefined ? { active } : {}),
+            ...(specialtyId ? { specialtyId } : {})
+          }
+        });
+
+        const data = rawData.map(hit => {
+          const dbDoc = doctorsFromDb.find(d => d.id === hit.id);
+          if (!dbDoc) return null;
+          return {
+            ...hit,
+            ...dbDoc,
+            active: dbDoc.active,
+          };
+        }).filter(Boolean);
 
         return {
           success: true,
@@ -542,7 +561,7 @@ class SearchService {
   /**
    * Full-text search for blogs with DB fallback.
    */
-  static async searchBlogs({ query, status = 'PUBLISHED', page = 1, limit = 10 }) {
+  static async searchBlogs({ query, status, page = 1, limit = 10 }) {
     const from = (page - 1) * limit;
     const esAvailable = await this.isHealthy();
 
@@ -589,12 +608,30 @@ class SearchService {
           ? esResponse.hits.total.value
           : esResponse.hits.total;
 
-        const data = hits.map(hit => ({
+        const rawData = hits.map(hit => ({
           id: hit._id,
           ...hit._source,
           highlights: hit.highlight || null,
           score: hit._score,
         }));
+
+        const blogIds = rawData.map(h => h.id);
+        const blogsFromDb = await prisma.blogPost.findMany({
+          where: {
+            id: { in: blogIds },
+            ...(status ? { status } : {})
+          }
+        });
+
+        const data = rawData.map(hit => {
+          const dbBlog = blogsFromDb.find(b => b.id === hit.id);
+          if (!dbBlog) return null;
+          return {
+            ...hit,
+            ...dbBlog,
+            status: dbBlog.status,
+          };
+        }).filter(Boolean);
 
         return {
           success: true,
@@ -722,11 +759,29 @@ class SearchService {
           ? esResponse.hits.total.value
           : esResponse.hits.total;
 
-        const data = hits.map(hit => ({
+        const rawData = hits.map(hit => ({
           id: hit._id,
           ...hit._source,
           score: hit._score,
         }));
+
+        const specialtyIds = rawData.map(h => h.id);
+        const specialtiesFromDb = await prisma.specialty.findMany({
+          where: {
+            id: { in: specialtyIds },
+            ...(active !== undefined ? { active } : {})
+          }
+        });
+
+        const data = rawData.map(hit => {
+          const dbSpec = specialtiesFromDb.find(s => s.id === hit.id);
+          if (!dbSpec) return null;
+          return {
+            ...hit,
+            ...dbSpec,
+            active: dbSpec.active,
+          };
+        }).filter(Boolean);
 
         return {
           success: true,
