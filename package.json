@@ -4,7 +4,9 @@
   "scripts": {
     "dev:backend": "pnpm --filter backend dev",
     "dev:frontend": "pnpm --filter frontend dev",
-    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\""
+    "dev": "concurrently \"pnpm dev:backend\" \"pnpm dev:frontend\"",
+    "test": "pnpm --filter integration-tests test",
+    "test:ui": "pnpm --filter integration-tests test:ui"
   },
   "devDependencies": {
     "concurrently": "^10.0.3"

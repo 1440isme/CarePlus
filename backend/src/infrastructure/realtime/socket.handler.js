@@ -1,7 +1,5 @@
 const jwt = require('jsonwebtoken');
 const prisma = require('../database/prisma.client');
-const redis = require('../cache/redis.client');
-const { AUTH_TOKEN_CONFIG } = require('../../modules/auth/auth.types');
 
 function parseCookies(cookieHeader) {
   if (!cookieHeader) return {};
@@ -51,18 +49,6 @@ async function socketAuthMiddleware(socket, next) {
     if (!userId || !role || !jti) {
       socket.user = null;
       return next();
-    }
-
-    // Check blacklist in Redis
-    const blacklistKey = `${AUTH_TOKEN_CONFIG.TOKEN_BLACKLIST_KEY_PREFIX || 'token:blacklist:'}${jti}`;
-    try {
-      const isBlacklisted = await redis.get(blacklistKey);
-      if (isBlacklisted) {
-        socket.user = null;
-        return next();
-      }
-    } catch (redisErr) {
-      console.error('[SocketAuth] Redis error:', redisErr.message);
     }
 
     // Success, bind user details

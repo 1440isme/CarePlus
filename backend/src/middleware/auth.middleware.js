@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
-const redis = require('../infrastructure/cache/redis.client');
-const { AUTH_ERROR_CODES, AUTH_TOKEN_CONFIG } = require('../modules/auth/auth.types');
+const { AUTH_ERROR_CODES } = require('../modules/auth/auth.types');
 
 function sendAuthError(res, statusCode, code, message, details = []) {
   return res.status(statusCode).json({
@@ -52,22 +51,6 @@ async function authenticate(req, res, next) {
       401,
       AUTH_ERROR_CODES.INVALID_ACCESS_TOKEN_PAYLOAD,
       'Payload access token không hợp lệ',
-    );
-  }
-
-  const blacklistKey = `${AUTH_TOKEN_CONFIG.TOKEN_BLACKLIST_KEY_PREFIX}${jti}`;
-
-  try {
-    const revokedToken = await redis.get(blacklistKey);
-    if (revokedToken) {
-      return sendAuthError(res, 401, AUTH_ERROR_CODES.ACCESS_TOKEN_REVOKED, 'Access token đã bị thu hồi');
-    }
-  } catch (error) {
-    return sendAuthError(
-      res,
-      503,
-      AUTH_ERROR_CODES.AUTH_SERVICE_UNAVAILABLE,
-      'Dịch vụ xác thực tạm thời không khả dụng',
     );
   }
 

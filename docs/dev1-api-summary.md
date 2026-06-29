@@ -2,6 +2,11 @@
 
 Tài liệu này chỉ mô tả API trong phạm vi Dev 1. Mọi module ngoài scope như `appointment`, `schedule`, `timeslot`, `review`, `approval request`, `chat` không được xem là feature chính trong file này.
 
+Ghi chú cập nhật:
+
+- Tài liệu này đã được đối chiếu lại với code backend hiện tại.
+- Trong scope Dev 1 hiện có thêm `specialties` và `ai-assistant` đang được mount trong app.
+
 Base URL mặc định:
 
 ```text
@@ -204,9 +209,10 @@ Error:
 - Role required: Any authenticated user
 - Request body: none
 - Success response: trả user profile hiện tại
-- Error codes: `AUTH_TOKEN_MISSING`, `INVALID_AUTH_HEADER`, `ACCESS_TOKEN_EXPIRED`, `INVALID_ACCESS_TOKEN`, `ACCESS_TOKEN_REVOKED`, `USER_NOT_FOUND`, `GET_ME_FAILED`
+- Error codes: `AUTH_TOKEN_MISSING`, `INVALID_AUTH_HEADER`, `ACCESS_TOKEN_EXPIRED`, `INVALID_ACCESS_TOKEN`, `USER_NOT_FOUND`, `GET_ME_FAILED`
 - Notes:
   - Email readonly ở UI hiện tại.
+  - Theo code hiện tại, middleware `authenticate` không check Redis blacklist cho access token; access token sẽ hết hạn tự nhiên theo TTL JWT.
 
 ### PATCH `/users/me`
 
@@ -397,6 +403,8 @@ search, role, status, createdFrom, createdTo, page, limit
   - Không tạo `PATIENT`.
   - `academicTitle` canonical: `BS.CKI`, `BS.CKII`, `ThS.BS`, `TS.BS`.
   - Backend hiện có normalize legacy underscore value.
+  - Nếu role = `DOCTOR` thì `doctorName`, `specialtyId`, `academicTitle` là bắt buộc.
+  - `specialtyId` phải tham chiếu tới chuyên khoa đang active.
 
 ## Patient Profiles
 
@@ -449,6 +457,14 @@ search, page, limit
 - Request body: các field của profile, cập nhật từng phần
 - Success response: trả `message` và `profile`
 - Error codes: `VALIDATION_ERROR`, `PATIENT_PROFILE_NOT_FOUND`, `PATIENT_PROFILE_INACTIVE`, `UPDATE_PATIENT_PROFILE_FAILED`
+
+### GET `/patient-profiles/:id`
+
+- Auth required: Yes
+- Role required: `PATIENT`
+- Request body: none
+- Success response: trả chi tiết một hồ sơ của chính user hiện tại
+- Error codes: `VALIDATION_ERROR`, `PATIENT_PROFILE_NOT_FOUND`, `PATIENT_PROFILE_INACTIVE`, `GET_PATIENT_PROFILE_FAILED`
 
 ### DELETE `/patient-profiles/:id`
 
@@ -555,7 +571,7 @@ search, page, limit
 
 ### Notes
 
-- `GET /clinic-settings/stats/public` có tồn tại trong code nhưng không nằm trong scope docs Dev 1 này.
+- `GET /clinic-settings/stats/public` đang tồn tại và được mount public trong code hiện tại, nhưng đây là endpoint hỗ trợ thống kê public, không phải flow cốt lõi của Dev 1.
 - `clinicInfo` và `systemSetting` hiện được xử lý theo singleton flow ở backend.
 
 ## Specialties
@@ -592,6 +608,16 @@ search, page, limit
   - Khi `search` có giá trị và Elasticsearch đang bật/khả dụng, backend ưu tiên Elasticsearch cho search admin rồi đọc lại dữ liệu từ MySQL.
   - Nếu Elasticsearch tắt, lỗi hoặc chưa chạy, backend fallback an toàn về Prisma/MySQL search cũ.
 
+### GET `/specialties/:id`
+
+- Auth required: No
+- Role required: None
+- Request body: none
+- Success response: trả chi tiết chuyên khoa active theo `id`
+- Error codes: `VALIDATION_ERROR`, `SPECIALTY_NOT_FOUND`, `GET_SPECIALTY_FAILED`
+- Notes:
+  - Public detail chỉ trả chuyên khoa active.
+
 ### POST `/specialties`
 
 - Auth required: Yes
@@ -610,6 +636,7 @@ search, page, limit
 - Error codes: `VALIDATION_ERROR`, `SPECIALTY_ALREADY_EXISTS`, `SPECIALTY_SLUG_ALREADY_EXISTS`, `CREATE_SPECIALTY_FAILED`
 - Notes:
   - Backend tự sinh `slug` từ `name` nếu admin không gửi.
+  - Backend cũng cho phép client gửi `slug` hợp lệ nếu cần override.
   - `icon` optional, hiện chưa có icon picker/upload ở Admin FE.
 
 ### PATCH `/specialties/:id`
@@ -628,6 +655,8 @@ search, page, limit
 
 - Success response: trả `message` và `specialty`
 - Error codes: `VALIDATION_ERROR`, `SPECIALTY_NOT_FOUND`, `SPECIALTY_ALREADY_EXISTS`, `SPECIALTY_SLUG_ALREADY_EXISTS`, `UPDATE_SPECIALTY_FAILED`
+- Notes:
+  - Nếu không gửi `slug` nhưng có đổi `name`, backend sẽ tự regenerate `slug` từ tên mới.
 
 ### DELETE `/specialties/:id`
 
