@@ -237,13 +237,23 @@ async function cleanupUserByEmail(email) {
 
 async function closeBackendTestClients() {
   if (redisClient) {
-    await redisClient.quit();
+    try {
+      await redisClient.quit();
+    } catch (e) {}
     redisClient = undefined;
+    try {
+      delete require.cache[require.resolve('../backend/src/infrastructure/cache/redis.client')];
+    } catch (e) {}
   }
 
   if (prismaClient) {
-    await prismaClient.$disconnect();
+    try {
+      await prismaClient.$disconnect();
+    } catch (e) {}
     prismaClient = undefined;
+    try {
+      delete require.cache[require.resolve('../backend/src/infrastructure/database/prisma.client')];
+    } catch (e) {}
   }
 }
 

@@ -1604,7 +1604,7 @@ export default function BookingWizardPage() {
 
             <div className="success-actions">
               <Link to="/patient/lich-hen" className="btn-primary-action">
-                Xem chi tiết lịch hẹn
+                Quay về Quản lý lịch hẹn
               </Link>
               <button
                 type="button"
@@ -1613,9 +1613,6 @@ export default function BookingWizardPage() {
               >
                 Đặt lịch mới
               </button>
-              <Link to="/patient/lich-hen" className="btn-grey-action">
-                Quay về Quản lý lịch hẹn
-              </Link>
             </div>
           </div>
         )}
