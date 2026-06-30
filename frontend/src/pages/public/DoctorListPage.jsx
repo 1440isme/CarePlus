@@ -120,16 +120,19 @@ export default function DoctorListPage() {
 
   const { data: specialtiesData } = useSpecialties({});
   const specialties = specialtiesData?.data || [];
+  const { data: bookingRulesResponse } = useBookingRules();
+  const { data: clinicResponse } = useClinicInfo({ staleTime: 10 * 60 * 1000 });
 
   // ── 7-day date selector ───────────────────────────────────────────────────
   const dates = useMemo(() => {
     const today = new Date();
-    return Array.from({ length: 7 }, (_, i) => {
+    const limit = bookingRulesResponse?.data?.maxBookingDaysAhead || 7;
+    return Array.from({ length: limit }, (_, i) => {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
       return d.toLocaleDateString('sv').slice(0, 10);
     });
-  }, []);
+  }, [bookingRulesResponse?.data?.maxBookingDaysAhead]);
 
   const dayVi = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
   const dateLabels = useMemo(() => {
@@ -162,8 +165,6 @@ export default function DoctorListPage() {
   }, [searchParams]);
 
   const { data, isLoading, error } = useDoctorList(query);
-  const { data: bookingRulesResponse } = useBookingRules();
-  const { data: clinicResponse } = useClinicInfo({ staleTime: 10 * 60 * 1000 });
   const clinicInfo = clinicResponse?.data;
   const doctors = data?.data || [];
 

@@ -113,6 +113,9 @@ function normalizeBookingRulesResponse(bookingRules = {}) {
     cancelBeforeHours: normalizedBookingRules.cancelBeforeHours == null
       ? undefined
       : Number(normalizedBookingRules.cancelBeforeHours),
+    maxActiveAppointmentsPerUser: normalizedBookingRules.maxActiveAppointmentsPerUser == null
+      ? undefined
+      : Number(normalizedBookingRules.maxActiveAppointmentsPerUser),
     workingShifts: {
       morning: {
         start: normalizedBookingRules.workingShifts?.morning?.start ?? '',

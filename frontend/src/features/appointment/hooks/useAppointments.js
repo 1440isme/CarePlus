@@ -96,10 +96,11 @@ export function useBookAppointment() {
   });
 }
 
-export function useMyAppointments(params) {
+export function useMyAppointments(params = {}, options = {}) {
   return useQuery({
     queryKey: QUERY_KEYS.myAppointments(params),
     queryFn: () => getMyAppointments(params),
+    ...options,
   });
 }
 
