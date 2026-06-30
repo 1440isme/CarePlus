@@ -30,7 +30,7 @@ async function startServer() {
     io.use(socketAuthMiddleware);
     io.on('connection', (socket) => handleSocketConnection(io, socket));
 
-    server.listen(PORT, () => {
+    server.listen(PORT, '0.0.0.0', () => {
       console.log(`CarePlus Backend Server running on port ${PORT}`);
       console.log(`Health check URL: http://localhost:${PORT}/health`);
     });
