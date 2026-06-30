@@ -3,6 +3,10 @@ import { Link } from 'react-router-dom';
 import { Search, Plus, X, Edit2, Save, Loader2 } from 'lucide-react';
 import { useDoctorDetail, useDoctorList, useUpdateDoctorByAdmin, useUpdateDoctorPrice } from '../../features/doctor/index.js';
 import { useAdminSpecialties } from '../../features/admin/specialties/hooks/useAdminSpecialties.js';
+import {
+  AdminUserConfirmDialog,
+  useResetUserPassword,
+} from '../../features/admin/users/index.js';
 import { APP_ROUTES } from '../../shared/constants/routes.js';
 
 const PAGE_SIZE = 10;
@@ -57,16 +61,25 @@ function buildDoctorFormValues(doctor) {
 function AdminDoctorDetailDrawer({ doctor, onClose }) {
   const [isEditing, setIsEditing] = useState(false);
   const [feedback, setFeedback] = useState('');
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
   const [formValues, setFormValues] = useState(() => buildDoctorFormValues(doctor));
   const [errors, setErrors] = useState({});
   const detailQuery = useDoctorDetail(doctor?.id);
   const updateDoctorMutation = useUpdateDoctorByAdmin();
   const updatePriceMutation = useUpdateDoctorPrice();
+  const resetPasswordMutation = useResetUserPassword({
+    onSuccess: (response) => {
+      setFeedback(response?.data?.message || 'Đã reset mật khẩu và gửi thông báo qua email cho bác sĩ.');
+      setIsResetPasswordDialogOpen(false);
+    },
+  });
   const detailDoctor = detailQuery.data?.data || doctor;
 
   useEffect(() => {
     setIsEditing(false);
     setFeedback('');
+    setIsResetPasswordDialogOpen(false);
+    resetPasswordMutation.reset();
     setErrors({});
     setFormValues(buildDoctorFormValues(detailDoctor));
   }, [detailDoctor?.id]);
@@ -85,6 +98,13 @@ function AdminDoctorDetailDrawer({ doctor, onClose }) {
   const disabledInputClass = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-400';
   const avatarUrl = detailDoctor?.user?.avatarUrl || detailDoctor?.avatar;
   const doctorName = detailDoctor?.user?.name || detailDoctor?.name || 'Bác sĩ';
+  const doctorUser = detailDoctor?.user
+    ? {
+      id: detailDoctor.user.id,
+      name: detailDoctor.user.name || detailDoctor.name || doctorName,
+      email: detailDoctor.user.email,
+    }
+    : null;
 
   const validateForm = () => {
     const nextErrors = {};
@@ -131,6 +151,27 @@ function AdminDoctorDetailDrawer({ doctor, onClose }) {
 
     setFeedback(response?.data?.message || response?.message || 'Cập nhật hồ sơ bác sĩ thành công.');
     setIsEditing(false);
+  };
+
+  const handleRequestResetPassword = () => {
+    resetPasswordMutation.reset();
+    setFeedback('');
+    setIsResetPasswordDialogOpen(true);
+  };
+
+  const handleCloseResetPasswordDialog = () => {
+    if (!resetPasswordMutation.isPending) {
+      resetPasswordMutation.reset();
+      setIsResetPasswordDialogOpen(false);
+    }
+  };
+
+  const handleConfirmResetPassword = () => {
+    if (!doctorUser?.id) {
+      return;
+    }
+
+    resetPasswordMutation.mutate({ userId: doctorUser.id });
   };
 
   return (
@@ -211,7 +252,17 @@ function AdminDoctorDetailDrawer({ doctor, onClose }) {
               </section>
 
               <section className="rounded-2xl border border-gray-200 bg-white p-5">
-                <p className="mb-3 text-xs font-bold uppercase tracking-wide text-gray-400">Thông tin tài khoản</p>
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">Thông tin tài khoản</p>
+                  <button
+                    type="button"
+                    disabled={!doctorUser?.id || resetPasswordMutation.isPending}
+                    onClick={handleRequestResetPassword}
+                    className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-700 transition hover:bg-amber-100 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {resetPasswordMutation.isPending ? 'Đang reset...' : 'Reset mật khẩu'}
+                  </button>
+                </div>
                 <DetailRow label="Email" value={detailDoctor?.user?.email} />
                 <DetailRow label="Số điện thoại" value={detailDoctor?.user?.phone} />
                 <DetailRow label="Ngày tạo" value={detailDoctor?.createdAt ? new Date(detailDoctor.createdAt).toLocaleDateString('vi-VN') : '--'} />
@@ -300,6 +351,19 @@ function AdminDoctorDetailDrawer({ doctor, onClose }) {
           )}
         </div>
       </aside>
+      <AdminUserConfirmDialog
+        open={isResetPasswordDialogOpen}
+        title="Reset mật khẩu bác sĩ"
+        description="Bạn có chắc muốn reset mật khẩu của bác sĩ này không? Mật khẩu tạm thời mới sẽ được gửi qua email của bác sĩ."
+        confirmLabel="Reset mật khẩu"
+        pendingLabel="Đang reset..."
+        confirmVariant="primary"
+        user={doctorUser}
+        isPending={resetPasswordMutation.isPending}
+        errorMessage={resetPasswordMutation.error?.message || ''}
+        onClose={handleCloseResetPasswordDialog}
+        onConfirm={handleConfirmResetPassword}
+      />
     </div>
   );
 }
