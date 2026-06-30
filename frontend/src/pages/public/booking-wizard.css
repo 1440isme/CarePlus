@@ -1,0 +1,852 @@
+/* Styles for Patient Booking Wizard matching Figma designs */
+
+.booking-wizard-container {
+  width: min(688px, 100%);
+  margin: 0 auto;
+  padding: 24px 16px;
+  animation: fadeIn 0.4s ease-out forwards;
+}
+
+.booking-wizard-container.step-5-layout {
+  width: min(528px, 100%);
+  padding: 40px 16px;
+}
+
+/* Stepper Progress Indicator */
+.booking-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0 32px;
+  width: 100%;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  position: relative;
+}
+
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  z-index: 2;
+}
+
+.step-circle {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  background-color: #F0F0F0;
+  color: #AAAAAA;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.step-item.active .step-circle {
+  background-color: #49BCE2;
+  color: #FFFFFF;
+  box-shadow: 0px 0px 0px 4px rgba(73, 188, 226, 0.15);
+}
+
+.step-item.completed .step-circle {
+  background-color: #49BCE2;
+  color: #FFFFFF;
+}
+
+.step-label {
+  font-size: 10px;
+  font-weight: 400;
+  color: #BBBBBB;
+  white-space: nowrap;
+  transition: all 0.3s ease;
+}
+
+.step-item.active .step-label {
+  color: #49BCE2;
+  font-weight: 700;
+}
+
+.step-item.completed .step-label {
+  color: #49BCE2;
+}
+
+.step-line {
+  height: 2px;
+  background-color: #E5E5E5;
+  width: 80px;
+  margin: 0 -10px 15px -10px; /* Offset line position */
+  align-self: center;
+  transition: all 0.3s ease;
+}
+
+@media (max-width: 580px) {
+  .step-line {
+    width: 40px;
+  }
+}
+
+@media (max-width: 420px) {
+  .step-line {
+    width: 25px;
+  }
+  .step-label {
+    font-size: 8px;
+  }
+}
+
+.step-item.completed + .step-line,
+.step-item.active + .step-line {
+  background-color: #49BCE2;
+}
+
+/* Card layout & structure */
+.booking-card {
+  background: #FFFFFF;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  box-shadow: 0px 1px 4px 0px rgba(0, 0, 0, 0.06);
+  padding: 20px 22px;
+  margin-bottom: 24px;
+}
+
+.booking-title-section h1 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 4px;
+}
+
+.booking-title-section p {
+  font-size: 13px;
+  color: #888888;
+  margin: 0;
+}
+
+.booking-card h3 {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 16px;
+}
+
+/* Step 1: Specialty List */
+.search-wrapper {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #888888;
+}
+
+.booking-search-input {
+  width: 100%;
+  height: 37px;
+  padding: 8px 10px 8px 30px;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.booking-search-input:focus {
+  border-color: #49BCE2;
+}
+
+.specialty-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 14px;
+}
+
+@media (max-width: 600px) {
+  .specialty-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 400px) {
+  .specialty-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.specialty-card-button {
+  background: #FFFFFF;
+  border: 1.5px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  cursor: pointer;
+  height: 108.92px;
+  transition: all 0.25s ease;
+  text-align: left;
+  width: 100%;
+}
+
+.specialty-card-button:hover {
+  border-color: #49BCE2;
+  background-color: #F8FAFC;
+  transform: translateY(-2px);
+}
+
+.specialty-card-button.selected {
+  border-color: #49BCE2;
+  background-color: rgba(73, 188, 226, 0.05);
+  box-shadow: 0 0 0 2px rgba(73, 188, 226, 0.15);
+}
+
+.specialty-emoji {
+  font-size: 22px;
+  margin-bottom: 6px;
+  line-height: 1;
+}
+
+.specialty-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #333333;
+  margin-bottom: 2px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  height: 38px;
+}
+
+.specialty-count {
+  font-size: 11px;
+  color: #AAAAAA;
+}
+
+/* Step 2: Date Selector & Doctor Cards */
+.date-selector-row {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 0 12px;
+  scrollbar-width: thin;
+  margin-bottom: 14px;
+}
+
+.date-selector-row::-webkit-scrollbar {
+  height: 6px;
+}
+
+.date-selector-row::-webkit-scrollbar-thumb {
+  background: #E5E5E5;
+  border-radius: 3px;
+}
+
+.date-card-button {
+  flex: 0 0 78px;
+  height: 76px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: #F7F7F7;
+  border: 1px solid transparent;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.date-card-button:hover {
+  background-color: #EEEEEE;
+}
+
+.date-card-button.selected {
+  background-color: #49BCE2;
+  color: #FFFFFF;
+}
+
+.date-card-label {
+  font-size: 10px;
+  font-weight: 500;
+  color: #888888;
+  margin-bottom: 2px;
+}
+
+.date-card-button.selected .date-card-label {
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.date-card-num {
+  font-size: 17px;
+  font-weight: 700;
+  color: #333333;
+}
+
+.date-card-button.selected .date-card-num {
+  color: #FFFFFF;
+}
+
+/* Doctor card items */
+.doctor-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.doctor-item-card {
+  background: #FFFFFF;
+  border: 1.5px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 14px 16px;
+  transition: all 0.25s ease;
+}
+
+.doctor-item-card.selected-doctor {
+  border-color: #49BCE2;
+  box-shadow: 0 0 0 1px rgba(73, 188, 226, 0.15);
+}
+
+.doctor-main-info {
+  display: flex;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.doctor-avatar-wrapper img {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: #F3F4F6;
+}
+
+.doctor-details-wrapper {
+  flex-grow: 1;
+}
+
+.doctor-name-text {
+  font-size: 14px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 2px;
+}
+
+.doctor-specialty-text {
+  font-size: 12px;
+  color: #49BCE2;
+  margin: 0 0 4px;
+}
+
+.doctor-meta-row {
+  display: flex;
+  gap: 10px;
+  font-size: 11px;
+  color: #888888;
+}
+
+.doctor-rating {
+  color: #FFC10E;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.doctor-price-tag {
+  color: #49BCE2;
+  font-weight: 600;
+}
+
+/* Timeslot Section */
+.timeslot-selection-area {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed #E5E5E5;
+}
+
+.timeslot-date-title {
+  font-size: 11px;
+  font-weight: 500;
+  color: #888888;
+  margin-bottom: 8px;
+}
+
+.timeslot-shift-group {
+  margin-bottom: 10px;
+}
+
+.timeslot-shift-label {
+  font-size: 11px;
+  color: #AAAAAA;
+  margin-bottom: 6px;
+  display: block;
+}
+
+.timeslots-button-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+}
+
+@media (max-width: 600px) {
+  .timeslots-button-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.timeslot-btn {
+  height: 27px;
+  font-size: 10px;
+  font-weight: 400;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #F9FAFB;
+  border: 1px solid #D1D5DB;
+  color: #333333;
+  width: 100%;
+}
+
+.timeslot-btn:hover:not(:disabled) {
+  border-color: #49BCE2;
+  background-color: #EBF7FD;
+}
+
+.timeslot-btn.selected {
+  background-color: #49BCE2;
+  border-color: #49BCE2;
+  color: #FFFFFF;
+  font-weight: 700;
+}
+
+.timeslot-btn:disabled {
+  background-color: #F5F5F5;
+  border-color: #F0F0F0;
+  color: #CCCCCC;
+  cursor: not-allowed;
+}
+
+/* Step 3: Patient Form */
+.patient-switch-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.patient-profile-toggle-btn {
+  background: #EBF7FD;
+  border: 1px solid #49BCE2;
+  color: #49BCE2;
+  border-radius: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.patient-profile-toggle-btn:hover {
+  background: #DFF3FD;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+@media (max-width: 580px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.form-group.full-width {
+  grid-column: span 2;
+}
+
+@media (max-width: 580px) {
+  .form-group.full-width {
+    grid-column: span 1;
+  }
+}
+
+.form-group label {
+  font-size: 12px;
+  font-weight: 500;
+  color: #555555;
+}
+
+.form-group label span {
+  color: #E53935;
+}
+
+.form-control-input {
+  height: 37px;
+  padding: 8px 10px;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  background-color: #FFFFFF;
+}
+
+.form-control-input:disabled {
+  background-color: #F9FAFB;
+  color: #666666;
+  cursor: not-allowed;
+}
+
+.form-control-input:focus:not(:disabled) {
+  border-color: #49BCE2;
+}
+
+.form-control-select {
+  height: 37px;
+  padding: 8px 10px;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  background-color: #FFFFFF;
+}
+
+.form-control-select:disabled {
+  background-color: #F9FAFB;
+  color: #666666;
+}
+
+.form-control-textarea {
+  height: 76px;
+  padding: 8px 10px;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  font-size: 13px;
+  outline: none;
+  resize: none;
+}
+
+.form-control-textarea:focus {
+  border-color: #49BCE2;
+}
+
+/* Step 4: Booking Confirmation */
+.confirm-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: #AAAAAA;
+  margin: 12px 0 6px;
+  letter-spacing: 0.04em;
+}
+
+.confirm-details-box {
+  background-color: #F7F9FC;
+  border-radius: 8px;
+  padding: 6px 14px;
+  display: flex;
+  flex-direction: column;
+}
+
+.confirm-detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid #EAEAEA;
+  font-size: 13px;
+}
+
+.confirm-detail-row:last-child {
+  border-bottom: none;
+}
+
+.confirm-detail-label {
+  color: #888888;
+}
+
+.confirm-detail-val {
+  color: #333333;
+  font-weight: 500;
+  text-align: right;
+}
+
+.confirm-detail-val.bold-text {
+  font-weight: 700;
+}
+
+.warning-banner {
+  background-color: #FFF9E6;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 12px;
+  color: #92620C;
+  line-height: 18px;
+  margin-top: 14px;
+  border-left: 3px solid #FFC10E;
+}
+
+/* Step 5: Success screen */
+.success-card-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.success-icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background-color: #DCFCE7;
+  color: #16A34A;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  margin: 0 auto 16px;
+}
+
+.success-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #333333;
+  margin: 0 0 6px;
+}
+
+.success-badge {
+  background-color: #DCFCE7;
+  color: #16A34A;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  display: inline-block;
+  letter-spacing: 0.05em;
+}
+
+.success-receipt-box {
+  width: 100%;
+  background-color: #F7F9FC;
+  border-radius: 8px;
+  padding: 10px 16px;
+  margin-bottom: 16px;
+}
+
+.receipt-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #EAEAEA;
+  font-size: 13px;
+}
+
+.receipt-row:last-child {
+  border-bottom: none;
+}
+
+.receipt-label {
+  color: #888888;
+}
+
+.receipt-value {
+  color: #333333;
+  font-weight: 500;
+}
+
+.receipt-value.highlight-code {
+  color: #49BCE2;
+  font-weight: 700;
+}
+
+.receipt-value.green-text {
+  color: #16A34A;
+  font-weight: 700;
+}
+
+.success-email-notice {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #F7F9FC;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: #666666;
+  width: 100%;
+  margin-bottom: 20px;
+}
+
+.success-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Nav Actions & Buttons */
+.wizard-footer-actions {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.btn-wizard-back {
+  background: #FFFFFF;
+  border: 1px solid #DDDDDD;
+  color: #555555;
+  border-radius: 6px;
+  padding: 9px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-wizard-back:hover:not(:disabled) {
+  border-color: #888888;
+  background-color: #F9FAFB;
+}
+
+.btn-wizard-back:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-wizard-next {
+  background-color: #49BCE2;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.2s ease;
+}
+
+.btn-wizard-next:hover:not(:disabled) {
+  background-color: #0092B8;
+  box-shadow: 0 2px 4px rgba(0, 146, 184, 0.2);
+}
+
+.btn-wizard-next:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-confirm-booking {
+  background-color: #FFC10E;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 9px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.btn-confirm-booking:hover:not(:disabled) {
+  background-color: #e0ab0d;
+  box-shadow: 0 2px 4px rgba(224, 171, 13, 0.25);
+}
+
+.btn-confirm-booking:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Success Actions Buttons */
+.btn-primary-action {
+  background-color: #49BCE2;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  transition: background-color 0.2s ease;
+}
+
+.btn-primary-action:hover {
+  background-color: #0092B8;
+}
+
+.btn-outline-action {
+  background-color: #FFFFFF;
+  color: #49BCE2;
+  border: 1px solid #49BCE2;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.btn-outline-action:hover {
+  background-color: rgba(73, 188, 226, 0.05);
+}
+
+.btn-grey-action {
+  background-color: #FFFFFF;
+  color: #555555;
+  border: 1px solid #DDDDDD;
+  border-radius: 6px;
+  padding: 10px 0;
+  font-size: 13px;
+  font-weight: 400;
+  cursor: pointer;
+  text-align: center;
+  width: 100%;
+  transition: all 0.2s ease;
+}
+
+.btn-grey-action:hover {
+  background-color: #F9FAFB;
+  border-color: #BBBBBB;
+}

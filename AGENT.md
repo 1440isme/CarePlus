@@ -516,7 +516,7 @@ NotificationService: gửi email
 - React Router v7 với route config tập trung trong `app/router.tsx`.
 - Lazy loading cho mọi page: `React.lazy(() => import('./pages/...'))`.
 - Route guard qua `ProtectedRoute` component check role.
-- URL pattern theo spec: `/benh-nhan`, `/bac-si-portal`, `/le-tan`, `/admin`.
+- URL pattern theo spec: `/benh-nhan`, `/portal/bac-si`, `/portal/le-tan`, `/portal/admin`.
 
 ### Data Fetching
 
@@ -932,6 +932,8 @@ Client → Backend API (multer memory storage) → UploadService → Cloudinary 
 - Multer dùng memory storage, KHÔNG lưu file vào disk.
 - UploadService trả về Cloudinary URL + public_id.
 - Lưu URL và public_id vào database.
+- **Bắt buộc**: Toàn bộ tài nguyên ảnh trong hệ thống (avatar, ảnh bài viết, ảnh phòng khám) đều phải sử dụng Cloudinary. Nghiêm cấm lưu trữ hình ảnh dưới dạng raw binary hoặc chuỗi base64 trực tiếp vào database.
+- **Tối ưu hóa tránh ảnh rác (Orphan assets)**: Đối với các ảnh đại diện (thumbnail) hoặc ảnh đi kèm form nhập liệu, frontend chỉ thực hiện upload lên Cloudinary khi người dùng bấm nút Save/Gửi và xác nhận tạo bài viết/tài liệu thành công.
 
 ### Folder Structure trên Cloudinary
 
@@ -976,9 +978,9 @@ careplus/
 |------|------------------|
 | GUEST | Public pages, login, register |
 | PATIENT | `/benh-nhan/**`, `/dat-lich` |
-| DOCTOR | `/bac-si-portal/**` |
-| RECEPTIONIST | `/le-tan/**` |
-| ADMIN | `/admin/**` |
+| DOCTOR | `/portal/bac-si/**` |
+| RECEPTIONIST | `/portal/le-tan/**` |
+| ADMIN | `/portal/admin/**` |
 
 - RBAC check ở CÁCH hai tầng: frontend route guard + backend middleware.
 - Backend middleware: `authorize('ADMIN', 'RECEPTIONIST')` cho endpoint cần multiple roles.

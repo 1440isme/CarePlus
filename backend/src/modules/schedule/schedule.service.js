@@ -1,0 +1,369 @@
+const DoctorRepository = require('../doctor/doctor.repository');
+const ScheduleRepository = require('./schedule.repository');
+const ClinicSettingsRepository = require('../clinic-settings/clinic-settings.repository');
+const { toScheduleDto, toScheduleCalendarDto } = require('./schedule.dto');
+const {
+  SCHEDULE_ERROR_CODES,
+  SCHEDULE_PAGINATION,
+  SCHEDULE_STATUSES,
+  SCHEDULE_VIEWS,
+  WORKING_SHIFTS,
+} = require('./schedule.types');
+const { CLINIC_SETTINGS_DEFAULTS } = require('../clinic-settings/clinic-settings.types');
+const { USER_ROLES } = require('../../shared/constants/roles');
+
+class ScheduleServiceError extends Error {
+  constructor({ code, message, statusCode, details = [] }) {
+    super(message);
+    this.code = code;
+    this.statusCode = statusCode;
+    this.details = details;
+  }
+}
+
+function parseDateOnly(value) {
+  return new Date(`${value}T00:00:00.000Z`);
+}
+
+function formatDateOnly(date) {
+  return date.toISOString().slice(0, 10);
+}
+
+function getTodayDateOnly() {
+  const now = new Date();
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+}
+
+function getViewRange(view, value) {
+  const baseDate = parseDateOnly(value || formatDateOnly(getTodayDateOnly()));
+
+  if (view === SCHEDULE_VIEWS.WEEK) {
+    const day = baseDate.getUTCDay();
+    const diffToMonday = day === 0 ? -6 : 1 - day;
+    const start = new Date(baseDate);
+    start.setUTCDate(baseDate.getUTCDate() + diffToMonday);
+    const end = new Date(start);
+    end.setUTCDate(start.getUTCDate() + 6);
+    return { startDate: start, endDate: end };
+  }
+
+  if (view === SCHEDULE_VIEWS.MONTH) {
+    const start = new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth(), 1));
+    const end = new Date(Date.UTC(baseDate.getUTCFullYear(), baseDate.getUTCMonth() + 1, 0));
+    return { startDate: start, endDate: end };
+  }
+
+  return { startDate: baseDate, endDate: baseDate };
+}
+
+class ScheduleService {
+  constructor(doctorRepository, scheduleRepository, clinicSettingsRepository) {
+    this.doctorRepository = doctorRepository;
+    this.scheduleRepository = scheduleRepository;
+    this.clinicSettingsRepository = clinicSettingsRepository;
+  }
+
+  async createSchedules(payload) {
+    try {
+      if (payload.workingDate) {
+        return this._createSingleSchedule(payload);
+      }
+
+      return this._createBatchSchedules(payload);
+    } catch (error) {
+      throw this._wrapUnexpectedError(
+        error,
+        SCHEDULE_ERROR_CODES.CREATE_SCHEDULE_FAILED,
+        'Không thể tạo lịch làm việc',
+      );
+    }
+  }
+
+  async listSchedules(currentUser, query) {
+    try {
+      const doctorId = await this._resolveDoctorFilter(currentUser, query.doctorId);
+      const normalizedQuery = this._normalizeListQuery(query);
+
+      const [schedules, total] = await Promise.all([
+        this.scheduleRepository.findSchedulesByRange({
+          doctorId,
+          specialtyId: query.specialtyId,
+          status: normalizedQuery.status,
+          workingShift: normalizedQuery.workingShift,
+          startDate: normalizedQuery.startDate,
+          endDate: normalizedQuery.endDate,
+          skip: (normalizedQuery.page - 1) * normalizedQuery.limit,
+          take: normalizedQuery.limit,
+        }),
+        this.scheduleRepository.countSchedulesByRange({
+          doctorId,
+          specialtyId: query.specialtyId,
+          status: normalizedQuery.status,
+          workingShift: normalizedQuery.workingShift,
+          startDate: normalizedQuery.startDate,
+          endDate: normalizedQuery.endDate,
+        }),
+      ]);
+
+      return {
+        data: toScheduleCalendarDto(schedules),
+        meta: {
+          page: normalizedQuery.page,
+          limit: normalizedQuery.limit,
+          total,
+          totalPages: Math.ceil(total / normalizedQuery.limit),
+        },
+      };
+    } catch (error) {
+      throw this._wrapUnexpectedError(
+        error,
+        SCHEDULE_ERROR_CODES.LIST_SCHEDULES_FAILED,
+        'Không thể lấy danh sách lịch làm việc',
+      );
+    }
+  }
+
+  async getDoctorSchedules(doctorId, query) {
+    try {
+      await this._getDoctorOrThrow(doctorId, { activeOnly: true });
+      const normalizedQuery = this._normalizeListQuery(query);
+      const schedules = await this.scheduleRepository.findSchedulesByRange({
+        doctorId,
+        status: normalizedQuery.status,
+        workingShift: normalizedQuery.workingShift,
+        startDate: normalizedQuery.startDate,
+        endDate: normalizedQuery.endDate,
+        skip: 0,
+        take: normalizedQuery.limit,
+      });
+
+      return toScheduleCalendarDto(schedules);
+    } catch (error) {
+      throw this._wrapUnexpectedError(
+        error,
+        SCHEDULE_ERROR_CODES.GET_DOCTOR_SCHEDULES_FAILED,
+        'Không thể lấy lịch làm việc của bác sĩ',
+      );
+    }
+  }
+
+  async _createSingleSchedule(payload) {
+    const doctor = await this._getDoctorOrThrow(payload.doctorId);
+    const workingDate = parseDateOnly(payload.workingDate);
+    const workingShift = this._normalizeWorkingShift(payload.workingShift);
+    this._assertNotPastDate(workingDate);
+
+    const existingSchedules = await this.scheduleRepository.findSchedulesByDoctorAndDate(doctor.id, workingDate);
+    this._assertNoShiftConflicts(existingSchedules, workingShift, [workingDate]);
+    const shiftConfig = await this._getShiftConfig();
+
+    const createdSchedule = await this.scheduleRepository.prisma.$transaction((dbClient) => (
+      this.scheduleRepository.createSchedule({
+        doctorId: doctor.id,
+        workingDate,
+        workingShift,
+        ...shiftConfig,
+        status: SCHEDULE_STATUSES.WORKING,
+      }, dbClient)
+    ));
+
+    return {
+      message: 'Tạo lịch làm việc thành công',
+      schedules: [toScheduleDto(createdSchedule)],
+    };
+  }
+
+  async _createBatchSchedules(payload) {
+    const doctor = await this._getDoctorOrThrow(payload.doctorId);
+    const fromDate = parseDateOnly(payload.fromDate);
+    const toDate = parseDateOnly(payload.toDate);
+    const workingShift = this._normalizeWorkingShift(payload.workingShift);
+
+    if (fromDate > toDate) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.INVALID_DATE_RANGE,
+        message: 'fromDate phải nhỏ hơn hoặc bằng toDate',
+        statusCode: 400,
+      });
+    }
+
+    const targetDates = this._buildBatchDates(fromDate, toDate, payload.weekdays);
+    if (targetDates.length === 0) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.EMPTY_BATCH_RANGE,
+        message: 'Không có ngày hợp lệ để tạo lịch',
+        statusCode: 400,
+      });
+    }
+
+    targetDates.forEach((date) => this._assertNotPastDate(date));
+
+    const existingSchedules = await this.scheduleRepository.findSchedulesByRange({
+      doctorId: doctor.id,
+      startDate: fromDate,
+      endDate: toDate,
+      skip: 0,
+      take: 366,
+    });
+    this._assertNoShiftConflicts(existingSchedules, workingShift, targetDates);
+    const shiftConfig = await this._getShiftConfig();
+
+    const createdSchedules = await this.scheduleRepository.prisma.$transaction(async (dbClient) => {
+      const records = [];
+      for (const workingDate of targetDates) {
+        const createdSchedule = await this.scheduleRepository.createSchedule({
+          doctorId: doctor.id,
+          workingDate,
+          workingShift,
+          ...shiftConfig,
+          status: SCHEDULE_STATUSES.WORKING,
+        }, dbClient);
+        records.push(createdSchedule);
+      }
+      return records;
+    });
+
+    return {
+      message: 'Tạo lịch làm việc hàng loạt thành công',
+      schedules: createdSchedules.map(toScheduleDto),
+    };
+  }
+
+  async _getDoctorOrThrow(doctorId, options = {}) {
+    const doctor = await this.doctorRepository.findDoctorByIdWithRelations(doctorId, options);
+
+    if (!doctor) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.DOCTOR_NOT_FOUND,
+        message: 'Không tìm thấy bác sĩ',
+        statusCode: 404,
+      });
+    }
+
+    return doctor;
+  }
+
+  async _resolveDoctorFilter(currentUser, requestedDoctorId) {
+    if (currentUser?.role !== USER_ROLES.DOCTOR) {
+      return requestedDoctorId || undefined;
+    }
+
+    const doctor = await this.doctorRepository.findDoctorByUserId(currentUser.userId);
+    if (!doctor) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.DOCTOR_NOT_FOUND,
+        message: 'Không tìm thấy hồ sơ bác sĩ',
+        statusCode: 404,
+      });
+    }
+
+    return doctor.id;
+  }
+
+  _normalizeListQuery(query) {
+    const page = query.page || SCHEDULE_PAGINATION.DEFAULT_PAGE;
+    const limit = Math.min(query.limit || SCHEDULE_PAGINATION.DEFAULT_LIMIT, SCHEDULE_PAGINATION.MAX_LIMIT);
+    const status = query.status || undefined;
+    const workingShift = query.workingShift || undefined;
+
+    if (query.startDate && query.endDate) {
+      return {
+        page,
+        limit,
+        status,
+        workingShift,
+        startDate: parseDateOnly(query.startDate),
+        endDate: parseDateOnly(query.endDate),
+      };
+    }
+
+    const { startDate, endDate } = getViewRange(query.view, query.date);
+    return { page, limit, status, workingShift, startDate, endDate };
+  }
+
+  _assertNotPastDate(date) {
+    const today = getTodayDateOnly();
+
+    if (date < today) {
+      throw new ScheduleServiceError({
+        code: SCHEDULE_ERROR_CODES.PAST_WORKING_DATE,
+        message: 'Không thể tạo lịch làm việc cho ngày trong quá khứ',
+        statusCode: 400,
+      });
+    }
+  }
+
+  _buildBatchDates(fromDate, toDate, weekdays) {
+    const dates = [];
+    const cursor = new Date(fromDate);
+
+    while (cursor <= toDate) {
+      if (weekdays.includes(cursor.getUTCDay())) {
+        dates.push(new Date(cursor));
+      }
+      cursor.setUTCDate(cursor.getUTCDate() + 1);
+    }
+
+    return dates;
+  }
+
+  _normalizeWorkingShift(workingShift) {
+    return workingShift || WORKING_SHIFTS.ALL_DAY;
+  }
+
+  _assertNoShiftConflicts(existingSchedules, requestedShift, targetDates) {
+    const targetDateSet = new Set(targetDates.map(formatDateOnly));
+    const conflictingSchedules = existingSchedules.filter((schedule) => (
+      targetDateSet.has(formatDateOnly(schedule.workingDate))
+      && this._hasShiftOverlap(schedule.workingShift, requestedShift)
+    ));
+
+    if (conflictingSchedules.length === 0) {
+      return;
+    }
+
+    throw new ScheduleServiceError({
+      code: SCHEDULE_ERROR_CODES.SCHEDULE_ALREADY_EXISTS,
+      message: 'Lịch làm việc của bác sĩ đã tồn tại hoặc bị trùng ca trong ngày này',
+      statusCode: 409,
+      details: conflictingSchedules.map((schedule) => ({
+        field: 'workingShift',
+        message: `Schedule already exists on ${formatDateOnly(schedule.workingDate)} for ${schedule.workingShift}`,
+      })),
+    });
+  }
+
+  _hasShiftOverlap(existingShift, requestedShift) {
+    if (existingShift === WORKING_SHIFTS.ALL_DAY || requestedShift === WORKING_SHIFTS.ALL_DAY) {
+      return true;
+    }
+
+    return existingShift === requestedShift;
+  }
+
+  async _getShiftConfig() {
+    const systemSetting = await this.clinicSettingsRepository.getSystemSetting();
+
+    return {
+      morningShiftStart: systemSetting?.morningShiftStart || CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_START,
+      morningShiftEnd: systemSetting?.morningShiftEnd || CLINIC_SETTINGS_DEFAULTS.MORNING_SHIFT_END,
+      afternoonShiftStart: systemSetting?.afternoonShiftStart || CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_START,
+      afternoonShiftEnd: systemSetting?.afternoonShiftEnd || CLINIC_SETTINGS_DEFAULTS.AFTERNOON_SHIFT_END,
+    };
+  }
+
+  _wrapUnexpectedError(error, code, message) {
+    if (error instanceof ScheduleServiceError || (error && error.code && error.statusCode)) {
+      return error;
+    }
+
+    return new ScheduleServiceError({
+      code,
+      message,
+      statusCode: 500,
+      details: error?.message ? [{ message: error.message }] : [],
+    });
+  }
+}
+
+module.exports = new ScheduleService(DoctorRepository, ScheduleRepository, ClinicSettingsRepository);

@@ -1,0 +1,22 @@
+export const QUERY_KEYS = {
+  doctors: ['doctors'],
+  doctorDetail: (doctorId) => ['doctor-detail', doctorId],
+  doctorProfile: ['doctor-profile'],
+  doctorDashboard: ['doctor-dashboard'],
+  schedules: (params) => ['schedules', params],
+  doctorSchedules: (doctorId, params) => ['doctor-schedules', doctorId, params],
+  timeSlots: (params) => ['timeslots', params],
+  approvalRequests: (params) => ['approval-requests', params],
+  users: (params) => ['users', params],
+  me: ['me'],
+  appointments: (params) => ['appointments', params],
+  appointmentDetail: (id) => ['appointment-detail', id],
+  doctorAppointments: (params) => ['doctor-appointments', params],
+  myAppointments: (params) => ['my-appointments', params],
+  myAppointmentDetail: (id) => ['my-appointment-detail', id],
+  specialties: (params) => ['specialties', params],
+  patientsSearch: (params) => ['patients-search', params],
+  doctorReviews: (doctorId, params) => ['doctor-reviews', doctorId, params],
+  appointmentReview: (appointmentId) => ['appointment-review', appointmentId],
+};
+

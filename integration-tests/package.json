@@ -1,0 +1,22 @@
+{
+  "name": "integration-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Selenium automated integration tests for CarePlus",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha specs/**/*.test.js --timeout 60000 --exit",
+    "test:ui": "cross-env TEST_HEADLESS=false mocha specs/**/*.test.js --timeout 60000 --exit",
+    "test:auth": "mocha specs/**/*.test.js --timeout 60000 --exit --grep Auth",
+    "test:auth:ui": "cross-env TEST_HEADLESS=false mocha specs/**/*.test.js --timeout 60000 --exit --grep Auth"
+  },
+  "dependencies": {
+    "chai": "^4.4.1",
+    "dotenv": "^16.4.5",
+    "mocha": "^10.4.0",
+    "selenium-webdriver": "^4.21.0"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0"
+  }
+}

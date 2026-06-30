@@ -1,0 +1,534 @@
+.listing-layout {
+  display: grid;
+  gap: 20px;
+}
+
+.doctor-card,
+.info-card,
+.blog-card,
+.specialty-card-page {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.doctor-card {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+}
+
+.doctor-card-main,
+.doctor-card-schedule,
+.blog-card-content,
+.specialty-card-page-content {
+  padding: 24px;
+}
+
+.doctor-card-main h3,
+.blog-card-content h3,
+.specialty-card-page-content h3 {
+  margin-bottom: 10px;
+}
+
+.doctor-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin-bottom: 14px;
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+.slot-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.slot-button {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 12px;
+  background: #fff;
+  color: var(--text-h);
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.slot-button.status-AVAILABLE {
+  border-color: rgba(0, 146, 184, 0.35);
+  background: rgba(0, 146, 184, 0.08);
+}
+
+.slot-button.status-BOOKED,
+.slot-button.status-LOCKED,
+.slot-button.status-EXPIRED {
+  opacity: 0.7;
+}
+
+.doctor-schedule-panel {
+  overflow: hidden;
+}
+
+.schedule-heading {
+  align-items: flex-start;
+  border-bottom: 1px solid #eef2f7;
+  margin: -24px -24px 0;
+  padding: 22px 24px 18px;
+}
+
+.date-pill-row {
+  display: flex;
+  gap: 10px;
+  margin: 18px 0 22px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.date-pill-row button {
+  min-width: 76px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #fff;
+  color: #667085;
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: 0.2s ease;
+}
+
+.date-pill-row button span,
+.date-pill-row button strong {
+  display: block;
+}
+
+.date-pill-row button span {
+  margin-bottom: 5px;
+  font-size: 0.78rem;
+  text-transform: capitalize;
+}
+
+.date-pill-row button strong {
+  color: #101828;
+  font-size: 0.98rem;
+}
+
+.date-pill-row button.is-active {
+  border-color: #0092b8;
+  background: #0092b8;
+  color: #fff;
+  box-shadow: 0 10px 22px rgba(0, 146, 184, 0.2);
+}
+
+.date-pill-row button.is-active strong {
+  color: #fff;
+}
+
+.doctor-slot-sections {
+  display: grid;
+  gap: 24px;
+}
+
+.doctor-slot-sections h3 {
+  margin: 0 0 12px;
+  color: #101828;
+  font-size: 1rem;
+}
+
+.figma-slot-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.figma-slot-grid .slot-button {
+  min-height: 46px;
+  border-radius: 12px;
+  border-color: #d7f0f5;
+  background: #f0fbfd;
+  color: #047c9b;
+  box-shadow: none;
+}
+
+.figma-slot-grid .slot-button:hover:not(:disabled) {
+  border-color: #0092b8;
+  background: #0092b8;
+  color: #fff;
+}
+
+.figma-slot-grid .slot-button span,
+.figma-slot-grid .slot-button small {
+  display: block;
+}
+
+.figma-slot-grid .slot-button small {
+  margin-top: 3px;
+  color: inherit;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
+.figma-slot-grid .slot-button.status-BOOKED,
+.figma-slot-grid .slot-button.status-EXPIRED {
+  border-color: #e5e7eb;
+  background: #f3f4f6;
+  color: #98a2b3;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.figma-slot-grid.is-preview {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.split-hero {
+  display: grid;
+  grid-template-columns: 1.3fr 0.9fr;
+  gap: 24px;
+}
+
+.sidebar-stack {
+  display: grid;
+  gap: 20px;
+}
+
+.detail-tab-grid {
+  display: grid;
+  gap: 20px;
+}
+
+.simple-article {
+  line-height: 1.8;
+}
+
+.simple-article h2 {
+  margin-top: 0;
+}
+
+.simple-article p {
+  margin-bottom: 16px;
+}
+
+@media (max-width: 960px) {
+  .doctor-card,
+  .split-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .figma-slot-grid,
+  .figma-slot-grid.is-preview {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Tabs for Doctor Detail Page */
+.doctor-detail-tabs {
+  display: flex;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.doctor-detail-tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 3px solid transparent;
+  padding: 12px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #64748b;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  outline: none;
+}
+
+.doctor-detail-tab-btn:hover {
+  color: #49BCE2;
+}
+
+.doctor-detail-tab-btn.active {
+  color: #49BCE2;
+  border-bottom-color: #49BCE2;
+}
+
+.tab-content-panel {
+  animation: tabFadeIn 0.35s ease-out;
+}
+
+@keyframes tabFadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Reviews styles on detail page */
+.reviews-summary-card {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 24px;
+  background-color: #f8fafc;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  align-items: center;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 640px) {
+  .reviews-summary-card {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+}
+
+.reviews-score-block {
+  text-align: center;
+}
+
+.reviews-score-big {
+  font-size: 3rem;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1;
+}
+
+.reviews-score-stars {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+  margin: 12px 0 6px;
+}
+
+.reviews-score-star-svg {
+  width: 20px;
+  height: 20px;
+  fill: #FFC10E;
+}
+
+.reviews-count-text {
+  font-size: 0.875rem;
+  color: #64748b;
+}
+
+.reviews-bars-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.reviews-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.875rem;
+  color: #475569;
+}
+
+.reviews-bar-label {
+  min-width: 50px;
+  text-align: right;
+}
+
+.reviews-bar-bg {
+  flex: 1;
+  height: 8px;
+  background-color: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.reviews-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #FFC10E 0%, #fab103 100%);
+  border-radius: 999px;
+}
+
+.reviews-bar-count {
+  min-width: 30px;
+  text-align: left;
+  color: #64748b;
+}
+
+.reviews-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.review-item-card {
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+}
+
+.review-item-card:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+}
+
+.review-item-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.review-item-user {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.review-item-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: #e0f2fe;
+  color: #0369a1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.review-item-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.review-item-name {
+  font-weight: 600;
+  color: #0f172a;
+  font-size: 0.95rem;
+}
+
+.review-item-date {
+  font-size: 0.775rem;
+  color: #64748b;
+}
+
+.review-item-rating {
+  display: flex;
+  gap: 2px;
+}
+
+.review-item-rating-star {
+  width: 14px;
+  height: 14px;
+  fill: #cbd5e1;
+}
+
+.review-item-rating-star.active {
+  fill: #FFC10E;
+}
+
+.review-item-comment {
+  font-size: 0.925rem;
+  color: #334155;
+  line-height: 1.5;
+  margin: 0;
+  padding-left: 52px;
+}
+
+.load-more-btn-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
+
+.load-more-btn {
+  background-color: #ffffff;
+  border: 1px solid #49BCE2;
+  color: #49BCE2;
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  background-color: #e8f9fd;
+}
+
+.load-more-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Static sections styling */
+.clinic-info-list,
+.instructions-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.clinic-info-item,
+.instructions-item {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.clinic-info-icon,
+.instructions-step {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: #e8f9fd;
+  color: #129ac7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.clinic-info-text,
+.instructions-text {
+  flex: 1;
+}
+
+.clinic-info-text strong,
+.instructions-text strong {
+  display: block;
+  font-size: 0.95rem;
+  color: #0f172a;
+  margin-bottom: 4px;
+}
+
+.clinic-info-text span,
+.instructions-text span {
+  font-size: 0.9rem;
+  color: #475569;
+}
+
+.btn-chat-doctor {
+  background: linear-gradient(135deg, #FFC10E 0%, #e0a90b 100%);
+  color: #0f172a;
+  box-shadow: 0 4px 6px -1px rgba(255, 193, 14, 0.3);
+  font-weight: 700 !important;
+  text-align: center;
+  display: block;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  cursor: pointer;
+  border: none;
+  font-size: 0.95rem;
+  transition: all 0.2s;
+  box-sizing: border-box;
+}
+
+.btn-chat-doctor:hover {
+  background: linear-gradient(135deg, #e0a90b 0%, #b38708 100%);
+  box-shadow: 0 4px 12px -1px rgba(255, 193, 14, 0.4);
+}
+

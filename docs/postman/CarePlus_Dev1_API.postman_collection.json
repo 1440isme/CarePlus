@@ -1,0 +1,860 @@
+{
+  "info": {
+    "_postman_id": "f4bcdb62-b6de-4d01-b8fb-f44517c2e111",
+    "name": "CarePlus Dev1 API",
+    "description": "Dev 1 scoped collection for Auth, User, Patient Profiles, Clinic Settings, and Specialties. No real secrets, OTPs, or tokens are stored here.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyen Van A\",\n  \"email\": \"patient@example.com\",\n  \"phone\": \"0901234567\",\n  \"password\": \"Password123\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/register",
+            "description": "Create a patient account and trigger email verification OTP."
+          }
+        },
+        {
+          "name": "Verify Email",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@example.com\",\n  \"otp\": \"{{otp}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/verify-email",
+            "description": "Verify email by OTP. Fill {{otp}} manually from the safe test source."
+          }
+        },
+        {
+          "name": "Resend Verification OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/resend-verification-otp",
+            "description": "Actual route in code. Not /auth/resend-otp."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@example.com\",\n  \"password\": \"Password123\",\n  \"rememberMe\": false\n}"
+            },
+            "url": "{{baseUrl}}/auth/login",
+            "description": "Stores accessToken into collection variables. Refresh token stays in httpOnly cookie."
+          }
+        },
+        {
+          "name": "Refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.collectionVariables.set('accessToken', json.data.accessToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/auth/refresh",
+            "description": "Uses refreshToken httpOnly cookie. Send raw JSON {} because validator expects a strict empty body."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/auth/logout",
+            "description": "Uses refreshToken httpOnly cookie. Send raw JSON {} because validator expects a strict empty body."
+          }
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/forgot-password",
+            "description": "Generate password reset flow. Do not store real reset tokens in this collection."
+          }
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"patient@example.com\",\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\",\n  \"confirmPassword\": \"{{newPassword}}\"\n}"
+            },
+            "url": "{{baseUrl}}/auth/reset-password",
+            "description": "Current backend flow uses email + token, not OTP."
+          }
+        }
+      ]
+    },
+    {
+      "name": "User - Self",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me"
+          }
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyen Van A Updated\",\n  \"phone\": \"0901234567\",\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"address\": \"123 Nguyen Trai\"\n}"
+            },
+            "url": "{{baseUrl}}/users/me",
+            "description": "User dateOfBirth format is YYYY-MM-DD."
+          }
+        },
+        {
+          "name": "Change My Password",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"Password123\",\n  \"newPassword\": \"NewPassword456\",\n  \"confirmPassword\": \"NewPassword456\"\n}"
+            },
+            "url": "{{baseUrl}}/users/me/password"
+          }
+        },
+        {
+          "name": "Update My Avatar",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/me/avatar"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin - Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users?search=nguyen&role=&status=&page=1&limit=10",
+            "description": "Admin user search giữ nguyên contract. Backend ưu tiên Elasticsearch khi search có giá trị và tự fallback về Prisma nếu Elasticsearch không khả dụng."
+          }
+        },
+        {
+          "name": "Get User Detail",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/{{userId}}"
+          }
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated User\",\n  \"phone\": \"0901234567\",\n  \"gender\": \"FEMALE\",\n  \"dateOfBirth\": \"1990-05-15\",\n  \"address\": \"456 Le Loi\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}",
+            "description": "User dateOfBirth format is YYYY-MM-DD."
+          }
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"LOCKED\"\n}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/status"
+          }
+        },
+        {
+          "name": "Reset No Show",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/reset-no-show"
+          }
+        },
+        {
+          "name": "Reset User Password",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{}"
+            },
+            "url": "{{baseUrl}}/users/{{userId}}/reset-password",
+            "description": "Admin reset mật khẩu người dùng. Backend tự sinh mật khẩu tạm thời và gửi qua email. API không trả mật khẩu mới trong response."
+          }
+        },
+        {
+          "name": "Create Staff - Receptionist",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Le Tan A\",\n  \"email\": \"staff@example.com\",\n  \"phone\": \"0901234567\",\n  \"password\": \"Password123\",\n  \"role\": \"RECEPTIONIST\",\n  \"status\": \"ACTIVE\"\n}"
+            },
+            "url": "{{baseUrl}}/users/staff"
+          }
+        },
+        {
+          "name": "Create Staff - Doctor",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Doctor User\",\n  \"email\": \"doctor@example.com\",\n  \"phone\": \"0901234567\",\n  \"password\": \"Password123\",\n  \"role\": \"DOCTOR\",\n  \"status\": \"ACTIVE\",\n  \"doctorName\": \"BS Nguyen Van B\",\n  \"specialtyId\": \"{{specialtyId}}\",\n  \"academicTitle\": \"BS.CKI\",\n  \"yearsOfExperience\": 8,\n  \"consultationFee\": 300000,\n  \"avatarUrl\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/users/staff"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient Profiles",
+      "item": [
+        {
+          "name": "List Patient Profiles",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/patient-profiles?page=1&limit=10&search="
+          }
+        },
+        {
+          "name": "Create Patient Profile",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Tran Thi C\",\n  \"phone\": \"0901234567\",\n  \"email\": \"relative@example.com\",\n  \"gender\": \"FEMALE\",\n  \"dateOfBirth\": \"1995-05-15\",\n  \"address\": \"123 Nguyen Hue\",\n  \"relationship\": \"ME\"\n}"
+            },
+            "url": "{{baseUrl}}/patient-profiles",
+            "description": "PatientProfile dateOfBirth sample uses YYYY-MM-DD. relationship must match backend enum such as SELF, CHA, ME, CON, VO, CHONG, ANH, CHI, EM, ONG, BA, KHAC."
+          }
+        },
+        {
+          "name": "Update Patient Profile",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Tran Thi C Updated\",\n  \"address\": \"456 Nguyen Hue\"\n}"
+            },
+            "url": "{{baseUrl}}/patient-profiles/{{patientProfileId}}"
+          }
+        },
+        {
+          "name": "Delete Patient Profile",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/patient-profiles/{{patientProfileId}}"
+          }
+        },
+        {
+          "name": "Set Default Patient Profile (Legacy)",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/patient-profiles/{{patientProfileId}}/default",
+            "description": "Legacy route. Not the main UI flow."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clinic Settings",
+      "item": [
+        {
+          "name": "Get Clinic Info",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/clinic-settings/clinic-info"
+          }
+        },
+        {
+          "name": "Update Clinic Info",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CarePlus Clinic\",\n  \"address\": \"123 Nguyen Trai\",\n  \"hotline\": \"19001234\",\n  \"email\": \"clinic@example.com\",\n  \"workingHours\": \"08:00-17:00\",\n  \"description\": \"Phong kham da khoa\"\n}"
+            },
+            "url": "{{baseUrl}}/clinic-settings/clinic-info"
+          }
+        },
+        {
+          "name": "Get System Setting",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/clinic-settings/system"
+          }
+        },
+        {
+          "name": "Update System Setting",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxBookingDaysAhead\": 7,\n  \"slotDurationMinutes\": 30,\n  \"cancelBeforeHours\": 2,\n  \"maxNoShowBeforeLock\": 3,\n  \"maxActiveAppointmentsPerUser\": 5,\n  \"morningShiftStart\": \"08:00\",\n  \"morningShiftEnd\": \"11:30\",\n  \"afternoonShiftStart\": \"13:30\",\n  \"afternoonShiftEnd\": \"17:00\"\n}"
+            },
+            "url": "{{baseUrl}}/clinic-settings/system"
+          }
+        },
+        {
+          "name": "Get Booking Rules",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/clinic-settings/booking-rules"
+          }
+        },
+        {
+          "name": "Get System Public (Deprecated Alias)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/clinic-settings/system/public"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Specialties",
+      "item": [
+        {
+          "name": "List Public Specialties",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/specialties?page=1&limit=10&search="
+          }
+        },
+        {
+          "name": "List Admin Specialties",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/specialties/admin?page=1&limit=10&search=tim",
+            "description": "Actual admin list route in code. Backend ưu tiên Elasticsearch cho search admin và fallback về Prisma nếu Elasticsearch không khả dụng."
+          }
+        },
+        {
+          "name": "Create Specialty",
+          "request": {
+            "method": "POST",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tim mach\",\n  \"description\": \"Chuyen khoa tim mach\",\n  \"active\": true\n}"
+            },
+            "url": "{{baseUrl}}/specialties"
+          }
+        },
+        {
+          "name": "Update Specialty",
+          "request": {
+            "method": "PATCH",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tim mach cap nhat\",\n  \"description\": \"Mo ta moi\",\n  \"active\": true\n}"
+            },
+            "url": "{{baseUrl}}/specialties/{{specialtyId}}"
+          }
+        },
+        {
+          "name": "Delete Specialty",
+          "request": {
+            "method": "DELETE",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{accessToken}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/specialties/{{specialtyId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "AI Assistant",
+      "item": [
+        {
+          "name": "Chat",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"CarePlus có chuyên khoa tim mạch không?\"\n}"
+            },
+            "url": "{{baseUrl}}/ai-assistant/chat",
+            "description": "Public CarePlus AI chat endpoint. Only supports CarePlus/public-safe questions, refuses out-of-scope or sensitive requests, and does not diagnose diseases."
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "otp",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resetToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "newPassword",
+      "value": "NewPassword456",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patientProfileId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "specialtyId",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

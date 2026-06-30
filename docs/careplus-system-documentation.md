@@ -21,11 +21,11 @@
    
  | Patient Portal | Bệnh nhân | /benh-nhan |  
    
- | Doctor Portal | Bác sĩ | /bac-si-portal |  
+| Doctor Portal | Bác sĩ | /portal/bac-si |  
    
- | Receptionist Portal | Lễ tân | /le-tan |  
+| Receptionist Portal | Lễ tân | /portal/le-tan |  
    
- | Admin Portal | Quản trị viên | /admin |  
+| Admin Portal | Quản trị viên | /portal/admin |  
    
     
    
@@ -134,6 +134,13 @@
    
     
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OMQ2AABAAsSNBACvucMH6NpGACyywEZJWQZeZ2aszAAD+4l6rrTo+jgAA8N71AL/GBEhnueqbAAAAAElFTkSuQmCC)  
+ **Ghi chú Admin Specialty hiện tại:**  
+- Model Specialty vẫn có `slug` và `icon`.  
+- Admin Specialty form chỉ nhập: Tên, Mô tả, Trạng thái active.  
+- `slug` dùng cho URL/lookup/public detail và được backend tự sinh từ `name` nếu Admin không gửi.  
+- `icon` là optional string, mặc định rỗng nếu không gửi; hiện chưa có UI icon picker/upload.  
+- Frontend Admin Specialty không bắt Admin nhập `slug`/`icon` trong scope hiện tại. Nếu sau này cần icon thật, tạo task riêng cho icon picker/upload.  
+   
  **2.4 Schedules & TimeSlots (lịch làm việc)**  
    
  Schedule {  
@@ -258,6 +265,12 @@
     
    
   | NO_SHOW | Không đến khám, không hủy trước |  
+  
+**Quy tắc giới hạn lịch hẹn active theo user:**  
+- Mỗi user có số lịch hẹn active tối đa được cấu hình bởi `maxActiveAppointmentsPerUser`  
+- Rule này dùng để chống spam đặt lịch thay cho rule giới hạn số hồ sơ người thân  
+- Khi lịch hẹn hoàn thành hoặc bị hủy, số lượng lịch active đang chiếm sẽ được giải phóng  
+- Active appointment status cần được appointment module xác nhận theo enum thực tế hiện tại  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAAM0lEQVR4nO3OMQ0AIAwAwdJgBKdVgjecsGCAiZDcTT9+q6oRETMAAPjF6ify6QYAADdyA9Y4AyrfLLISAAAAAElFTkSuQmCC)  
  **2.6 PatientProfiles (hồ sơ người được khám)**  
    
@@ -291,10 +304,14 @@
    
     
  **Quy tắc:**  
-- Mỗi tài khoản có tối đa **4 hồ sơ người thân đang hoạt động** (isActive = true)  
+- Không giới hạn số hồ sơ người thân đang hoạt động  
 - Xóa hồ sơ = soft delete (isActive = false), không phải hard delete  
 - Không thể xóa hồ sơ đang có lịch khám chưa hoàn tất  
-- Hồ sơ "Bản thân" (relationship = SELF) là hồ sơ mặc định  
+- Trong nghiệp vụ hiện tại, hệ thống không sử dụng hồ sơ mặc định trong UI/flow đặt lịch  
+- Khi đặt lịch, user chọn trực tiếp hồ sơ người được khám từ danh sách hồ sơ active  
+- Nếu field `isDefault` còn tồn tại trong database thì không expose trên UI hiện tại  
+- API create/update patient-profile không nên nhận `isDefault` từ client  
+- Route set default nếu còn tồn tại thì không được frontend sử dụng trong flow hiện tại  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/kCmMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4D2Bc8ZGvQ1AAAAAElFTkSuQmCC)  **2.7 Reviews (đánh giá bác sĩ)**
 
 ```ts
@@ -622,11 +639,11 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Avatar: hiển thị initials (không upload)  
 - Email không thể chỉnh sửa, có lock icon + helper text  
  ***3.4 Hồ sơ người thân (*** */benh-nhan/nguoi-than* ***)***  
- **Giới hạn:** Tối đa 4 hồ sơ active  
+ **Giới hạn:** Không giới hạn số hồ sơ active  
    
     
    
-  **Hiển thị counter:** "Đang hoạt động: X/4"  
+  **Hiển thị counter:** "Đang hoạt động: X hồ sơ"  
  **Mỗi card:**  
 - Tên, quan hệ, giới tính, ngày sinh, SĐT  
 - Nút "Xem chi tiết" → modal view/edit  
@@ -686,7 +703,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Hiển thị trên tab "Đánh giá" trang chi tiết bác sĩ  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/khHMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4DmBdF2VlroAAAAAElFTkSuQmCC)  
  **ROLE: DOCTOR (Bác sĩ)**  
- **Doctor Portal (**/bac-si-portal  **)**  
+**Doctor Portal (**/portal/bac-si  **)**  
  ***4.1 Tổng quan***  
  **KPI cards (4 thẻ):**  
 - Lịch hẹn hôm nay  
@@ -695,8 +712,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Lịch hẹn vắng mặt (NO_SHOW)  
  **Timeline lịch hẹn hôm nay:**  
 - Danh sách lịch hẹn trong ngày  
-- "Xem tất cả" → /bac-si-portal/lich-hen  
- ***4.2 Lịch hẹn (*** */bac-si-portal/lich-hen* ***)***  
+- "Xem tất cả" → /portal/bac-si/lich-hen  
+***4.2 Lịch hẹn (*** */portal/bac-si/lich-hen* ***)***  
  **Default state:** Hôm nay + tab "Đã check-in"  
  **Filters:**  
 - Quick date: Hôm nay | Ngày mai | Tuần này | Tuần sau | Tháng này | Tùy chọn  
@@ -726,7 +743,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  **Detail drawer:**  
 - Thông tin bệnh nhân: tên, năm sinh, giới tính, SĐT, email, lý do khám  
 - Thông tin lịch: ngày giờ, ca, giá tham khảo  
- ***4.3 Lịch làm việc (*** */bac-si-portal/lich-lam-viec* ***)***  
+***4.3 Lịch làm việc (*** */portal/bac-si/lich-lam-viec* ***)***  
  **Toolbar (không có nút "Hôm nay"):**  
 - Week navigation (prev/next)  
 - Toggle Tuần / Tháng  
@@ -776,26 +793,26 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Lý do *  
 - Validation: giờ bắt đầu < giờ kết thúc  
 - Success: toast + block "Chờ duyệt" trên calendar  
- ***4.4 Tin nhắn (*** */bac-si-portal/tin-nhan* ***)***  
+***4.4 Tin nhắn (*** */portal/bac-si/tin-nhan* ***)***  
 - Danh sách cuộc trò chuyện (trái) + active chat (phải)  
 - Chỉ xem conversations liên quan đến bác sĩ  
 - Real-time (mock): gửi/nhận text, trạng thái "Đã xem"/"Đã gửi"  
- ***4.5 Thông tin cá nhân (*** */bac-si-portal/thong-tin-ca-nhan* ***)***  
+***4.5 Thông tin cá nhân (*** */portal/bac-si/thong-tin-ca-nhan* ***)***  
  **Fields có thể chỉnh:**  
 - Họ tên *, SĐT *, Giới tính, Ngày sinh, Học hàm/học vị, Số năm kinh nghiệm, Giới thiệu bản thân  
  **Fields readonly:**  
 - Email (có lock icon + helper), Chuyên khoa  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANElEQVR4nO3OQQmAABRAsad4EFMY9fewnUms4E2ELcGWmTmrKwAA/uLeqrU6vp4AAPDa/gDzYgM3ZPdzEgAAAABJRU5ErkJggg==)  
  **ROLE: RECEPTIONIST (Lễ tân)**  
- **Receptionist Portal (**/le-tan  **)**  
+**Receptionist Portal (**/portal/le-tan  **)**  
  ***5.1 Tổng quan***  
  **KPI cards (5 thẻ):** Lịch hẹn hôm nay | Đã check-in | Chờ khám | Đã hoàn thành | Vắng mặt  
  **Section "Lịch hẹn hôm nay":** Table tóm tắt + "Xem tất cả"  
  **Thao tác nhanh:**  
-- Đặt lịch khám → /le-tan/dat-lich  
-- Tra cứu lịch hẹn → /le-tan/lich-hen  
-- Xem lịch làm việc bác sĩ → /le-tan/lich-lam-viec-bac-si  
- ***5.2 Quản lý lịch hẹn (*** */le-tan/lich-hen* ***)***  
+- Đặt lịch khám → /portal/le-tan/dat-lich  
+- Tra cứu lịch hẹn → /portal/le-tan/lich-hen  
+- Xem lịch làm việc bác sĩ → /portal/le-tan/lich-bac-si  
+***5.2 Quản lý lịch hẹn (*** */portal/le-tan/lich-hen* ***)***  
  **Filter bar (1 hàng):** Chuyên khoa → Bác sĩ (phụ thuộc chuyên khoa) → Trạng thái → Hôm nay | Ngày mai | Tuần này | Tùy chọn  
  **Table columns:** Mã lịch, Ngày, Giờ, Bệnh nhân, Ngày sinh, Bác sĩ, Chuyên khoa, Trạng thái, Thao tác  
  *Không có cột SĐT trong danh sách (chỉ xem trong chi tiết)*  
@@ -864,7 +881,7 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Mã lịch, thông tin đầy đủ bệnh nhân + bác sĩ + ngày giờ + CONFIRMED badge  
 - **Chỉ 1 button:** "Tạo lịch hẹn mới"  
 - Không có "Xem chi tiết" hay "Quay về Quản lý"  
- ***5.4 Lịch làm việc bác sĩ (*** */le-tan/lich-lam-viec-bac-si* ***)***  
+***5.4 Lịch làm việc bác sĩ (*** */portal/le-tan/lich-bac-si* ***)***  
  **Read-only** — Lễ tân chỉ xem, không chỉnh sửa  
  **Toolbar:**  
 - Chuyên khoa filter → Bác sĩ filter (phụ thuộc chuyên khoa đã chọn)  
@@ -873,16 +890,17 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Shift filter, Status filter  
  **Week view:** Timetable 7 cột, cells hiển thị tên bác sĩ, chuyên khoa, thời gian, số lịch hẹn  
  **Day view:** Danh sách bác sĩ với status từng ca  
- ***5.5 Tin nhắn (*** */le-tan/tin-nhan* ***)***  
+***5.5 Tin nhắn (*** */portal/le-tan/tin-nhan* ***)***  
 - Conversation list + active chat  
 - Tìm kiếm theo tên, SĐT, email  
 - Gửi/nhận real-time (mock)  
- ***5.6 Thông tin cá nhân (*** */le-tan/thong-tin-ca-nhan* ***)***  
+***5.6 Thông tin cá nhân (*** */portal/le-tan/thong-tin-ca-nhan* ***)***  
 - Họ tên *, SĐT *, Giới tính, Ngày sinh, Địa chỉ  
 - Email readonly  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/khHMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4DmBdF2VlroAAAAAElFTkSuQmCC)  
  **ROLE: ADMIN (Quản trị viên)**  
- **Admin Portal (**/admin  **)**  
+**Admin Portal (**/portal/admin  **)**  
+- Route tương thích ngược: `/admin/*` hiện redirect sang `/portal/admin/*`; tài liệu này dùng `/portal/admin/*` làm URL chuẩn.  
  ***6.1 Tổng quan***  
  **KPI 6 thẻ:** Lịch hôm nay, Chờ duyệt, Hoàn thành, No-show, Số bác sĩ, Chuyên khoa  
  **Chart:** AreaChart lịch hẹn theo ngày (7 ngày gần nhất)  
@@ -890,12 +908,14 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  ***6.2 Quản lý chuyên khoa***  
    
  CRUD: Tên, Mô tả, Trạng thái active  
+- Form Admin không có field bắt buộc cho `slug`/`icon`. Backend tự sinh `slug` từ tên chuyên khoa; `icon` optional và đang để chuỗi rỗng nếu chưa có dữ liệu.  
+- Bảng Admin có thể hiển thị slug đã sinh để đối chiếu URL/public detail; không yêu cầu Admin nhập slug thủ công.  
  ***6.3 Quản lý bác sĩ***  
 - Bảng list bác sĩ  
 - **Cột "Giá khám tham khảo"** (không phải "Giá khám")  
 - Helper text: "Giá này chỉ dùng để hiển thị tham khảo. Không xử lý thanh toán online."  
 - Edit modal cho phép cập nhật giá  
- ***6.4 Lịch làm việc (*** */admin/lich-lam-viec* ***)***  
+***6.4 Lịch làm việc (*** */portal/admin/lich-lam-viec* ***)***  
 - Quy tắc lịch làm việc theo bác sĩ  
 - Thêm quy tắc: từ ngày - đến ngày, ngày trong tuần, ca sáng/chiều/cả hai  
  ***6.5 Quản lý lịch hẹn***  
@@ -917,29 +937,72 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Khóa tài khoản / Mở khóa tài khoản  
 - Reset no-show  
 - Mở khóa đặt lịch online  
- **Tạo tài khoản nhân sự:**  
+  
+- Admin reset password đã được hỗ trợ (cung cấp nút Reset Password tự sinh mật khẩu tạm thời gửi qua email của người dùng).
+- Chi tiết user hiển thị số lần vắng mặt.
+  
+**Admin User APIs hiện tại (mount dưới `/api/v1/users`):**
+- `GET /api/v1/users`: Admin xem danh sách user, search/filter role/status, pagination. Hỗ trợ tìm kiếm qua Elasticsearch (fallback MySQL nếu lỗi/tắt).
+- `GET /api/v1/users/:id`: Admin xem chi tiết user.
+- `PATCH /api/v1/users/:id`: Admin cập nhật thông tin cơ bản của user (Họ tên, SĐT, Giới tính, Ngày sinh, Địa chỉ).
+- `PATCH /api/v1/users/:id/status`: Admin khóa/mở khóa tài khoản.
+- `PATCH /api/v1/users/:id/reset-no-show`: Admin reset số lần vắng mặt.
+- `PATCH /api/v1/users/:id/reset-password`: Admin đặt lại mật khẩu tạm thời gửi qua email.
+- `POST /api/v1/users/staff`: Admin tạo tài khoản nhân sự.
+
+**Giới hạn scope hiện tại:**
+- Admin update user không dùng để sửa `passwordHash` trực tiếp.
+- Admin update user không dùng để sửa `noShowCount` trực tiếp (phải dùng endpoint reset riêng).
+- Admin khóa/mở khóa và reset mật khẩu đều có endpoint riêng để đảm bảo bảo mật.
+  **Tạo tài khoản nhân sự:**  
 - Role: Doctor | Receptionist | Admin  
 - Email, SĐT, Mật khẩu tạm, Trạng thái  
 - Nếu role = Doctor → thêm Doctor profile (tên, chuyên khoa, học vị, kinh nghiệm, giá, avatar)  
  ***6.8 Quản lý bài viết***  
    
  CRUD blog posts, filter theo status (PUBLISHED/DRAFT/ARCHIVED)  
- ***6.9 Email Preview (*** */admin/email-preview* ***)***  
-   
- Preview 4 loại email:  
-- Xác minh tài khoản  
-- Xác nhận đặt lịch  
-- Hủy lịch  
-- Khóa đặt lịch do no-show  
+ ***6.9 [Đã xóa] Email Preview***
  ***6.10 Thông tin phòng khám***  
    
  CRUD: Tên phòng khám, địa chỉ, hotline, email, giờ làm việc, mô tả  
+  
+**Clinic Settings APIs hiện tại:**  
+- `GET /api/v1/clinic-settings/clinic-info`: Public lấy thông tin phòng khám  
+- `PATCH /api/v1/clinic-settings/clinic-info`: Admin cập nhật thông tin phòng khám  
+  
+**Field thông tin phòng khám:**  
+- `name`  
+- `address`  
+- `hotline`  
+- `email`  
+- `workingHours`  
+- `description`  
  ***6.11 Cài đặt hệ thống***  
 - max_booking_days_ahead (mặc định 7 ngày)  
 - slot_duration_minutes (30 phút)  
 - cancel_before_hours (2 giờ → yêu cầu hủy qua bác sĩ)  
 - max_no_show_before_lock (3 lần)  
+- max_active_appointments_per_user (giới hạn số lịch hẹn active tối đa mỗi user)  
 - Giờ ca sáng/chiều  
+  
+**System Settings APIs hiện tại:**  
+- `GET /api/v1/clinic-settings/system`: Admin xem cấu hình hệ thống  
+- `PATCH /api/v1/clinic-settings/system`: Admin cập nhật cấu hình hệ thống  
+- `GET /api/v1/clinic-settings/booking-rules`: Public DTO gọn cho UI đặt lịch, chỉ trả rule hiển thị lịch/giờ làm việc  
+- `GET /api/v1/clinic-settings/system/public`: Deprecated/alias sang booking-rules DTO, không trả full system settings  
+  
+**Ý nghĩa field:**  
+- `maxBookingDaysAhead`: số ngày tối đa user được đặt lịch trước  
+- `slotDurationMinutes`: thời lượng mỗi khung giờ khám  
+- `cancelBeforeHours`: số giờ tối thiểu trước giờ khám để được hủy trực tiếp  
+- `maxNoShowBeforeLock`: số lần vắng mặt tối đa trước khi user bị hạn chế/khóa đặt lịch  
+- `maxActiveAppointmentsPerUser`: số lịch hẹn active tối đa mỗi user được có cùng lúc  
+- `morningShiftStart` / `morningShiftEnd`: giờ ca sáng  
+- `afternoonShiftStart` / `afternoonShiftEnd`: giờ ca chiều  
+  
+**Ngoài scope UI cài đặt hệ thống:**  
+- Token TTL / access token TTL / refresh token TTL không thuộc màn Admin System Settings  
+- Các cấu hình bảo mật/auth TTL nên nằm ở env/config backend, không cho Admin chỉnh trên UI  
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANklEQVR4nO3OQQmAABRAsScYxpg/khHMYQKvNrCCNxG2BFtmZquOAAD4i3Ot7mr/egIAwGvXA4DmBdF2VlroAAAAAElFTkSuQmCC)  
  **4. Quy tắc nghiệp vụ tổng hợp**  
  **4.1 Anti-spam booking**  
@@ -957,6 +1020,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  | Rule áp dụng cho | Cả bệnh nhân tự đặt và lễ tân đặt hộ |  
    
  | Xác định người khám | forSelf=true → patientId, forSelf=false → patientProfileId |  
+  
+ | Giới hạn theo user | Mỗi user có số lịch hẹn active tối đa theo `maxActiveAppointmentsPerUser` |  
    
     
  **4.2 Quy tắc hủy lịch (Patient)**  
@@ -984,10 +1049,12 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Admin có thể reset và mở khóa  
 - Bệnh nhân nhận email thông báo khóa  
  **4.5 Người thân (Relatives)**  
-- Tối đa **4 hồ sơ người thân active** mỗi tài khoản  
+- Không giới hạn số hồ sơ người thân active mỗi tài khoản  
 - Xóa = soft delete (isActive = false)  
 - Không thể xóa nếu có lịch CONFIRMED hoặc CHECKED_IN  
-- Khi đặt lịch qua Patient Portal: popup picker (Bản thân / các người thân đã lưu / thêm mới)  
+- Không dùng hồ sơ mặc định trong nghiệp vụ hiện tại  
+- Không hiển thị UI đặt mặc định  
+- Khi đặt lịch qua Patient Portal: user chọn trực tiếp hồ sơ active cần khám từ danh sách  
 - Khi đặt qua Receptionist: search → trả về bệnh nhân + người thân của bệnh nhân đó  
  **4.6 Email notifications**  
    
@@ -1004,9 +1071,32 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
  | Hủy lịch | Thông báo hủy |  
    
  | Tài khoản bị khóa | Thông báo no-show |  
-   
-    
- ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANUlEQVR4nO3OMQ2AABAAsSPBCj7fEl5YGfHAiAU2QtIq6DIzW7UHAMBfnGt1V8fXEwAAXrse4eAF6m0KxEoAAAAASUVORK5CYII=)  
+  
+**4.7 Upload & Cập nhật ảnh đại diện (Avatar)**
+- Bệnh nhân, Bác sĩ, Lễ tân và Admin đều hỗ trợ upload và cập nhật ảnh đại diện trực tiếp thông qua form Thông tin cá nhân/Cài đặt tài khoản.
+- File upload được gửi lên server qua API `PATCH /users/me/avatar` dạng `multipart/form-data` và lưu trữ trực tuyến trên Cloudinary (trả về URL ảnh thay vì lưu base64).
+- Ảnh đại diện của bác sĩ sau khi được cập nhật sẽ tự động phản ánh và đồng bộ hiển thị ngoài trang chủ, trang danh sách bác sĩ công khai và các widget chat.
+
+**4.8 Hệ thống Thông báo In-App (Real-time Notifications)**
+- Triển khai mô hình notification lưu trữ database MySQL thông qua model `Notification`.
+- Sử dụng **Socket.IO** để kết nối real-time giữa client và server. Socket tự động kết nối ngay khi đăng nhập thành công và ngắt khi đăng xuất, đảm bảo đồng bộ thông báo live trên toàn portal.
+- **In-App Notification Bell & Dropdown**: Tích hợp trên thanh header của mọi portal (Bệnh nhân, Bác sĩ, Lễ tân, Admin) và trang chủ công khai (khi đã login). Hiển thị unread badge đỏ, danh sách thông báo mới và các live Toast popup trượt vào màn hình khi có thông báo mới.
+- **Sự kiện kích hoạt thông báo:**
+  - *Đặt lịch khám:* Gửi thông báo đến bệnh nhân và tất cả các lễ tân.
+  - *Thay đổi trạng thái lịch khám (Check-in, Hoàn thành, Hủy, Vắng mặt):* Gửi thông báo real-time cho cả bệnh nhân và bác sĩ tương ứng.
+  - *Yêu cầu nghỉ của bác sĩ:* Gửi yêu cầu nghỉ lên admin chờ duyệt, gửi thông báo kết quả duyệt (chấp nhận/từ chối) về cho bác sĩ.
+  - *Chat:* Gửi toast thông báo khi nhận tin nhắn mới từ đối phương (lọc không hiện toast khi người dùng tự gửi).
+- **Socket Real-time Data Sync:** Khi có event socket như `appointment:created` hoặc `appointment:status-changed`, hệ thống tự động invalidates cache React Query trên frontend giúp danh sách lịch hẹn và dashboard cập nhật tức thì không cần F5.
+
+**4.9 Tìm kiếm thông minh với Elasticsearch**
+- Hỗ trợ Elasticsearch phiên bản `8.11.3` cho tìm kiếm Full-text search (Doctors, Specialties, Blogs, Users) hỗ trợ tìm kiếm gần đúng (Fuzziness).
+- **Nguyên tắc MySQL là Source of Truth**: Dữ liệu lưu chính ở MySQL, đồng bộ bất đồng bộ sang ES khi thêm/sửa/xóa.
+- **Cơ chế Fallback an toàn**: Nếu Elasticsearch offline hoặc lỗi, hệ thống tự động fallback về truy vấn Prisma/MySQL `LIKE` mà không gây gián đoạn dịch vụ.
+- Dropdown tìm kiếm tại Trang chủ cho phép tìm kiếm đa chức năng (Bác sĩ, Bài viết, Chuyên khoa). Thanh tìm kiếm trong trang quản lý của Admin và Lễ tân cũng được tích hợp ES.
+- Bộ lọc ngày khám trên trang `/bac-si` và `/chuyen-khoa` hoạt động real-time kết hợp với api slots thực của bác sĩ.
+
+  
+  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANUlEQVR4nO3OMQ2AABAAsSPBCj7fEl5YGfHAiAU2QtIq6DIzW7UHAMBfnGt1V8fXEwAAXrse4eAF6m0KxEoAAAAASUVORK5CYII=)  
  **5. Tính năng Chat**  
  **Widget Chat (Public & Patient Portal)**  
  **2 loại hội thoại:**  
@@ -1022,8 +1112,8 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
 - Phải: active chat (header + messages + input)  
  **Chat trang nội bộ (Doctor & Receptionist Portal)**  
  **URL:**  
-- Bác sĩ: /bac-si-portal/tin-nhan  
-- Lễ tân: /le-tan/tin-nhan  
+- Bác sĩ: /portal/bac-si/tin-nhan  
+- Lễ tân: /portal/le-tan/tin-nhan  
  **Features:**  
 - Conversation list (trái): search, online status, unread badges  
 - Active chat (phải): message history với timestamp, read receipts  
@@ -1073,59 +1163,70 @@ export function addReview(review: Omit<Review, 'id' | 'createdAt'>): Review {
   /benh-nhan/thong-tin-ca-nhan  → PatientProfile  
    
   /benh-nhan/nguoi-than         → PatientRelatives  
+  
+**Frontend Patient screens hiện tại:**  
+- `/benh-nhan/thong-tin-ca-nhan`: user xem/cập nhật thông tin cá nhân, email readonly, có card bảo mật tài khoản và đổi mật khẩu riêng, có upload avatar nếu code hiện tại bật  
+- `/benh-nhan/nguoi-than`: user quản lý hồ sơ người thân, không giới hạn số hồ sơ, chỉ hiển thị tổng số hồ sơ active, không có UI đặt mặc định, thêm/sửa/xóa mềm hồ sơ theo rule backend  
    
     
- **Doctor Portal (**/bac-si-portal  **)**  
+**Doctor Portal (**/portal/bac-si  **)**  
    
- /bac-si-portal                        → DoctorDashboard  
+/portal/bac-si                        → DoctorDashboard  
    
-  /bac-si-portal/lich-hen               → DoctorAppointmentList  
+  /portal/bac-si/lich-hen               → DoctorAppointmentList  
    
-  /bac-si-portal/lich-lam-viec          → DoctorWorkSchedule  
+  /portal/bac-si/lich-lam-viec          → DoctorWorkSchedule  
    
-  /bac-si-portal/tin-nhan               → ChatPage (Doctor)  
+  /portal/bac-si/tin-nhan               → ChatPage (Doctor)  
    
-  /bac-si-portal/thong-tin-ca-nhan      → DoctorProfile  
-   
-    
- **Receptionist Portal (**/le-tan  **)**  
-   
- /le-tan                               → ReceptionistDashboard  
-   
-  /le-tan/lich-hen                      → AppointmentManagement  
-   
-  /le-tan/dat-lich                      → ReceptionistBooking  
-   
-  /le-tan/lich-lam-viec-bac-si          → DoctorScheduleView  
-   
-  /le-tan/tin-nhan                      → ChatPage (Receptionist)  
-   
-  /le-tan/thong-tin-ca-nhan             → ReceptionistProfile  
+  /portal/bac-si/thong-tin-ca-nhan      → DoctorProfile  
    
     
- **Admin Portal (**/admin  **)**  
+**Receptionist Portal (**/portal/le-tan  **)**  
    
- /admin                        → AdminDashboard  
+/portal/le-tan                               → ReceptionistDashboard  
    
-  /admin/chuyen-khoa            → SpecialtyManagement  
+  /portal/le-tan/lich-hen                      → AppointmentManagement  
    
-  /admin/bac-si                 → DoctorManagement  
+  /portal/le-tan/dat-lich                      → ReceptionistBooking  
    
-  /admin/lich-lam-viec          → ScheduleRulesManagement  
+  /portal/le-tan/lich-bac-si          → DoctorScheduleView  
    
-  /admin/lich-hen               → AppointmentManagement (Admin)  
+  /portal/le-tan/tin-nhan                      → ChatPage (Receptionist)  
    
-  /admin/duyet-yeu-cau          → ApprovalRequests  
+  /portal/le-tan/thong-tin-ca-nhan             → ReceptionistProfile  
    
-  /admin/nguoi-dung             → UserManagement  
+    
+**Admin Portal (**/portal/admin  **)**  
+- Alias tương thích ngược: `/admin/*` redirect sang `/portal/admin/*`.  
    
-  /admin/blog                   → BlogManagement  
+/portal/admin                        → AdminDashboard  
    
-  /admin/email-preview          → EmailPreviewPage  
+  /portal/admin/chuyen-khoa            → SpecialtyManagement  
    
-  /admin/phong-kham             → ClinicInfo  
+  /portal/admin/bac-si                 → DoctorManagement  
    
-  /admin/cai-dat                → SystemSettings  
+  /portal/admin/lich-lam-viec          → ScheduleRulesManagement  
+   
+  /portal/admin/lich-hen               → AppointmentManagement (Admin)  
+   
+  /portal/admin/duyet-yeu-cau          → ApprovalRequests  
+   
+  /portal/admin/nguoi-dung             → UserManagement  
+   
+  /portal/admin/blog                   → BlogManagement  
+   
+  /portal/admin/email-preview          → (Đã xóa)  
+   
+  /portal/admin/phong-kham             → ClinicInfo  
+   
+  /portal/admin/cai-dat                → SystemSettings  
+  
+**Frontend Admin screens hiện tại:**  
+- `/portal/admin/nguoi-dung`: Admin quản lý người dùng, list/search/filter role/status, pagination, xem chi tiết, sửa thông tin cơ bản, tạo tài khoản nhân sự, khóa/mở khóa, reset noShowCount; không có section đổi/đặt lại mật khẩu trong chi tiết user ở scope hiện tại; chi tiết user hiển thị số lần vắng mặt  
+- `/portal/admin/chuyen-khoa`: Admin quản lý chuyên khoa, list/search/pagination nếu backend hỗ trợ, thêm, sửa, xem chi tiết nếu UI có, bật/tắt active  
+- `/portal/admin/phong-kham`: Admin cập nhật thông tin phòng khám gồm tên, địa chỉ, hotline, email, giờ làm việc, mô tả  
+- `/portal/admin/cai-dat`: Admin cập nhật system settings gồm giới hạn đặt lịch, thời lượng slot, thời gian hủy tối thiểu, số lần vắng mặt tối đa, số lịch hẹn active tối đa mỗi user, giờ ca sáng/chiều; không có Token TTL trên UI  
    
     
  ![](data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAnEAAAACCAYAAAA3pIp+AAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAA7EAAAOxAGVKw4bAAAANElEQVR4nO3OUQmAABBAsSeYxKSXxlxGEAOIFfwTYUuwZWa2ag8AgL841uquzq8nAAC8dj05WAYOJzduCAAAAABJRU5ErkJggg==)  

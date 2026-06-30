@@ -1,0 +1,324 @@
+.receptionist-portal-layout {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 264px minmax(0, 1fr);
+  background: #f7f9fc;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  color: #1f2937;
+}
+
+.receptionist-portal-sidebar {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-right: 1px solid #e7eef4;
+}
+
+.receptionist-portal-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 0 18px;
+  border-bottom: 1px solid #e7eef4;
+  box-sizing: border-box;
+}
+
+.receptionist-portal-brand-mark {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0092B8;
+  color: #ffffff;
+  font-size: 15px;
+  line-height: 1;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.receptionist-portal-brand-text {
+  color: #16202a;
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+}
+
+.receptionist-portal-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 20px 14px 14px;
+  padding: 11px 14px;
+  border-radius: 14px;
+  background: #dff6fb;
+}
+
+.receptionist-portal-profile-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #0092B8;
+  color: #ffffff;
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 700;
+  flex: 0 0 auto;
+}
+
+.receptionist-portal-profile-avatar svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.9;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.receptionist-portal-profile-copy {
+  min-width: 0;
+}
+
+.receptionist-portal-profile-name,
+.receptionist-portal-profile-role {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receptionist-portal-profile-name {
+  color: #243043;
+  font-size: 15px;
+  line-height: 20px;
+  font-weight: 600;
+}
+
+.receptionist-portal-profile-role {
+  margin-top: 2px;
+  color: #0092B8;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
+.receptionist-portal-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 14px 14px;
+}
+
+.receptionist-portal-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 46px;
+  padding: 0 14px;
+  border-radius: 12px;
+  color: #4b5b6b;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.receptionist-portal-nav-link svg,
+.receptionist-portal-icon-button svg,
+.receptionist-portal-logout-link svg,
+.receptionist-portal-home-link svg,
+.receptionist-portal-sidebar-logout svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: 0 0 auto;
+}
+
+.receptionist-portal-nav-link:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.receptionist-portal-nav-link.is-active {
+  background: #0092B8;
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(0, 146, 184, 0.15);
+}
+
+.receptionist-portal-nav-arrow {
+  margin-left: auto;
+  font-size: 20px;
+  line-height: 1;
+}
+
+.receptionist-portal-sidebar-footer {
+  margin-top: auto;
+  padding: 18px 14px 22px;
+  border-top: 1px solid #e7eef4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.receptionist-portal-home-link,
+.receptionist-portal-sidebar-logout {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: #5a6577;
+  text-decoration: none;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.receptionist-portal-home-link:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.receptionist-portal-sidebar-logout {
+  color: #ff2e2e;
+}
+
+.receptionist-portal-sidebar-logout:hover {
+  background: #fef2f2;
+}
+
+.receptionist-portal-shell {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.receptionist-portal-header {
+  height: 60px;
+  padding: 0 22px;
+  background: #ffffff;
+  border-bottom: 1px solid #e7eef4;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.receptionist-portal-header-divider {
+  flex: 1;
+  height: 1px;
+  background: transparent;
+}
+
+.receptionist-portal-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.receptionist-portal-icon-button,
+.receptionist-portal-logout-link {
+  border: none;
+  background: transparent;
+  color: #64748b;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+
+.receptionist-portal-icon-button {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.receptionist-portal-icon-button:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.receptionist-portal-logout-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  padding: 6px 12px;
+}
+
+.receptionist-portal-logout-link:hover {
+  background: #fef2f2;
+  color: #ff2e2e;
+}
+
+.receptionist-portal-notification-dot {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ff3b3b;
+  border: 1.5px solid #ffffff;
+}
+
+.receptionist-portal-main {
+  padding: 22px 24px 28px;
+}
+
+.receptionist-portal-icon-button:disabled,
+.receptionist-portal-logout-link:disabled,
+.receptionist-portal-sidebar-logout:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (max-width: 1024px) {
+  .receptionist-portal-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .receptionist-portal-sidebar {
+    border-right: none;
+    border-bottom: 1px solid #e7eef4;
+  }
+
+  .receptionist-portal-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 768px) {
+  .receptionist-portal-header {
+    height: auto;
+    padding-top: 12px;
+    padding-bottom: 12px;
+    gap: 12px;
+  }
+
+  .receptionist-portal-main {
+    padding: 18px 14px 24px;
+  }
+}

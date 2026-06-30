@@ -1,0 +1,384 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
+import { Search, Heart, MapPin, Star, Clock, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useDoctorList } from '../../features/doctor/index.js';
+import { useSpecialties } from '../../features/specialty/hooks/useSpecialties.js';
+import { buildVirtualSlotsForSchedules, flattenSlotGroups, filterSlotGroupsBySchedules, mergePersistedSlots } from '../../features/timeslot/virtual-slot.service.js';
+import { useBookingRules } from '../../features/admin/clinic-settings/hooks/useBookingRules.js';
+import { useTimeSlots } from '../../features/timeslot/hooks/useTimeSlots.js';
+import LoadingBlock from '../../shared/components/feedback/LoadingBlock.jsx';
+import StateBlock from '../../shared/components/feedback/StateBlock.jsx';
+import { useClinicInfo } from '../../features/admin/clinic-settings/hooks/useClinicInfo.js';
+
+function formatPrice(value) {
+  return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value || 0);
+}
+
+// ── Per-doctor slot widget ────────────────────────────────────────────────────
+function DoctorSlots({ doctorId, selectedDate, onBook, bookingRulesData }) {
+  const { data: tsData, isLoading } = useTimeSlots({ doctorId, date: selectedDate });
+
+  const slotGroups = useMemo(() => {
+    const slotData = tsData?.data;
+    const schedules = slotData?.schedules || [];
+    if (schedules.length === 0) return { morning: [], afternoon: [] };
+
+    return mergePersistedSlots(
+      filterSlotGroupsBySchedules(buildVirtualSlotsForSchedules(bookingRulesData, schedules), schedules),
+      slotData?.slots || [],
+    );
+  }, [tsData, bookingRulesData]);
+
+  const allSlots = useMemo(() => {
+    return [
+      ...(slotGroups.morning || []),
+      ...(slotGroups.afternoon || []),
+    ];
+  }, [slotGroups]);
+
+  const availableCount = useMemo(() => {
+    return allSlots.filter(s => {
+      const isBooked = s.status === 'BOOKED' || s.status === 'LOCKED';
+      const isExpired = s.status === 'EXPIRED' || (() => {
+        const now = new Date();
+        const [year, month, day] = selectedDate.split('-').map(Number);
+        const [hours, minutes] = s.endTime.split(':').map(Number);
+        const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+        return now > slotEndTime;
+      })();
+      return !isBooked && !isExpired;
+    }).length;
+  }, [allSlots, selectedDate]);
+
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-4 gap-2 mb-3">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-8 bg-gray-100 rounded-lg animate-pulse" />
+        ))}
+      </div>
+    );
+  }
+
+  if (allSlots.length === 0) {
+    return (
+      <div className="py-4 text-center text-xs text-gray-400 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+        Bác sĩ chưa có lịch khám ngày này
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-2">
+        LỊCH KHÁM CÒN TRỐNG ({availableCount} khung)
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-4 gap-2 mb-3">
+        {allSlots.slice(0, 8).map(slot => {
+          const isBooked = slot.status === 'BOOKED' || slot.status === 'LOCKED';
+          const isExpired = slot.status === 'EXPIRED' || (() => {
+            const now = new Date();
+            const [year, month, day] = selectedDate.split('-').map(Number);
+            const [hours, minutes] = slot.endTime.split(':').map(Number);
+            const slotEndTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
+            return now > slotEndTime;
+          })();
+          const isDisabled = isBooked || isExpired;
+          return (
+            <button
+              key={slot.startTime}
+              type="button"
+              disabled={isDisabled}
+              onClick={() => onBook(doctorId, `${slot.startTime}-${slot.endTime}`)}
+              className={`py-1.5 px-1 text-[11px] rounded-lg text-center font-medium border transition-all shadow-sm whitespace-nowrap ${
+                isBooked
+                  ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed line-through'
+                  : isExpired
+                  ? 'border-gray-100 bg-gray-50 text-gray-300 cursor-not-allowed'
+                  : 'border-gray-200 bg-white hover:bg-cyan-50 hover:border-cyan-500 hover:text-cyan-600 cursor-pointer'
+              }`}
+            >
+              {slot.startTime.slice(0, 5)} - {slot.endTime.slice(0, 5)}
+            </button>
+          );
+        })}
+      </div>
+      <div className="text-xs text-gray-500">
+        Chọn giờ và đặt <span className="text-green-600 font-bold">(Phí đặt lịch 0đ)</span>
+      </div>
+    </>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
+export default function DoctorListPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') || '');
+  const [specFilter, setSpecFilter] = useState(searchParams.get('specialty') || '');
+  const debounceRef = useRef(null);
+
+  const { data: specialtiesData } = useSpecialties({});
+  const specialties = specialtiesData?.data || [];
+  const { data: bookingRulesResponse } = useBookingRules();
+  const { data: clinicResponse } = useClinicInfo({ staleTime: 10 * 60 * 1000 });
+
+  // ── 7-day date selector ───────────────────────────────────────────────────
+  const dates = useMemo(() => {
+    const today = new Date();
+    const limit = bookingRulesResponse?.data?.maxBookingDaysAhead || 7;
+    return Array.from({ length: limit }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return d.toLocaleDateString('sv').slice(0, 10);
+    });
+  }, [bookingRulesResponse?.data?.maxBookingDaysAhead]);
+
+  const dayVi = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+  const dateLabels = useMemo(() => {
+    const labels = {};
+    dates.forEach(d => {
+      const dt = new Date(d + 'T00:00:00');
+      labels[d] = {
+        short: `${dayVi[dt.getDay()]} ${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`,
+        day: dt.getDate(),
+        weekday: dayVi[dt.getDay()],
+      };
+    });
+    return labels;
+  }, [dates]);
+
+  const [selectedDate, setSelectedDate] = useState(dates[0]);
+
+  // ── Query ─────────────────────────────────────────────────────────────────
+  const query = useMemo(() => {
+    const q = {
+      page: Number(searchParams.get('page') || 1),
+      limit: 50,
+      active: true,
+    };
+    const search = searchParams.get('search');
+    if (search?.trim()) q.search = search.trim();
+    const specialtyId = searchParams.get('specialty');
+    if (specialtyId) q.specialtyId = specialtyId;
+    return q;
+  }, [searchParams]);
+
+  const { data, isLoading, error } = useDoctorList(query);
+  const clinicInfo = clinicResponse?.data;
+  const doctors = data?.data || [];
+
+  // ── Debounced search ──────────────────────────────────────────────────────
+  const handleSearchChange = useCallback((e) => {
+    const value = e.target.value;
+    setSearchInput(value);
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      const next = new URLSearchParams(searchParams);
+      if (value.trim()) {
+        next.set('search', value.trim());
+      } else {
+        next.delete('search');
+      }
+      next.set('page', '1');
+      setSearchParams(next);
+    }, 350);
+  }, [searchParams, setSearchParams]);
+
+  const handleSpecialtyChange = (e) => {
+    const value = e.target.value;
+    setSpecFilter(value);
+    const next = new URLSearchParams(searchParams);
+    if (value) {
+      next.set('specialty', value);
+    } else {
+      next.delete('specialty');
+    }
+    next.set('page', '1');
+    setSearchParams(next);
+  };
+
+  const handleBook = (doctorId, slotTime) => {
+    navigate(`/dat-lich?doctorId=${doctorId}&date=${selectedDate}&slot=${encodeURIComponent(slotTime)}`);
+  };
+
+  // Mock heart favorites
+  const [favorites, setFavorites] = useState({});
+  const toggleFavorite = (id) => {
+    setFavorites(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  return (
+    <div className="bg-gray-50 min-h-screen py-10">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6">
+
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Đội ngũ bác sĩ</h1>
+          <p className="text-sm text-gray-500 mt-2">Tìm kiếm và đặt lịch khám với các bác sĩ chuyên khoa của CarePlus Clinic</p>
+        </div>
+
+        {/* Filter bar */}
+        <div className="bg-white rounded-2xl border border-gray-150 p-4 mb-6 shadow-sm flex flex-wrap gap-4 items-center justify-between">
+          <div className="flex-1 flex gap-4 min-w-[280px]">
+            {/* Search */}
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="text"
+                value={searchInput}
+                onChange={handleSearchChange}
+                placeholder="Tìm tên bác sĩ, chuyên khoa..."
+                className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+            </div>
+
+            {/* Specialty filter */}
+            <select
+              value={specFilter}
+              onChange={handleSpecialtyChange}
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              <option value="">Tất cả chuyên khoa</option>
+              {specialties.map(s => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Date filter — no submit button, changes immediately */}
+          <div className="text-sm text-gray-500 flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-cyan-600" />
+            <span className="font-medium text-gray-700">Xem lịch ngày:</span>
+            <select
+              value={selectedDate}
+              onChange={e => setSelectedDate(e.target.value)}
+              className="border border-gray-200 rounded-xl px-3 py-2.5 text-sm text-gray-700 bg-white cursor-pointer focus:outline-none focus:ring-2 focus:ring-cyan-500"
+            >
+              {dates.map(d => (
+                <option key={d} value={d}>
+                  {d === dates[0] ? `Hôm nay — ${dateLabels[d]?.short}` : d === dates[1] ? `Ngày mai — ${dateLabels[d]?.short}` : dateLabels[d]?.short}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Count */}
+        <div className="text-sm text-gray-500 mb-4">
+          Tìm thấy <strong className="text-gray-900">{doctors.length}</strong> bác sĩ
+          {query.search ? ` cho từ khoá "${query.search}"` : ''}
+        </div>
+
+        {/* Status Blocks */}
+        {isLoading ? <LoadingBlock label="Đang tải danh sách bác sĩ..." /> : null}
+        {error ? <StateBlock variant="error" title="Không thể tải danh sách bác sĩ" description={error.message} /> : null}
+
+        {/* Doctor List */}
+        {!isLoading && !error ? (
+          doctors.length === 0 ? (
+            <StateBlock title="Không có bác sĩ phù hợp" description="Hãy thử đổi từ khóa tìm kiếm hoặc quay lại sau." />
+          ) : (
+            <div className="space-y-4">
+              {doctors.map((doctor) => {
+                const isFav = !!favorites[doctor.id];
+                const docAvatar = doctor.avatar || (doctor.gender === 'FEMALE'
+                  ? 'https://images.unsplash.com/photo-1594824813573-246434de83fb?auto=format&fit=crop&w=256&h=256&q=80'
+                  : 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&w=256&h=256&q=80'
+                );
+
+                return (
+                  <div key={doctor.id} className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden transition-all hover:shadow-md">
+                    <div className="flex flex-col md:flex-row">
+
+                      {/* Left: Doctor Profile */}
+                      <div className="flex-1 p-6 border-b border-gray-100 md:border-b-0 md:border-r md:border-gray-100">
+                        <div className="flex gap-4 mb-4">
+                          <div className="relative flex-shrink-0">
+                            <img
+                              src={docAvatar}
+                              alt={doctor.name}
+                              className="w-20 h-20 rounded-full object-cover object-top border-2 border-gray-150"
+                            />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-bold text-gray-900">{doctor.title} {doctor.name}</h3>
+                            <div className="text-sm text-cyan-600 font-semibold mt-0.5">{doctor.specialtyName}</div>
+                            <div className="flex items-center gap-1 text-xs text-amber-500 font-bold mt-1.5">
+                              <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                              <span>{Number(doctor.rating || 0).toFixed(1)}</span>
+                              <span className="text-gray-400 font-normal">({doctor.reviewCount || 0} đánh giá)</span>
+                            </div>
+                            <div className="text-xs text-gray-500 mt-1">{doctor.position || 'Bác sĩ chuyên khoa'}</div>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 text-xs text-gray-600 mb-4">
+                          <div className="flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-gray-400" />
+                            <span>Kinh nghiệm: <strong>{doctor.experience} năm</strong></span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="w-4 h-4 text-gray-400" />
+                            <span>Khu vực khám: <strong>TP. Hồ Chí Minh</strong></span>
+                          </div>
+                        </div>
+
+                        <p className="text-xs text-gray-500 leading-relaxed line-clamp-3">
+                          {doctor.description || `Bác sĩ chuyên khoa tại CarePlus với nhiều năm kinh nghiệm, luôn tận tụy vì sức khỏe người bệnh.`}
+                        </p>
+                      </div>
+
+                      {/* Right: Real timeslots from API */}
+                      <div className="w-full md:w-[45%] p-6 flex flex-col justify-between flex-shrink-0 bg-gray-50/50">
+                        <div>
+                          <div className="text-xs font-bold text-gray-800 mb-3 flex items-center gap-1.5">
+                            <Calendar className="w-4 h-4 text-cyan-600" />
+                            <span>
+                              Lịch khám {dateLabels[selectedDate]?.weekday}{' '}
+                              {selectedDate === dates[0] ? '(Hôm nay)' : selectedDate === dates[1] ? '(Ngày mai)' : ''}
+                              {' — '}{dateLabels[selectedDate]?.short}
+                            </span>
+                          </div>
+
+                          <DoctorSlots
+                            doctorId={doctor.id}
+                            selectedDate={selectedDate}
+                            onBook={handleBook}
+                            bookingRulesData={bookingRulesResponse?.data}
+                          />
+                        </div>
+
+                        <div className="border-t border-gray-150 pt-4 mt-4 flex flex-col gap-2">
+                          <div className="text-xs font-bold text-gray-700">CarePlus Clinic</div>
+                          <div className="text-[11px] text-gray-500 flex gap-1.5 items-start">
+                            <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0 mt-0.5" />
+                            <span>{clinicInfo?.address || '123 Nguyễn Thị Minh Khai, Quận 3, TP.HCM'}</span>
+                          </div>
+                          <div className="flex justify-between items-center mt-2">
+                            <div>
+                              <div className="text-[10px] text-gray-400">Giá khám tham khảo</div>
+                              <div className="text-sm font-bold text-cyan-600">{formatPrice(doctor.price)}</div>
+                            </div>
+                            <Link
+                              to={`/bac-si/${doctor.id}`}
+                              className="text-xs font-semibold text-cyan-600 hover:text-cyan-700"
+                            >
+                              Xem chi tiết →
+                            </Link>
+                          </div>
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )
+        ) : null}
+
+      </div>
+    </div>
+  );
+}

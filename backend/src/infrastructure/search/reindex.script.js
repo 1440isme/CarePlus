@@ -19,10 +19,13 @@ async function reindexAll() {
       doctors: {
         mappings: {
           properties: {
+            displayName: { type: 'text', analyzer: 'standard' },
             name: { type: 'text', analyzer: 'standard' },
+            specialtyId: { type: 'keyword' },
             specialtyName: { type: 'text', analyzer: 'standard' },
             description: { type: 'text', analyzer: 'standard' },
             title: { type: 'text', analyzer: 'standard' },
+            position: { type: 'text', analyzer: 'standard' },
             experience: { type: 'integer' },
             price: { type: 'double' },
             rating: { type: 'double' },
@@ -38,6 +41,16 @@ async function reindexAll() {
             tags: { type: 'text', analyzer: 'standard' },
             summary: { type: 'text', analyzer: 'standard' },
             status: { type: 'keyword' }
+          }
+        }
+      },
+      specialties: {
+        mappings: {
+          properties: {
+            name: { type: 'text', analyzer: 'standard' },
+            description: { type: 'text', analyzer: 'standard' },
+            slug: { type: 'keyword' },
+            active: { type: 'boolean' }
           }
         }
       }
@@ -68,10 +81,13 @@ async function reindexAll() {
         index: 'doctors',
         id: doc.id,
         document: {
+          displayName: [doc.title, doc.name].filter(Boolean).join(' ').trim(),
           name: doc.name,
+          specialtyId: doc.specialtyId,
           specialtyName: doc.specialtyName,
           description: doc.description,
           title: doc.title,
+          position: doc.position,
           experience: doc.experience,
           price: doc.price,
           rating: doc.rating,
@@ -99,6 +115,24 @@ async function reindexAll() {
       });
     }
     console.log('✅ Blogs reindexed successfully');
+
+    // 5. Reindex Specialties
+    console.log('📖 Fetching specialties from MySQL...');
+    const specialties = await prisma.specialty.findMany();
+    console.log(`Indexing ${specialties.length} specialties...`);
+    for (const spec of specialties) {
+      await elasticClient.index({
+        index: 'specialties',
+        id: spec.id,
+        document: {
+          name: spec.name,
+          description: spec.description,
+          slug: spec.slug,
+          active: spec.active
+        }
+      });
+    }
+    console.log('✅ Specialties reindexed successfully');
 
     console.log('🎉 Full reindex completed successfully!');
   } catch (error) {
