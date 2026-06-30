@@ -411,6 +411,13 @@ class ApprovalRequestService {
     return new Set([request.shift]);
   }
 
+  _getRequestedShifts(shift) {
+    if (shift === 'ALL_DAY') {
+      return [WORKING_SHIFTS.MORNING, WORKING_SHIFTS.AFTERNOON, WORKING_SHIFTS.ALL_DAY];
+    }
+    return [shift];
+  }
+
   async _markSchedulesApprovedOff(request, dbClient) {
     const client = dbClient || this.prisma;
 

@@ -236,15 +236,8 @@ async function cleanupUserByEmail(email) {
 }
 
 async function closeBackendTestClients() {
-  if (redisClient) {
-    await redisClient.quit();
-    redisClient = undefined;
-  }
-
-  if (prismaClient) {
-    await prismaClient.$disconnect();
-    prismaClient = undefined;
-  }
+  // Do nothing to prevent closing shared singletons from require cache.
+  // Mocha --exit will clean up all connections.
 }
 
 module.exports = {
