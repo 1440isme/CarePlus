@@ -6,9 +6,9 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha specs/**/*.test.js --timeout 60000 --exit",
-    "test:ui": "TEST_HEADLESS=false mocha specs/**/*.test.js --timeout 60000 --exit",
+    "test:ui": "node scripts/run-mocha.js --ui",
     "test:auth": "mocha specs/**/*.test.js --timeout 60000 --exit --grep Auth",
-    "test:auth:ui": "TEST_HEADLESS=false mocha specs/**/*.test.js --timeout 60000 --exit --grep Auth"
+    "test:auth:ui": "node scripts/run-mocha.js --ui --grep Auth"
   },
   "dependencies": {
     "chai": "^4.4.1",
