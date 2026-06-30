@@ -4,15 +4,15 @@ const { createDriver, login, waitForUrl } = require('../helper');
 const config = require('../config');
 
 const ADMIN_ACCOUNT = {
-  email: process.env.TEST_FLOW_ADMIN_EMAIL || 'admin@careplus.local',
-  password: process.env.TEST_FLOW_ADMIN_PASSWORD || 'Admin@123',
+  email: process.env.TEST_FLOW_ADMIN_EMAIL || config.users.admin.email,
+  password: process.env.TEST_FLOW_ADMIN_PASSWORD || config.users.admin.password,
 };
 
 const DOCTOR_ACCOUNT = {
-  email: process.env.TEST_FLOW_DOCTOR_EMAIL || 'bacsi1@gmail.com',
-  password: process.env.TEST_FLOW_DOCTOR_PASSWORD || '12345678',
-  name: 'Quốc Trung',
-  title: 'BS',
+  email: process.env.TEST_FLOW_DOCTOR_EMAIL || config.users.doctor.email,
+  password: process.env.TEST_FLOW_DOCTOR_PASSWORD || config.users.doctor.password,
+  name: 'Nguyễn Minh Anh',
+  title: 'ThS.BS',
 };
 
 function formatIsoDate(date) {

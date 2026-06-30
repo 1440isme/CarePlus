@@ -14,8 +14,8 @@ RUN pnpm install --frozen-lockfile
 # Copy source code
 COPY . .
 
-# Generate Prisma Client
-RUN pnpm exec prisma generate
+# Generate Prisma Client (uses a mock DATABASE_URL to satisfy Prisma 7 validation during build)
+RUN DATABASE_URL="mysql://mock:mock@localhost:3306/mock" pnpm exec prisma generate
 
 # Build stage 2 - production runner
 FROM node:20-alpine AS runner
