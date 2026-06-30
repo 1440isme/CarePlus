@@ -66,6 +66,11 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Root path handler for default platform health checks
+app.get('/', (req, res) => {
+  res.status(200).send('CarePlus Backend is running');
+});
+
 // Basic health check endpoint
 app.get('/health', async (req, res) => {
   const healthDetails = {
