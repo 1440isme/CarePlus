@@ -34,16 +34,11 @@ jobs:
       - name: Build and push container image to registry
         uses: azure/container-apps-deploy-action@v2
         with:
-          appSourcePath: ${{ github.workspace }}backend
-          _dockerfilePathKey_: _dockerfilePath_
-          _targetLabelKey_: _targetLabel_
+          appSourcePath: ${{ github.workspace }}/backend
+          dockerfilePath: Dockerfile
           registryUrl: 1440isme.azurecr.io
           registryUsername: ${{ secrets.CAREPLUS_REGISTRY_USERNAME }}
           registryPassword: ${{ secrets.CAREPLUS_REGISTRY_PASSWORD }}
           containerAppName: careplus
           resourceGroup: rg-enflow
           imageToBuild: 1440isme.azurecr.io/careplus:${{ github.sha }}
-          _buildArgumentsKey_: |
-            _buildArgumentsValues_
-
-
