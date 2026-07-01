@@ -54,6 +54,17 @@ class AuthService {
         });
       }
 
+      const existingPhoneUser = await this.authRepository.findUserByPhone(normalizedDto.phone);
+
+      if (existingPhoneUser) {
+        throw new AuthServiceError({
+          code: AUTH_ERROR_CODES.PHONE_ALREADY_EXISTS,
+          message: 'Số điện thoại đã được sử dụng',
+          statusCode: 409,
+          details: [],
+        });
+      }
+
       const passwordHash = await bcrypt.hash(normalizedDto.password, 10);
 
       const createdUser = await this.authRepository.createPatientUser({
@@ -815,6 +826,15 @@ class AuthService {
   }
 
   _buildMailError(error, code, message, statusCode) {
+    console.error('[AuthService] mail operation failed', {
+      authErrorCode: code,
+      mailErrorCode: error?.code,
+      message: error?.message,
+      response: error?.response,
+      responseCode: error?.responseCode,
+      command: error?.command,
+    });
+
     if (error instanceof AuthServiceError) {
       return error;
     }
