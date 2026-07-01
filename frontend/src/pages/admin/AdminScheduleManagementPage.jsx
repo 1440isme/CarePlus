@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAdminSpecialties } from '../../features/admin/specialties/hooks/useAdminSpecialties.js';
 import { useDoctorList } from '../../features/doctor/index.js';
 import { useCreateSchedules, useSchedules } from '../../features/schedule/hooks/useSchedules.js';
@@ -6,6 +6,12 @@ import { Search, Plus, Calendar, X } from 'lucide-react';
 import './admin-doctor-schedule.css';
 
 const PAGE_SIZE = 10;
+
+const SCHEDULE_VIEW_OPTIONS = [
+  { label: 'Ngày', value: 'DAY' },
+  { label: 'Tuần', value: 'WEEK' },
+  { label: 'Tháng', value: 'MONTH' },
+];
 
 const STATUS_LABELS = {
   WORKING: 'Đang làm việc',
@@ -51,9 +57,134 @@ function getMetaValue(meta, key, fallback) {
   return meta?.[key] ?? fallback;
 }
 
+function formatIsoToVietnameseDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) {
+    return value || '--';
+  }
+
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function formatIsoToDisplayDate(value) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) {
+    return value || '';
+  }
+
+  const [year, month, day] = value.split('-');
+  return `${day}/${month}/${year}`;
+}
+
+function parseDisplayDateToIso(value) {
+  const trimmedValue = String(value || '').trim();
+  if (!trimmedValue) {
+    return '';
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmedValue)) {
+    return trimmedValue;
+  }
+
+  const match = trimmedValue.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (!match) {
+    return trimmedValue;
+  }
+
+  const [, dayText, monthText, yearText] = match;
+  const day = Number(dayText);
+  const month = Number(monthText);
+  const year = Number(yearText);
+  const parsedDate = new Date(year, month - 1, day);
+
+  if (
+    parsedDate.getFullYear() !== year
+    || parsedDate.getMonth() !== month - 1
+    || parsedDate.getDate() !== day
+  ) {
+    return trimmedValue;
+  }
+
+  return `${yearText}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+}
+
+function AdminScheduleDateInput({
+  name,
+  value,
+  min,
+  onChange,
+  required,
+  disabled = false,
+}) {
+  const nativeDateInputRef = useRef(null);
+  const [displayValue, setDisplayValue] = useState(formatIsoToDisplayDate(value));
+
+  const openNativePicker = () => {
+    const nativeInput = nativeDateInputRef.current;
+    if (!nativeInput) return;
+
+    if (typeof nativeInput.showPicker === 'function') {
+      nativeInput.showPicker();
+      return;
+    }
+
+    nativeInput.click();
+  };
+
+  const commitDisplayValue = (nextDisplayValue) => {
+    const nextIsoValue = parseDisplayDateToIso(nextDisplayValue);
+    setDisplayValue(formatIsoToDisplayDate(nextIsoValue));
+    onChange(name, nextIsoValue);
+  };
+
+  useEffect(() => {
+    setDisplayValue(formatIsoToDisplayDate(value));
+  }, [value]);
+
+  return (
+    <div className="admin-figma-input-icon-wrap">
+      <input
+        type="text"
+        name={name}
+        value={displayValue}
+        onChange={(event) => setDisplayValue(event.target.value)}
+        onBlur={(event) => commitDisplayValue(event.target.value)}
+        required={required}
+        placeholder="dd/mm/yyyy"
+        inputMode="numeric"
+        disabled={disabled}
+      />
+      <button
+        type="button"
+        className="admin-schedule-date-picker-button"
+        onClick={openNativePicker}
+        aria-label="Chọn ngày"
+        disabled={disabled}
+      >
+        <Calendar className="w-4 h-4" />
+      </button>
+      <input
+        ref={nativeDateInputRef}
+        className="admin-schedule-native-date-input"
+        type="date"
+        tabIndex={-1}
+        value={/^\d{4}-\d{2}-\d{2}$/.test(value || '') ? value : ''}
+        min={min}
+        disabled={disabled}
+        onChange={(event) => {
+          const nextIsoValue = event.target.value;
+          setDisplayValue(formatIsoToDisplayDate(nextIsoValue));
+          onChange(name, nextIsoValue);
+        }}
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+
 export default function AdminScheduleManagementPage() {
   const [page, setPage] = useState(1);
   const [date, setDate] = useState(getTodayDate());
+  const [scheduleView, setScheduleView] = useState('DAY');
   const [doctorId, setDoctorId] = useState('');
   const [status, setStatus] = useState('');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -70,10 +201,10 @@ export default function AdminScheduleManagementPage() {
     page,
     limit: PAGE_SIZE,
     date,
-    view: 'DAY',
+    view: scheduleView,
     doctorId: doctorId || undefined,
     status: status || undefined,
-  }), [date, doctorId, page, status]);
+  }), [date, doctorId, page, scheduleView, status]);
 
   const schedulesQuery = useSchedules(scheduleParams);
   const doctorsQuery = useDoctorList({ page: 1, limit: 100, active: true });
@@ -105,8 +236,13 @@ export default function AdminScheduleManagementPage() {
     return doctors.filter((doctor) => doctor.specialtyId === createPayload.specialtyId);
   }, [createPayload.specialtyId, doctorsQuery.data?.data]);
 
-  const handleDateChange = (event) => {
-    setDate(event.target.value);
+  const handleDateChange = (_name, value) => {
+    setDate(value);
+    setPage(1);
+  };
+
+  const handleViewChange = (view) => {
+    setScheduleView(view);
     setPage(1);
   };
 
@@ -185,8 +321,7 @@ export default function AdminScheduleManagementPage() {
     setPage(1);
   };
 
-  const handleCreateDateChange = (event) => {
-    const { name, value } = event.target;
+  const handleCreateDateChange = (name, value) => {
     setCreatePayload((currentPayload) => {
       const nextPayload = {
         ...currentPayload,
@@ -224,16 +359,27 @@ export default function AdminScheduleManagementPage() {
       <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
         {/* Filter Bar */}
         <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-3">
-          <label className="relative">
-            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-            <input
-              type="date"
+          <div className="admin-schedule-filter-date">
+            <AdminScheduleDateInput
+              name="date"
               value={date}
               onChange={handleDateChange}
-              aria-label="Ngày làm việc"
-              className="pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white min-w-[180px]"
+              required
             />
-          </label>
+          </div>
+
+          <div className="admin-schedule-view-toggle" aria-label="Chọn kiểu xem lịch">
+            {SCHEDULE_VIEW_OPTIONS.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                className={scheduleView === option.value ? 'is-active' : ''}
+                onClick={() => handleViewChange(option.value)}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
           <select
             className="px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white"
@@ -301,7 +447,7 @@ export default function AdminScheduleManagementPage() {
                   {schedules.map((schedule) => (
                     <tr key={schedule.id}>
                       <td>
-                        <p className="admin-figma-main-text">{schedule.workingDate}</p>
+                        <p className="admin-figma-main-text">{formatIsoToVietnameseDate(schedule.workingDate)}</p>
                       </td>
                       <td>{schedule.doctor?.name || 'Chưa có bác sĩ'}</td>
                       <td>{schedule.doctor?.specialtyName || 'Chưa phân khoa'}</td>
@@ -394,32 +540,24 @@ export default function AdminScheduleManagementPage() {
             <div className="admin-figma-form-row">
               <label className="admin-figma-form-field">
                 <span>Từ ngày <strong>*</strong></span>
-                <span className="admin-figma-input-icon-wrap">
-                  <input
-                    type="date"
-                    name="fromDate"
-                    value={createPayload.fromDate}
-                    min={getTodayDate()}
-                    onChange={handleCreateDateChange}
-                    required
-                    placeholder="mm/dd/yyyy"
-                  />
-                </span>
+                <AdminScheduleDateInput
+                  name="fromDate"
+                  value={createPayload.fromDate}
+                  min={getTodayDate()}
+                  onChange={handleCreateDateChange}
+                  required
+                />
               </label>
 
               <label className="admin-figma-form-field">
                 <span>Đến ngày <strong>*</strong></span>
-                <span className="admin-figma-input-icon-wrap">
-                  <input
-                    type="date"
-                    name="toDate"
-                    value={createPayload.toDate}
-                    min={createPayload.fromDate || getTodayDate()}
-                    onChange={handleCreateDateChange}
-                    required
-                    placeholder="mm/dd/yyyy"
-                  />
-                </span>
+                <AdminScheduleDateInput
+                  name="toDate"
+                  value={createPayload.toDate}
+                  min={createPayload.fromDate || getTodayDate()}
+                  onChange={handleCreateDateChange}
+                  required
+                />
               </label>
             </div>
 
