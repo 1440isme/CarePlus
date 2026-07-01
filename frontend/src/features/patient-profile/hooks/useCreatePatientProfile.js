@@ -10,7 +10,12 @@ export function useCreatePatientProfile(options = {}) {
     mutationFn: createPatientProfile,
     ...mutationOptions,
     onSuccess: async (response, variables, context) => {
-      await queryClient.invalidateQueries({ queryKey: PATIENT_PROFILE_QUERY_KEYS.all });
+      // Invalidate and refetch all patient profile queries to force immediate UI updates
+      await queryClient.invalidateQueries({ queryKey: ['patient-profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['patient-profiles', {}] });
+      await queryClient.refetchQueries({ queryKey: ['patient-profiles'] });
+      await queryClient.refetchQueries({ queryKey: ['patient-profiles', {}] });
+      
       onSuccess?.(response, variables, context);
     },
   });

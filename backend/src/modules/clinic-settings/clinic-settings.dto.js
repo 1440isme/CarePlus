@@ -58,6 +58,7 @@ function toBookingRulesDto(systemSetting) {
     maxBookingDaysAhead: systemSetting.maxBookingDaysAhead,
     slotDurationMinutes: systemSetting.slotDurationMinutes,
     cancelBeforeHours: systemSetting.cancelBeforeHours,
+    maxActiveAppointmentsPerUser: systemSetting.maxActiveAppointmentsPerUser,
     workingShifts: {
       morning: {
         start: systemSetting.morningShiftStart,

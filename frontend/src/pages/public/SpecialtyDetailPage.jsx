@@ -115,13 +115,21 @@ export default function SpecialtyDetailPage() {
   const { slug } = useParams();
   const navigate = useNavigate();
 
-  // Generate 7 days for the schedule picker
-  const today = new Date();
-  const dates = useMemo(() => Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setDate(today.getDate() + i);
-    return d.toLocaleDateString('sv').slice(0, 10);
-  }), []);
+  const { data: bookingRulesResponse } = useBookingRules();
+  const { data: clinicResponse } = useClinicInfo({
+    staleTime: 10 * 60 * 1000,
+  });
+
+  // Generate dates for the schedule picker based on system settings
+  const dates = useMemo(() => {
+    const today = new Date();
+    const limit = bookingRulesResponse?.data?.maxBookingDaysAhead || 7;
+    return Array.from({ length: limit }, (_, i) => {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      return d.toLocaleDateString('sv').slice(0, 10);
+    });
+  }, [bookingRulesResponse?.data?.maxBookingDaysAhead]);
 
   const dayVi = ['CN', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
   const dateLabels = useMemo(() => {
@@ -161,10 +169,6 @@ export default function SpecialtyDetailPage() {
   }, [specialty]);
 
   const { data: doctorListResponse, isLoading: isLoadingDoctors, error: doctorsError } = useDoctorList(query);
-  const { data: bookingRulesResponse } = useBookingRules();
-  const { data: clinicResponse } = useClinicInfo({
-    staleTime: 10 * 60 * 1000,
-  });
   const clinicInfo = clinicResponse?.data;
   const doctors = doctorListResponse?.data || [];
 
