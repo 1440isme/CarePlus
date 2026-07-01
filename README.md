@@ -254,26 +254,6 @@ pnpm run dev
 
 ---
 
-## 📜 Development Guidelines & Conventions
-
-All developers must follow the architecture rules defined in [AGENT.md](./AGENT.md).
-
-### 1. Backend Layer Separation
-*   **No bypass imports:** Router only calls Controller. Controller only calls Service. Service only calls Repository. Repository only calls Prisma Client.
-*   Controllers must **never** reference a Repository or Prisma Client directly.
-*   Service methods must remain agnostic of transport protocols (no Express `req` or `res` objects inside services) to simplify unit testing.
-
-### 2. Frontend State Management Rules
-*   **Server State (API Data):** Must **never** be copied into the Redux store. Use **TanStack Query** (`useQuery` / `useMutation`) directly for automatic caching, background fetching, and garbage collection.
-*   **Client State (Global UI Data):** Store in **Redux Toolkit** (e.g. login credentials, authorization status, active tokens).
-*   **Forms:** Managed using `React Hook Form` integrated with `Zod` validation schemas.
-
-### 3. Database & Caching Guidelines
-*   **Dynamic Database connection:** Do not hardcode connection properties in `schema.prisma`. Pass connection details dynamically from `prisma.config.ts` using Driver Adapters.
-*   All queries must be organized as methods of Domain Repository classes in the `modules/*/*.repository.js` file.
-
----
-
 ## 🧪 Testing Strategy
 
 The project includes an automated end-to-end (E2E) integration test suite built with **Mocha**, **Chai**, and **Selenium Webdriver** running against a Chrome instance.
@@ -298,18 +278,11 @@ pnpm --filter integration-tests test:ui
 
 ---
 
-## 🚀 Production Deployment Guidelines
+## Developer Team
 
-When deploying CarePlus to staging or production environments:
-
-1. **Frontend Assets Build:**
-   - Execute `pnpm --filter frontend build` to compile the React code into optimized, minified static files inside `/dist`.
-   - Deploy `/dist` to Nginx, Vercel, Netlify, or AWS S3.
-2. **Process Management for Backend:**
-   - Run the backend service using a process manager like `PM2` or under a Docker wrapper to ensure auto-restart on crashes.
-   - Run the production launch command: `pnpm --filter backend start`.
-3. **Secret Management:**
-   - Do not commit `.env` files to the code repository.
-   - Inject environment variables through system environment contexts or secrets managers.
-4. **Email Service Configuration:**
-   - Set `MAIL_ENABLED=true` in the production environment and configure valid SMTP server credentials.
+| Fullname | Student ID |
+| :--- | :---: |
+| Truong Cong Binh | 23110184 |
+| Tran Le Quoc Dai | 23110201 |
+| Ninh Thi My Hanh | 23110210 |
+| Vu Quoc Trung | 23110252 |
