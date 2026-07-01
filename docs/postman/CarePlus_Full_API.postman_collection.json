@@ -1,0 +1,4584 @@
+{
+  "info": {
+    "_postman_id": "8a6ac2a5-8b1e-4a61-905c-4e28732f0e77",
+    "name": "CarePlus Full API",
+    "description": "Postman Collection tong hop toan bo API route dang duoc mount trong backend CarePlus.\n\nResponse envelope chinh:\n{\n  \"success\": true,\n  \"data\": {},\n  \"meta\": {}\n}\n\nError envelope chinh:\n{\n  \"success\": false,\n  \"error\": {\n    \"code\": \"...\",\n    \"message\": \"...\",\n    \"details\": []\n  }\n}\n\nLuu y:\n- Private API doc access token tu Authorization: Bearer {{accessToken}}.\n- Auth refresh/logout doc refresh token tu cookie, khong doc tu body.\n- Collection nay duoc tao tu code route/validator/controller hien tai, khong dua tren tri nho hay tai lieu cu.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "00 - System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "health"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Kiem tra suc khoe backend va cac dich vu phu tro nhu database, redis, elasticsearch.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve trang thai healthy/unhealthy cua he thong.\nLuu y: Route nay nam truc tiep trong app.js, khong thuoc module nghiep vu."
+          },
+          "response": []
+        },
+        {
+          "name": "API Root",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Kiem tra API root cua CarePlus.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve thong diep chao mung API v1.\nLuu y: Route nay nam truc tiep trong app.js."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "01 - Auth",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/register",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "register"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dang ky tai khoan benh nhan moi va gui OTP xac minh email.\nQuyen truy cap: Public.\nBody chinh: name, email, password, phone.\nKet qua thanh cong: Tra ve thong tin user va thong tin verification.\nLuu y: Schema dang ky dung field name, khong dung fullName.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyen Van A\",\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\",\n  \"phone\": \"0912345678\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/verify-email",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "verify-email"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Xac minh email bang OTP sau khi dang ky.\nQuyen truy cap: Public.\nBody chinh: email, otp.\nKet qua thanh cong: Danh dau emailVerified va tra ve user.\nLuu y: OTP can hop le tu email hoac log/test setup.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{patientEmail}}\",\n  \"otp\": \"{{otp}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Verification OTP",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/resend-verification-otp",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "resend-verification-otp"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Gui lai OTP xac minh email.\nQuyen truy cap: Public.\nBody chinh: email.\nKet qua thanh cong: Tra ve thong tin verification moi.\nLuu y: Co rate limit resend OTP.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{patientEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Login Patient",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dang nhap tai khoan patient va lay access token.\nQuyen truy cap: Public.\nBody chinh: email, password, rememberMe.\nKet qua thanh cong: Tra ve accessToken va user.\nLuu y: Script se luu accessToken, userId, role vao environment.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{patientEmail}}\",\n  \"password\": \"{{patientPassword}}\",\n  \"rememberMe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.environment.set(\"accessToken\", json.data.accessToken);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.id) {",
+                  "  pm.environment.set(\"userId\", json.data.user.id);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.role) {",
+                  "  pm.environment.set(\"role\", json.data.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Admin",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dang nhap tai khoan admin.\nQuyen truy cap: Public.\nBody chinh: email, password, rememberMe.\nKet qua thanh cong: Tra ve accessToken va user admin.\nLuu y: Dung request nay truoc khi test API admin.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\",\n  \"rememberMe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.environment.set(\"accessToken\", json.data.accessToken);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.id) {",
+                  "  pm.environment.set(\"userId\", json.data.user.id);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.role) {",
+                  "  pm.environment.set(\"role\", json.data.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Doctor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dang nhap tai khoan doctor.\nQuyen truy cap: Public.\nBody chinh: email, password, rememberMe.\nKet qua thanh cong: Tra ve accessToken va user doctor.\nLuu y: Dung request nay truoc khi test API doctor.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{doctorEmail}}\",\n  \"password\": \"{{doctorPassword}}\",\n  \"rememberMe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.environment.set(\"accessToken\", json.data.accessToken);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.id) {",
+                  "  pm.environment.set(\"userId\", json.data.user.id);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.role) {",
+                  "  pm.environment.set(\"role\", json.data.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login Receptionist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dang nhap tai khoan receptionist.\nQuyen truy cap: Public.\nBody chinh: email, password, rememberMe.\nKet qua thanh cong: Tra ve accessToken va user receptionist.\nLuu y: Dung request nay truoc khi test API le tan.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{receptionistEmail}}\",\n  \"password\": \"{{receptionistPassword}}\",\n  \"rememberMe\": false\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.environment.set(\"accessToken\", json.data.accessToken);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.id) {",
+                  "  pm.environment.set(\"userId\", json.data.user.id);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.role) {",
+                  "  pm.environment.set(\"role\", json.data.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/refresh",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "refresh"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lam moi access token bang refresh token trong cookie.\nQuyen truy cap: Public, nhung can refresh token cookie hop le.\nBody chinh: Body rong theo validator strict object.\nKet qua thanh cong: Tra ve accessToken moi va user.\nLuu y: Controller doc refresh token tu cookie refreshToken, khong doc tu body.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "if (json?.data?.accessToken) {",
+                  "  pm.environment.set(\"accessToken\", json.data.accessToken);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.id) {",
+                  "  pm.environment.set(\"userId\", json.data.user.id);",
+                  "}",
+                  "",
+                  "if (json?.data?.user?.role) {",
+                  "  pm.environment.set(\"role\", json.data.user.role);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "logout"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dang xuat va thu hoi refresh token neu co.\nQuyen truy cap: Public, neu co cookie refresh token thi se thu hoi.\nBody chinh: Body rong theo validator strict object.\nKet qua thanh cong: Tra ve message dang xuat thanh cong.\nLuu y: Controller clear cookie refreshToken.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/forgot-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "forgot-password"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Yeu cau gui email dat lai mat khau.\nQuyen truy cap: Public.\nBody chinh: email.\nKet qua thanh cong: Tra ve thong diep chung va thoi gian het han reset.\nLuu y: Neu email khong ton tai van tra response thanh cong de tranh lo thong tin.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{patientEmail}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/auth/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "auth",
+                "reset-password"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dat lai mat khau bang token reset.\nQuyen truy cap: Public.\nBody chinh: email, token, newPassword, confirmPassword.\nKet qua thanh cong: Tra ve message dat lai mat khau thanh cong.\nLuu y: Token reset can hop le tu email hoac backend test setup.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{patientEmail}}\",\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"Password123@\",\n  \"confirmPassword\": \"Password123@\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - User Self",
+      "item": [
+        {
+          "name": "Get Me",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay thong tin tai khoan dang dang nhap.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve user hien tai.\nLuu y: Access token duoc doc tu Authorization Bearer header."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Me",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat thong tin ca nhan cua user dang dang nhap.\nQuyen truy cap: Da dang nhap.\nBody chinh: name, phone, gender, dateOfBirth, address.\nKet qua thanh cong: Tra ve message va user sau khi cap nhat.\nLuu y: dateOfBirth phai theo dinh dang YYYY-MM-DD va khong duoc o tuong lai.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyen Van A\",\n  \"phone\": \"0912345678\",\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"2003-09-15\",\n  \"address\": \"123 Duong ABC, Quan 1, TP.HCM\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.user.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('userId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update My Avatar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/avatar",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "avatar"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat anh dai dien cua user hien tai.\nQuyen truy cap: Da dang nhap.\nBody chinh: multipart/form-data voi field avatar.\nKet qua thanh cong: Tra ve message va user sau khi cap nhat avatar.\nLuu y: Field file phai ten la avatar; middleware avatar gioi han toi da 2MB va chi cho JPEG/PNG/WEBP.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "avatar",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.user.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('userId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Change My Password",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/me/password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "me",
+                "password"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Doi mat khau cua user dang dang nhap.\nQuyen truy cap: Da dang nhap.\nBody chinh: currentPassword, newPassword, confirmPassword.\nKet qua thanh cong: Tra ve message doi mat khau thanh cong.\nLuu y: newPassword phai khac currentPassword.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{patientPassword}}\",\n  \"newPassword\": \"Password123@\",\n  \"confirmPassword\": \"Password123@\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Admin Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users?page=1&limit=10&role=PATIENT&status=ACTIVE&createdFrom=2026-01-01&createdTo=2026-12-31",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "role",
+                  "value": "PATIENT",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "ACTIVE",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "createdFrom",
+                  "value": "2026-01-01",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "createdTo",
+                  "value": "2026-12-31",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach user cho admin.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve mang user va meta phan trang.\nLuu y: Validator xac thuc page, limit, role, status, createdFrom, createdTo."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Staff User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/staff",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "staff"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tao tai khoan nhan su moi.\nQuyen truy cap: Admin.\nBody chinh: name, email, phone, password, role, status va them doctor fields neu role=DOCTOR.\nKet qua thanh cong: Tra ve message va user vua tao.\nLuu y: Mau duoi day tao tai khoan RECEPTIONIST de body ngan gon.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Le Tan A\",\n  \"email\": \"{{receptionistEmail}}\",\n  \"phone\": \"0911222333\",\n  \"password\": \"{{receptionistPassword}}\",\n  \"role\": \"RECEPTIONIST\",\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.user.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('userId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet mot user theo id.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve user detail.\nLuu y: Can co {{userId}} hop le tu request login hoac create truoc do."
+          },
+          "response": []
+        },
+        {
+          "name": "Admin Update User",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat thong tin co ban cua mot user.\nQuyen truy cap: Admin.\nBody chinh: name, phone, gender, dateOfBirth, address.\nKet qua thanh cong: Tra ve message va user sau cap nhat.\nLuu y: Body dung cung rule voi update me.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nguyen Van B\",\n  \"phone\": \"0987654321\",\n  \"gender\": \"OTHER\",\n  \"dateOfBirth\": \"2000-01-20\",\n  \"address\": \"456 Duong XYZ, Ha Noi\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.user.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('userId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update User Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "status"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Khoa hoac mo khoa tai khoan user.\nQuyen truy cap: Admin.\nBody chinh: status.\nKet qua thanh cong: Tra ve message va user sau cap nhat trang thai.\nLuu y: status chi nhan ACTIVE hoac LOCKED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.user.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('userId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset No-Show Count",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/reset-no-show",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "reset-no-show"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Reset so lan vang mat cua user.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve user sau khi reset no-show count.\nLuu y: Khong duoc tu reset no-show cho chinh minh.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.user.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('userId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reset User Password By Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/users/{{userId}}/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "users",
+                "{{userId}}",
+                "reset-password"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Admin reset mat khau tam thoi va gui thong bao qua email.\nQuyen truy cap: Admin.\nBody chinh: Body rong theo validator strict object.\nKet qua thanh cong: Tra ve message reset mat khau thanh cong.\nLuu y: Can user co email hop le de nhan mat khau moi.",
+            "body": {
+              "mode": "raw",
+              "raw": "{}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Patient Profiles",
+      "item": [
+        {
+          "name": "List My Profiles",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient-profiles?page=1&limit=10&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "patient-profiles"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach ho so nguoi than cua benh nhan dang dang nhap.\nQuyen truy cap: Patient.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve mang profile va meta phan trang.\nLuu y: Service hien tai co ho tro query search trong khi validator chi rang buoc page va limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient-profiles",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "patient-profiles"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tao ho so nguoi than moi.\nQuyen truy cap: Patient.\nBody chinh: fullName, phone, email, gender, dateOfBirth, address, relationship.\nKet qua thanh cong: Tra ve message va profile vua tao.\nLuu y: dateOfBirth phai theo YYYY-MM-DD va khong duoc o tuong lai.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nguyen Thi B\",\n  \"phone\": \"0912345678\",\n  \"email\": \"relative@example.com\",\n  \"gender\": \"FEMALE\",\n  \"dateOfBirth\": \"1990-05-20\",\n  \"address\": \"789 Duong DEF, Da Nang\",\n  \"relationship\": \"ME\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.profile.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('patientProfileId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Profile Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient-profiles/{{patientProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "patient-profiles",
+                "{{patientProfileId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet ho so nguoi than theo id.\nQuyen truy cap: Patient.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve chi tiet profile.\nLuu y: User chi xem duoc profile thuoc ve minh."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient-profiles/{{patientProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "patient-profiles",
+                "{{patientProfileId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat ho so nguoi than.\nQuyen truy cap: Patient.\nBody chinh: Cho phep update tung field hop le.\nKet qua thanh cong: Tra ve message va profile sau cap nhat.\nLuu y: Co the gui email/address = null de xoa gia tri.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Nguyen Thi B Updated\",\n  \"phone\": \"0988888888\",\n  \"email\": null,\n  \"address\": null,\n  \"relationship\": \"CHI\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.profile.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('patientProfileId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Profile",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient-profiles/{{patientProfileId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "patient-profiles",
+                "{{patientProfileId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Xoa mem ho so nguoi than bang isActive=false.\nQuyen truy cap: Patient.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve message va profile sau khi xoa mem.\nLuu y: Neu profile con lich hen active thi se bi chan voi code PROFILE_HAS_ACTIVE_APPOINTMENT."
+          },
+          "response": []
+        },
+        {
+          "name": "Set Default Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/patient-profiles/{{patientProfileId}}/default",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "patient-profiles",
+                "{{patientProfileId}}",
+                "default"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Dat profile mac dinh neu route legacy nay con duoc giu.\nQuyen truy cap: Patient.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve message va profile duoc dat mac dinh.\nLuu y: Tai lieu he thong hien ghi route nay khong duoc frontend chinh su dung, nhung backend van mount route that."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.profile.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('patientProfileId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "05 - Clinic Settings",
+      "item": [
+        {
+          "name": "Get Public Clinic Info",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/clinic-info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "clinic-info"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay thong tin cong khai cua phong kham.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve clinic info.\nLuu y: Dung cho public website va cac man hinh can thong tin phong kham."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Clinic Info",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/clinic-info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "clinic-info"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat thong tin phong kham.\nQuyen truy cap: Admin.\nBody chinh: name, address, hotline, email, workingHours, description.\nKet qua thanh cong: Tra ve clinic info sau cap nhat.\nLuu y: Co the update mot phan, khong can gui du tat ca field.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"CarePlus Clinic\",\n  \"address\": \"123 Nguyen Hue, Quan 1, TP.HCM\",\n  \"hotline\": \"0281234567\",\n  \"email\": \"contact@careplus.vn\",\n  \"workingHours\": \"08:00 - 17:00\",\n  \"description\": \"Phong kham da khoa dat lich truc tuyen\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Booking Rules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/booking-rules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "booking-rules"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay DTO gon cho UI dat lich.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve booking rules cong khai.\nLuu y: Tai lieu khuyen dung route nay thay vi system/public."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public System Setting (Deprecated Alias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/system/public",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "system",
+                "public"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay public system setting alias cu.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve DTO cong khai cho booking rules.\nLuu y: Route nay da duoc danh dau deprecated trong code."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Stats",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/stats/public",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "stats",
+                "public"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay thong ke cong khai cua he thong.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve public stats.\nLuu y: Route nay duoc mount that trong backend."
+          },
+          "response": []
+        },
+        {
+          "name": "Get System Setting",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/system",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "system"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay full system setting cho admin.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve system settings day du.\nLuu y: Can login admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Update System Setting",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/clinic-settings/system",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "clinic-settings",
+                "system"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat cau hinh he thong.\nQuyen truy cap: Admin.\nBody chinh: maxBookingDaysAhead, slotDurationMinutes, cancelBeforeHours, maxNoShowBeforeLock, maxActiveAppointmentsPerUser, morningShiftStart, morningShiftEnd, afternoonShiftStart, afternoonShiftEnd.\nKet qua thanh cong: Tra ve system setting sau cap nhat.\nLuu y: Cac field gio phai theo dinh dang HH:mm.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"maxBookingDaysAhead\": 7,\n  \"slotDurationMinutes\": 30,\n  \"cancelBeforeHours\": 2,\n  \"maxNoShowBeforeLock\": 3,\n  \"maxActiveAppointmentsPerUser\": 5,\n  \"morningShiftStart\": \"08:00\",\n  \"morningShiftEnd\": \"11:30\",\n  \"afternoonShiftStart\": \"13:30\",\n  \"afternoonShiftEnd\": \"17:00\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "06 - Specialties",
+      "item": [
+        {
+          "name": "List Public Specialties",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/specialties?page=1&limit=10&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "specialties"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach chuyen khoa cong khai.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve specialties va meta phan trang.\nLuu y: Query validator ho tro page, limit, search."
+          },
+          "response": []
+        },
+        {
+          "name": "List Admin Specialties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/specialties/admin?page=1&limit=10&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "specialties",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach chuyen khoa cho admin.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve specialties admin va meta.\nLuu y: Can login admin."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Specialty Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/specialties/{{specialtyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "specialties",
+                "{{specialtyId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet mot chuyen khoa theo id.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve specialty detail.\nLuu y: id la path param bat buoc."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Specialty",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/specialties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "specialties"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tao chuyen khoa moi.\nQuyen truy cap: Admin.\nBody chinh: name, slug, description, icon, active.\nKet qua thanh cong: Tra ve message va specialty vua tao.\nLuu y: slug la optional, neu gui phai dung lowercase letters, numbers, hyphens.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tim mach\",\n  \"slug\": \"tim-mach\",\n  \"description\": \"Chuyen khoa tim mach\",\n  \"icon\": \"heart\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.specialty.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('specialtyId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Specialty",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/specialties/{{specialtyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "specialties",
+                "{{specialtyId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat chuyen khoa.\nQuyen truy cap: Admin.\nBody chinh: Gui it nhat mot field hop le.\nKet qua thanh cong: Tra ve message va specialty sau cap nhat.\nLuu y: active la boolean.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Tim mach cap nhat\",\n  \"description\": \"Mo ta moi cho chuyen khoa\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.specialty.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('specialtyId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Specialty",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/specialties/{{specialtyId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "specialties",
+                "{{specialtyId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Xoa chuyen khoa.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve message va specialty sau khi xoa.\nLuu y: Neu chuyen khoa dang duoc su dung se bi chan."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "07 - Doctors",
+      "item": [
+        {
+          "name": "List Doctors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors?page=1&limit=10&specialtyId=%7B%7BspecialtyId%7D%7D&active=true&search=&sortBy=experience&sortOrder=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "specialtyId",
+                  "value": "{{specialtyId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "active",
+                  "value": "true",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "sortBy",
+                  "value": "experience",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "sortOrder",
+                  "value": "desc",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach bac si cong khai.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve doctors va meta phan trang.\nLuu y: Query validator ho tro specialtyId, active, search, sortBy, sortOrder."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Doctor Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors/{{doctorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors",
+                "{{doctorId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet bac si theo id.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve doctor detail.\nLuu y: Can {{doctorId}} hop le."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Doctor Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors/me/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors",
+                "me",
+                "profile"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay ho so bac si cua tai khoan doctor dang dang nhap.\nQuyen truy cap: Doctor.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve doctor profile cua chinh minh.\nLuu y: Can login doctor."
+          },
+          "response": []
+        },
+        {
+          "name": "Update My Doctor Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors/me/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors",
+                "me",
+                "profile"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat ho so cua doctor dang dang nhap.\nQuyen truy cap: Doctor.\nBody chinh: name, phone, title, experience, description, position.\nKet qua thanh cong: Tra ve doctor profile sau cap nhat.\nLuu y: Can gui it nhat mot field.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BS Nguyen Van C\",\n  \"phone\": \"0912345678\",\n  \"title\": \"BS.CKI\",\n  \"experience\": 12,\n  \"description\": \"Mo ta bac si\",\n  \"position\": \"Bac si dieu tri\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Doctor Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors/me/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors",
+                "me",
+                "dashboard"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay KPI/dashboard cua doctor dang dang nhap.\nQuyen truy cap: Doctor.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve dashboard data.\nLuu y: Can login doctor."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Doctor Price",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors/{{doctorId}}/price",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors",
+                "{{doctorId}}",
+                "price"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Admin cap nhat gia kham cua bac si.\nQuyen truy cap: Admin.\nBody chinh: price.\nKet qua thanh cong: Tra ve doctor sau cap nhat gia.\nLuu y: price >= 0.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 350000\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Doctor By Admin",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/doctors/{{doctorId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "doctors",
+                "{{doctorId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Admin cap nhat mot phan ho so bac si.\nQuyen truy cap: Admin.\nBody chinh: name, title, experience, description, position, active.\nKet qua thanh cong: Tra ve doctor sau cap nhat.\nLuu y: Can gui it nhat mot field.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"BS Tran Thi D\",\n  \"title\": \"ThS.BS\",\n  \"experience\": 15,\n  \"description\": \"Cap nhat mo ta bac si\",\n  \"position\": \"Truong khoa\",\n  \"active\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "08 - Schedules",
+      "item": [
+        {
+          "name": "Create Single Schedule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tao mot lich lam viec cho bac si.\nQuyen truy cap: Admin.\nBody chinh: doctorId, workingDate, workingShift.\nKet qua thanh cong: Tra ve message va mang schedules vua tao.\nLuu y: workingShift nhan MORNING, AFTERNOON, ALL_DAY.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"workingDate\": \"2026-07-10\",\n  \"workingShift\": \"MORNING\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.schedules.0.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('scheduleId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Batch Schedules",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tao lich lam viec hang loat theo khoang ngay va weekdays.\nQuyen truy cap: Admin.\nBody chinh: doctorId, fromDate, toDate, weekdays, workingShift.\nKet qua thanh cong: Tra ve message va mang schedules vua tao.\nLuu y: weekdays dung 0-6; workingShift co the la ALL_DAY.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"doctorId\": \"{{doctorId}}\",\n  \"fromDate\": \"2026-07-10\",\n  \"toDate\": \"2026-07-20\",\n  \"weekdays\": [\n    1,\n    3,\n    5\n  ],\n  \"workingShift\": \"AFTERNOON\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.schedules.0.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('scheduleId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Schedules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules?doctorId=%7B%7BdoctorId%7D%7D&specialtyId=%7B%7BspecialtyId%7D%7D&status=WORKING&workingShift=MORNING&date=2026-07-10&startDate=2026-07-01&endDate=2026-07-31&view=MONTH&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules"
+              ],
+              "query": [
+                {
+                  "key": "doctorId",
+                  "value": "{{doctorId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "specialtyId",
+                  "value": "{{specialtyId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "WORKING",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "workingShift",
+                  "value": "MORNING",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "2026-07-10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-07-01",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-07-31",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "view",
+                  "value": "MONTH",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach lich lam viec theo bo loc.\nQuyen truy cap: Admin, Receptionist, Doctor.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve du lieu lich va meta.\nLuu y: Validator ho tro alias shift/workingShift."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Doctor Schedules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/schedules/doctor/{{doctorId}}?status=WORKING&workingShift=ALL_DAY&date=2026-07-10&startDate=2026-07-01&endDate=2026-07-31&view=MONTH&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "schedules",
+                "doctor",
+                "{{doctorId}}"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "WORKING",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "workingShift",
+                  "value": "ALL_DAY",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "2026-07-10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-07-01",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-07-31",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "view",
+                  "value": "MONTH",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay lich lam viec cong khai theo doctorId.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve lich cua bac si.\nLuu y: doctorId la path param bat buoc."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "09 - Time Slots",
+      "item": [
+        {
+          "name": "List Time Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/timeslots?doctorId=%7B%7BdoctorId%7D%7D&date=2026-07-10&lockClientId=pm-local-lock-1",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "timeslots"
+              ],
+              "query": [
+                {
+                  "key": "doctorId",
+                  "value": "{{doctorId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "2026-07-10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "lockClientId",
+                  "value": "pm-local-lock-1",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach khung gio cua bac si trong ngay.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve danh sach timeslot.\nLuu y: doctorId va date la bat buoc theo validator."
+          },
+          "response": []
+        },
+        {
+          "name": "Lock Time Slot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/timeslots/{{timeSlotId}}/lock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "timeslots",
+                "{{timeSlotId}}",
+                "lock"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tam khoa mot khung gio bang lockClientId.\nQuyen truy cap: Public theo route hien tai.\nBody chinh: lockClientId.\nKet qua thanh cong: Tra ve ket qua lock slot.\nLuu y: Dich vu dat lich se dung lock nay de giu slot tam thoi.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lockClientId\": \"pm-local-lock-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Unlock Time Slot",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/timeslots/{{timeSlotId}}/unlock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "timeslots",
+                "{{timeSlotId}}",
+                "unlock"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Mo khoa khung gio da lock.\nQuyen truy cap: Public theo route hien tai.\nBody chinh: lockClientId.\nKet qua thanh cong: Tra ve ket qua unlock slot.\nLuu y: Can dung cung lockClientId voi luc lock.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lockClientId\": \"pm-local-lock-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "10 - Appointments",
+      "item": [
+        {
+          "name": "Create Appointment (Patient)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Benh nhan tu dat lich cho ban than hoac nguoi than.\nQuyen truy cap: Patient.\nBody chinh: timeSlotId, doctorId/date/workingShift/startTime/endTime tuy chon, forSelf, patientProfileId neu forSelf=false, reason, lockClientId.\nKet qua thanh cong: Tra ve appointment vua tao.\nLuu y: Neu dat cho nguoi than thi bat buoc co patientProfileId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"timeSlotId\": \"{{timeSlotId}}\",\n  \"doctorId\": \"{{doctorId}}\",\n  \"date\": \"2026-07-10\",\n  \"workingShift\": \"MORNING\",\n  \"startTime\": \"08:00\",\n  \"endTime\": \"08:30\",\n  \"forSelf\": true,\n  \"reason\": \"Kham tong quat\",\n  \"lockClientId\": \"pm-local-lock-1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('appointmentId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List My Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/my?page=1&limit=10&status=CONFIRMED",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "my"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "CONFIRMED",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay lich hen cua patient hien tai.\nQuyen truy cap: Patient.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve appointments va meta.\nLuu y: listMyAppointments hien validate page, limit, status."
+          },
+          "response": []
+        },
+        {
+          "name": "Get My Appointment Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/my/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "my",
+                "{{appointmentId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet lich hen cua patient hien tai.\nQuyen truy cap: Patient.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve appointment detail.\nLuu y: Chi xem duoc lich thuoc ve minh."
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel My Appointment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/my/{{appointmentId}}/cancel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "my",
+                "{{appointmentId}}",
+                "cancel"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Benh nhan huy lich hen cua minh.\nQuyen truy cap: Patient.\nBody chinh: reason, note neu can.\nKet qua thanh cong: Tra ve appointment sau huy hoac ket qua requiresApproval khi sat gio.\nLuu y: Route nay khong co validator body rieng; service co the tra ve requiresApproval=true neu sat gio.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Ban viec dot xuat\",\n  \"note\": \"Xin doi lich kham\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('appointmentId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Doctor Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/doctor/me?page=1&limit=10&status=CONFIRMED&date=2026-07-10&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "doctor",
+                "me"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "CONFIRMED",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "2026-07-10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Bac si xem lich hen cua chinh minh.\nQuyen truy cap: Doctor.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve appointments va meta.\nLuu y: Service doctor list co ho tro search/date/status/page/limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Doctor Appointment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/doctor/me/{{appointmentId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "doctor",
+                "me",
+                "{{appointmentId}}",
+                "status"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Bac si cap nhat trang thai lich hen cua chinh minh.\nQuyen truy cap: Doctor.\nBody chinh: status, reason, note.\nKet qua thanh cong: Tra ve appointment sau cap nhat.\nLuu y: Validator cho phep CHECKED_IN, COMPLETED, CANCELLED, NO_SHOW; service doctor chi cho hoan thanh trong flow hop le.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"COMPLETED\",\n  \"note\": \"Da kham xong\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('appointmentId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Create Receptionist Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/receptionist",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "receptionist"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Le tan hoac admin dat lich ho benh nhan.\nQuyen truy cap: Receptionist, Admin.\nBody chinh: Co the gui patientId hoac thong tin benh nhan moi; bat buoc timeSlotId va forSelf.\nKet qua thanh cong: Tra ve appointment vua tao.\nLuu y: Mau duoi day dat lich bang thong tin benh nhan moi, khong dung patientId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Benh Nhan Le Tan\",\n  \"phone\": \"0912111222\",\n  \"email\": \"walkin@example.com\",\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"1995-06-15\",\n  \"address\": \"Can Tho\",\n  \"timeSlotId\": \"{{timeSlotId}}\",\n  \"doctorId\": \"{{doctorId}}\",\n  \"date\": \"2026-07-10\",\n  \"workingShift\": \"AFTERNOON\",\n  \"startTime\": \"13:30\",\n  \"endTime\": \"14:00\",\n  \"forSelf\": true,\n  \"reason\": \"Kham noi\",\n  \"note\": \"Dat lich tai quay\",\n  \"lockClientId\": \"pm-local-lock-2\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('appointmentId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Receptionist Search Patients",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/receptionist/patients?search=patient",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "receptionist",
+                "patients"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "patient",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Tra cuu benh nhan cho flow dat lich cua le tan/admin.\nQuyen truy cap: Receptionist, Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve danh sach patient khop search.\nLuu y: Service doc query.search."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Appointment Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "stats"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay thong ke admin cho module appointments.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve weeklyData va specialtyData.\nLuu y: Route nay nam truc tiep trong appointment.routes.js."
+          },
+          "response": []
+        },
+        {
+          "name": "List All Appointments",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments?page=1&limit=10&status=CONFIRMED&doctorId=%7B%7BdoctorId%7D%7D&patientId=%7B%7BuserId%7D%7D&specialtyId=%7B%7BspecialtyId%7D%7D&date=2026-07-10&startDate=2026-07-01&endDate=2026-07-31&search=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "CONFIRMED",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "doctorId",
+                  "value": "{{doctorId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "patientId",
+                  "value": "{{userId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "specialtyId",
+                  "value": "{{specialtyId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "2026-07-10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "startDate",
+                  "value": "2026-07-01",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "endDate",
+                  "value": "2026-07-31",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Le tan/admin xem toan bo lich hen.\nQuyen truy cap: Receptionist, Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve appointments va meta phan trang.\nLuu y: Service ho tro them filter specialtyId va search."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointmentId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet lich hen cho receptionist/admin.\nQuyen truy cap: Receptionist, Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve appointment detail.\nLuu y: Can {{appointmentId}} hop le."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Appointment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/appointments/{{appointmentId}}/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "appointments",
+                "{{appointmentId}}",
+                "status"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Le tan/admin cap nhat trang thai lich hen.\nQuyen truy cap: Receptionist, Admin.\nBody chinh: status, reason, note.\nKet qua thanh cong: Tra ve appointment sau cap nhat.\nLuu y: status chi nhan CHECKED_IN, COMPLETED, CANCELLED, NO_SHOW.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"CHECKED_IN\",\n  \"note\": \"Benh nhan da den\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('appointmentId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "11 - Reviews",
+      "item": [
+        {
+          "name": "Create Review",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reviews"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Benh nhan gui danh gia cho lich hen da hoan thanh.\nQuyen truy cap: Patient.\nBody chinh: appointmentId, rating, comment.\nKet qua thanh cong: Tra ve review vua tao.\nLuu y: comment toi thieu 10 ky tu; rating 1-5.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"appointmentId\": \"{{appointmentId}}\",\n  \"rating\": 5,\n  \"comment\": \"Bac si kham rat ky va tu van ro rang.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('reviewId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Doctor Reviews",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/doctor/{{doctorId}}?page=1&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reviews",
+                "doctor",
+                "{{doctorId}}"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "5",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach review cua mot bac si.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve reviews va meta.\nLuu y: limit toi da 50 theo validator."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment Review",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/reviews/appointment/{{appointmentId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "reviews",
+                "appointment",
+                "{{appointmentId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Kiem tra lich hen da duoc review chua.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve review cua appointment neu co.\nLuu y: Route nay yeu cau authenticate."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12 - Blogs",
+      "item": [
+        {
+          "name": "List Public Blogs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs?page=1&limit=10&search=&tag=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "tag",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach bai viet cong khai.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve blog list va meta.\nLuu y: Public list chi lay bai viet published."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Public Blog Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs/suc-khoe-tim-mach",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs",
+                "suc-khoe-tim-mach"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet bai viet cong khai theo slug.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve blog detail.\nLuu y: Request mau dung slug tinh de minh hoa; doi lai slug that neu can."
+          },
+          "response": []
+        },
+        {
+          "name": "List Admin Blogs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs/admin?page=1&limit=10&search=&status=DRAFT&tag=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs",
+                "admin"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "DRAFT",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "tag",
+                  "value": "",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach bai viet cho admin.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve admin blog list va meta.\nLuu y: status hop le: DRAFT, PUBLISHED, ARCHIVED."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Admin Blog Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs/admin/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs",
+                "admin",
+                "{{blogPostId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet bai viet theo id cho admin.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve admin blog detail.\nLuu y: Can {{blogPostId}} hop le."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Blog",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs/admin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs",
+                "admin"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tao bai viet moi.\nQuyen truy cap: Admin.\nBody chinh: title, slug, content, summary, thumbnail, status, tags.\nKet qua thanh cong: Tra ve blog vua tao.\nLuu y: tags hien la string trong validator, khong phai array.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cach cham soc suc khoe tim mach\",\n  \"slug\": \"cach-cham-soc-suc-khoe-tim-mach\",\n  \"content\": \"Noi dung bai viet toi thieu 10 ky tu de hop le.\",\n  \"summary\": \"Tom tat ngan gon bai viet\",\n  \"thumbnail\": \"{{uploadFileUrl}}\",\n  \"status\": \"DRAFT\",\n  \"tags\": \"tim-mach,suc-khoe\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('blogPostId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Blog",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs/admin/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs",
+                "admin",
+                "{{blogPostId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Cap nhat bai viet.\nQuyen truy cap: Admin.\nBody chinh: Gui it nhat mot field hop le.\nKet qua thanh cong: Tra ve blog sau cap nhat.\nLuu y: slug neu gui phai dung lowercase letters, numbers, hyphens.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Cach cham soc suc khoe tim mach cap nhat\",\n  \"summary\": \"Tom tat moi\",\n  \"status\": \"PUBLISHED\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('blogPostId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Blog",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/blogs/admin/{{blogPostId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "blogs",
+                "admin",
+                "{{blogPostId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Xoa bai viet theo id.\nQuyen truy cap: Admin.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve message xoa thanh cong.\nLuu y: Controller tra data.message, khong tra lai blog object."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "13 - Approval Requests",
+      "item": [
+        {
+          "name": "Create Schedule Exception",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approval-requests/schedule-exception",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "approval-requests",
+                "schedule-exception"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Bac si tao yeu cau nghi/ngoai le lich lam viec.\nQuyen truy cap: Doctor.\nBody chinh: type, date, exceptionType, shift, reason.\nKet qua thanh cong: Tra ve message va request vua tao.\nLuu y: exceptionType chi nhan ALL_DAY hoac SHIFT trong validator hien tai.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"SCHEDULE_EXCEPTION\",\n  \"date\": \"2026-07-15\",\n  \"exceptionType\": \"SHIFT\",\n  \"shift\": \"MORNING\",\n  \"reason\": \"Xin nghi buoi sang de tham gia hoi thao chuyen mon\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.request.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('approvalRequestId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Approval Requests",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approval-requests?type=SCHEDULE_EXCEPTION&status=PENDING&doctorId=%7B%7BdoctorId%7D%7D&date=2026-07-15&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "approval-requests"
+              ],
+              "query": [
+                {
+                  "key": "type",
+                  "value": "SCHEDULE_EXCEPTION",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "PENDING",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "doctorId",
+                  "value": "{{doctorId}}",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "date",
+                  "value": "2026-07-15",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach yeu cau duyet.\nQuyen truy cap: Admin, Doctor, Receptionist.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve requests va meta.\nLuu y: Query validator ho tro type, status, doctorId, date, page, limit."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Approval Request Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approval-requests/{{approvalRequestId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "approval-requests",
+                "{{approvalRequestId}}"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay chi tiet mot yeu cau duyet.\nQuyen truy cap: Admin, Doctor, Receptionist.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve request detail.\nLuu y: Can {{approvalRequestId}} hop le."
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approval-requests/{{approvalRequestId}}/approve",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "approval-requests",
+                "{{approvalRequestId}}",
+                "approve"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Duyet yeu cau duyet.\nQuyen truy cap: Admin, Receptionist.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve message va request sau khi duyet.\nLuu y: Chi duyet duoc request dang PENDING."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.request.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('approvalRequestId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reject Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/approval-requests/{{approvalRequestId}}/reject",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "approval-requests",
+                "{{approvalRequestId}}",
+                "reject"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Tu choi yeu cau duyet.\nQuyen truy cap: Admin, Receptionist.\nBody chinh: rejectionReason.\nKet qua thanh cong: Tra ve message va request sau khi tu choi.\nLuu y: rejectionReason la optional.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rejectionReason\": \"Khong phu hop lich tiep nhan hien tai\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.request.id\",\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('approvalRequestId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "14 - Chat",
+      "item": [
+        {
+          "name": "List Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay danh sach hoi thoai cua user hien tai.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve conversation list.\nLuu y: Tat ca route chat deu require authenticate thong qua router.use(authenticate)."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Or Create Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Lay hoac tao hoi thoai support/doctor consultation.\nQuyen truy cap: Da dang nhap.\nBody chinh: type, doctorId neu type=DOCTOR_CONSULTATION.\nKet qua thanh cong: Tra ve conversation DTO.\nLuu y: Voi type DOCTOR_CONSULTATION bat buoc co doctorId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"DOCTOR_CONSULTATION\",\n  \"doctorId\": \"{{doctorId}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('conversationId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "List Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations/{{conversationId}}/messages?page=1&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach tin nhan cua mot conversation.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve messages va meta.\nLuu y: Can {{conversationId}} hop le."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/chat/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Gui tin nhan vao conversation.\nQuyen truy cap: Da dang nhap.\nBody chinh: message, messageType.\nKet qua thanh cong: Tra ve message vua tao.\nLuu y: messageType hien nhan TEXT hoac FILE.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Xin chao bac si, toi can duoc tu van them.\",\n  \"messageType\": \"TEXT\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('messageId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "15 - Notifications",
+      "item": [
+        {
+          "name": "Get My Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications?page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Lay danh sach thong bao cua user hien tai.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve notification data.\nLuu y: Controller parse page va limit truc tiep tu req.query."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark All Notifications As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "read-all"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Danh dau tat ca thong bao la da doc.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve message thanh cong.\nLuu y: Controller response khong theo data envelope thong thuong ma tra success + message."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Notification As Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/notifications/{{notificationId}}/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Danh dau mot thong bao la da doc.\nQuyen truy cap: Da dang nhap.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve notification sau cap nhat.\nLuu y: Can {{notificationId}} hop le."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.id\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('notificationId', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "16 - Upload / Files",
+      "item": [
+        {
+          "name": "Upload Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/upload/image",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "upload",
+                "image"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Upload anh len Cloudinary qua backend.\nQuyen truy cap: Public theo route hien tai.\nBody chinh: multipart/form-data voi field image; co the gui them type, userId, postId.\nKet qua thanh cong: Tra ve url va public_id.\nLuu y: Field file phai ten la image; gioi han mac dinh 5MB; mime cho phep JPEG/PNG/WEBP/GIF.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": ""
+                },
+                {
+                  "key": "type",
+                  "type": "text",
+                  "value": "blog"
+                },
+                {
+                  "key": "postId",
+                  "type": "text",
+                  "value": "{{blogPostId}}"
+                }
+              ]
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const json = pm.response.json();",
+                  "",
+                  "function getPath(source, path) {",
+                  "  return path.split('.').reduce((acc, part) => (acc == null ? undefined : acc[part]), source);",
+                  "}",
+                  "",
+                  "const candidates = [\"data.url\"];",
+                  "for (const candidate of candidates) {",
+                  "  const value = getPath(json, candidate);",
+                  "  if (typeof value === 'string' && value.trim()) {",
+                  "    pm.environment.set('uploadFileUrl', value);",
+                  "    break;",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/upload/delete",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "upload",
+                "delete"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Xoa anh tren Cloudinary theo public_id.\nQuyen truy cap: Public theo route hien tai.\nBody chinh: public_id.\nKet qua thanh cong: Tra ve message xoa anh thanh cong.\nLuu y: Route nay khong yeu cau authenticate trong code hien tai.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"public_id\": \"careplus/blog/temp/sample-public-id\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "17 - Search",
+      "item": [
+        {
+          "name": "Global Search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/search?query=tim%20mach&page=1&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "tim mach",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "disabled": false,
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "disabled": false,
+                  "description": ""
+                }
+              ]
+            },
+            "description": "Muc dich: Tim kiem doctor, blog va specialty dong thoi.\nQuyen truy cap: Public.\nBody chinh: Khong co.\nKet qua thanh cong: Tra ve data.doctors, data.blogs, data.specialties va meta tong hop.\nLuu y: Controller validate query, page, limit bang Zod ngay trong controller."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "18 - AI Assistant",
+      "item": [
+        {
+          "name": "Send AI Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/v1/ai-assistant/chat",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "ai-assistant",
+                "chat"
+              ],
+              "query": []
+            },
+            "description": "Muc dich: Gui cau hoi toi tro ly AI cong khai cua CarePlus.\nQuyen truy cap: Public.\nBody chinh: message, history (optional).\nKet qua thanh cong: Tra ve reply DTO cua AI assistant.\nLuu y: Co rate limit 10 request / 60 giay theo route.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Phong kham co chuyen khoa tim mach khong?\",\n  \"history\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"Xin chao\"\n    },\n    {\n      \"role\": \"assistant\",\n      \"content\": \"Chao ban, toi co the ho tro thong tin ve CarePlus.\"\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
