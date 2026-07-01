@@ -354,6 +354,9 @@ class AppointmentService {
         const appointmentDto = toAppointmentDto(appointment);
         socketService.emitToUser(doctor.userId, 'appointment:created', appointmentDto);
         socketService.emitToRole('admin', 'appointment:created', appointmentDto);
+        if (appointment.patientId) {
+          socketService.emitToUser(appointment.patientId, 'appointment:created', appointmentDto);
+        }
       } catch (socketErr) {
         console.error('Failed to emit appointment:created socket event:', socketErr.message);
       }
@@ -1060,6 +1063,22 @@ class AppointmentService {
 
       // 1. Kiểm tra tính hợp lệ của việc chuyển đổi trạng thái
       this._validateStatusTransition(currentStatus, newStatus);
+
+      // Check if there is a pending cancellation request
+      const pendingCancel = await this.prisma.approvalRequest.findFirst({
+        where: {
+          appointmentCode: appointment.code,
+          type: 'CANCELLATION',
+          status: 'PENDING'
+        }
+      });
+      if (pendingCancel) {
+        throw new AppointmentServiceError({
+          code: APPOINTMENT_ERROR_CODES.INVALID_STATUS_TRANSITION,
+          message: 'Lịch hẹn đang có yêu cầu hủy chờ duyệt, không thể cập nhật trạng thái',
+          statusCode: 400,
+        });
+      }
 
       // Lấy cấu hình chặn từ cài đặt hệ thống
       const settings = await this.clinicSettingsRepository.getSystemSetting();

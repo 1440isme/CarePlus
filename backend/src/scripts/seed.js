@@ -220,10 +220,10 @@ async function seed() {
     }
     console.log(`Created ${patientProfilesData.length} patient profiles.`);
 
-    // 7. Create Doctor Schedules for Past 7 Days and Next 7 Days (TimeSlots will be created on-demand per appointment)
-    console.log('Creating schedules for past 7 days and next 7 days...');
+    // 7. Create Doctor Schedules for Past 7 Days and Next 7 Days (excluding Sundays)
+    console.log('Creating schedules for past 7 days and next 7 days (excluding Sundays)...');
     const dates = [];
-    const baseDate = new Date("2026-07-01");
+    const baseDate = new Date("2026-07-02"); // Shifted baseDate to July 2nd
     // Generate dates from baseDate - 7 to baseDate + 7
     for (let i = -7; i <= 7; i++) {
       const d = new Date(baseDate);
@@ -237,6 +237,11 @@ async function seed() {
     for (const doctorId of doctors) {
       doctorDateScheduleMap[doctorId] = {};
       for (const workingDate of dates) {
+        // Skip Sundays (getUTCDay() === 0)
+        if (workingDate.getUTCDay() === 0) {
+          continue;
+        }
+
         const dateStr = workingDate.toISOString().slice(0, 10);
 
         const schedule = await prisma.schedule.create({
@@ -255,11 +260,11 @@ async function seed() {
         doctorDateScheduleMap[doctorId][dateStr] = schedule.id;
       }
     }
-    console.log('Schedules generated for 6 doctors across 15 days.');
+    console.log('Schedules generated for 6 doctors (Sundays excluded).');
 
     // 8. Create Appointments (Past, Today, and Tomorrow) and their respective TimeSlots
-    const dateStrToday = "2026-07-01";
-    const dateStrTomorrow = "2026-07-02";
+    const dateStrToday = "2026-07-02";
+    const dateStrTomorrow = "2026-07-03";
     const seedAppointmentsData = [
       // === Past Appointments ===
       {
@@ -343,7 +348,7 @@ async function seed() {
         patientAddress: "Bình Thạnh, TP HCM",
         doctorId: "d1",
         specialtyId: "s2",
-        dateStr: "2026-06-28",
+        dateStr: "2026-06-30",
         startTime: "09:30",
         endTime: "10:00",
         status: "COMPLETED",
@@ -379,7 +384,104 @@ async function seed() {
         reason: "Khám định kỳ đau dạ dày tá tràng"
       },
 
-      // === Today's Appointments ===
+      // === Today's Appointments (02/07/2026) - Before 9:00 AM for Live Demo ===
+      {
+        id: "a30",
+        code: "CP9876543230",
+        patientId: "u_nguyenthig",
+        patientName: "Nguyễn Khánh Linh",
+        patientPhone: "0956789012",
+        patientGender: "FEMALE",
+        patientDob: new Date("1991-11-02"),
+        patientAddress: "Quận 7, TP HCM",
+        doctorId: "d1",
+        specialtyId: "s2",
+        dateStr: dateStrToday,
+        startTime: "08:00",
+        endTime: "08:30",
+        status: "COMPLETED",
+        bookingChannel: "ONLINE",
+        bookingSource: "PATIENT_WEB",
+        createdBy: "u_nguyenthig",
+        forSelf: true,
+        consultationFee: 300000,
+        patientEmail: "nguyenkhanhlinh@email.com",
+        reason: "Đo điện tâm đồ định kỳ do tức ngực nhẹ",
+        note: "Nhịp tim đều, huyết áp ổn định 120/80 mmHg. Tiếp tục uống thuốc huyết áp theo đơn cũ."
+      },
+      {
+        id: "a31",
+        code: "CP9876543231",
+        patientId: "u_levanc",
+        patientName: "Lê Hoài Nam",
+        patientPhone: "0923456789",
+        patientGender: "MALE",
+        patientDob: new Date("1982-03-12"),
+        patientAddress: "Bình Thạnh, TP HCM",
+        doctorId: "d5",
+        specialtyId: "s5",
+        dateStr: dateStrToday,
+        startTime: "08:00",
+        endTime: "08:30",
+        status: "NO_SHOW",
+        bookingChannel: "RECEPTION",
+        bookingSource: "RECEPTIONIST",
+        createdBy: "u5",
+        forSelf: true,
+        consultationFee: 280000,
+        patientEmail: "lehoainam@email.com",
+        reason: "Khám viêm da cơ địa dị ứng thời tiết",
+        note: "Đã quá 30 phút từ ca khám, gọi điện 2 lần không liên lạc được để làm thủ tục."
+      },
+      {
+        id: "a32",
+        code: "CP9876543232",
+        patientId: "u_phamthie",
+        patientName: "Phạm Minh Hằng",
+        patientPhone: "0934567890",
+        patientGender: "FEMALE",
+        patientDob: new Date("1994-07-24"),
+        patientAddress: "Tân Bình, TP HCM",
+        doctorId: "d3",
+        specialtyId: "s4",
+        dateStr: dateStrToday,
+        startTime: "08:30",
+        endTime: "09:00",
+        status: "CHECKED_IN",
+        bookingChannel: "ONLINE",
+        bookingSource: "PATIENT_WEB",
+        createdBy: "u_phamthie",
+        forSelf: true,
+        consultationFee: 250000,
+        patientEmail: "phamminhhang@email.com",
+        reason: "Bé ho nhiều kèm sổ mũi nhẹ từ tối qua"
+      },
+      {
+        id: "a33",
+        code: "CP9876543233",
+        patientId: "u1",
+        patientName: "Nguyễn Anh Tuấn",
+        patientPhone: "0901234567",
+        patientGender: "MALE",
+        patientDob: new Date("1990-05-15"),
+        patientAddress: "Quận 1, TP HCM",
+        doctorId: "d2",
+        specialtyId: "s1",
+        dateStr: dateStrToday,
+        startTime: "08:30",
+        endTime: "09:00",
+        status: "CANCELLED",
+        bookingChannel: "ONLINE",
+        bookingSource: "PATIENT_WEB",
+        createdBy: "u1",
+        forSelf: true,
+        consultationFee: 350000,
+        patientEmail: "nguyenanhtuan@email.com",
+        reason: "Khám sưng đau khớp cổ tay sau chấn thương nhẹ",
+        note: "Bệnh nhân chủ động hủy lúc 07:45 sáng do có việc bận đột xuất."
+      },
+
+      // === Today's Appointments (02/07/2026) - After 9:00 AM ===
       {
         id: "a10",
         code: "CP9876543210",
@@ -392,8 +494,8 @@ async function seed() {
         doctorId: "d1",
         specialtyId: "s2",
         dateStr: dateStrToday,
-        startTime: "09:00",
-        endTime: "09:30",
+        startTime: "09:30",
+        endTime: "10:00",
         status: "CONFIRMED",
         bookingChannel: "ONLINE",
         bookingSource: "PATIENT_WEB",
@@ -415,9 +517,9 @@ async function seed() {
         doctorId: "d2",
         specialtyId: "s1",
         dateStr: dateStrToday,
-        startTime: "10:00",
-        endTime: "10:30",
-        status: "CHECKED_IN",
+        startTime: "14:30",
+        endTime: "15:00",
+        status: "CONFIRMED",
         bookingChannel: "ONLINE",
         bookingSource: "PATIENT_WEB",
         createdBy: "u2",
@@ -425,80 +527,6 @@ async function seed() {
         consultationFee: 350000,
         patientEmail: "tranthithutrang@email.com",
         reason: "Đau mỏi vai gáy và khớp gối khi vận động"
-      },
-      {
-        id: "a12",
-        code: "CP9876543212",
-        patientId: "u1",
-        patientName: "Nguyễn Minh Khôi",
-        patientPhone: "0901234567",
-        patientGender: "MALE",
-        patientDob: new Date("2018-05-05"),
-        patientAddress: "Quận 1, TP HCM",
-        patientProfileId: "pp3",
-        doctorId: "d3",
-        specialtyId: "s4",
-        dateStr: dateStrToday,
-        startTime: "08:30",
-        endTime: "09:00",
-        status: "COMPLETED",
-        bookingChannel: "ONLINE",
-        bookingSource: "PATIENT_WEB",
-        createdBy: "u1",
-        forSelf: false,
-        relativeName: "Nguyễn Minh Khôi",
-        consultationFee: 250000,
-        patientEmail: "nguyenanhtuan@email.com",
-        reason: "Bé ho nhiều kèm sốt nhẹ từ đêm qua",
-        note: "Viêm họng cấp, uống nhiều nước ấm, hẹn tái khám sau 5 ngày nếu không đỡ sốt."
-      },
-      {
-        id: "a13",
-        code: "CP9876543213",
-        patientId: "u1",
-        patientName: "Nguyễn Anh Tuấn",
-        patientPhone: "0901234567",
-        patientGender: "MALE",
-        patientDob: new Date("1990-05-15"),
-        patientAddress: "Quận 1, TP HCM",
-        doctorId: "d4",
-        specialtyId: "s6",
-        dateStr: dateStrToday,
-        startTime: "14:00",
-        endTime: "14:30",
-        status: "CANCELLED",
-        bookingChannel: "ONLINE",
-        bookingSource: "PATIENT_WEB",
-        createdBy: "u1",
-        forSelf: true,
-        consultationFee: 400000,
-        patientEmail: "nguyenanhtuan@email.com",
-        reason: "Đau dạ dày âm ỉ kéo dài",
-        note: "Bệnh nhân chủ động hủy trước 4 tiếng do bận công tác đột xuất."
-      },
-      {
-        id: "a14",
-        code: "CP9876543214",
-        patientId: "u7",
-        patientName: "Hoàng Minh Đức",
-        patientPhone: "0945678901",
-        patientGender: "MALE",
-        patientDob: new Date("1988-12-05"),
-        patientAddress: "Quận 3, TP HCM",
-        doctorId: "d5",
-        specialtyId: "s5",
-        dateStr: dateStrToday,
-        startTime: "08:00",
-        endTime: "08:30",
-        status: "NO_SHOW",
-        bookingChannel: "ONLINE",
-        bookingSource: "PATIENT_WEB",
-        createdBy: "u7",
-        forSelf: true,
-        consultationFee: 280000,
-        patientEmail: "hoangminhduc@email.com",
-        reason: "Mẩn ngứa da tay sau khi dọn vườn",
-        note: "Đã quá 30 phút từ ca khám, gọi điện 3 lần không liên lạc được."
       },
       {
         id: "a15",
@@ -547,104 +575,7 @@ async function seed() {
         reason: "Tái khám tim mạch & lấy thêm đơn thuốc điều trị huyết áp"
       },
 
-      // === Tomorrow's Appointments (02/07/2026) - Before 9:00 AM for Live Demo ===
-      {
-        id: "a30",
-        code: "CP9876543230",
-        patientId: "u_nguyenthig",
-        patientName: "Nguyễn Khánh Linh",
-        patientPhone: "0956789012",
-        patientGender: "FEMALE",
-        patientDob: new Date("1991-11-02"),
-        patientAddress: "Quận 7, TP HCM",
-        doctorId: "d1",
-        specialtyId: "s2",
-        dateStr: dateStrTomorrow,
-        startTime: "08:00",
-        endTime: "08:30",
-        status: "COMPLETED",
-        bookingChannel: "ONLINE",
-        bookingSource: "PATIENT_WEB",
-        createdBy: "u_nguyenthig",
-        forSelf: true,
-        consultationFee: 300000,
-        patientEmail: "nguyenkhanhlinh@email.com",
-        reason: "Đo điện tâm đồ định kỳ do tức ngực nhẹ",
-        note: "Nhịp tim đều, huyết áp ổn định 120/80 mmHg. Tiếp tục uống thuốc huyết áp theo đơn cũ."
-      },
-      {
-        id: "a31",
-        code: "CP9876543231",
-        patientId: "u_levanc",
-        patientName: "Lê Hoài Nam",
-        patientPhone: "0923456789",
-        patientGender: "MALE",
-        patientDob: new Date("1982-03-12"),
-        patientAddress: "Bình Thạnh, TP HCM",
-        doctorId: "d5",
-        specialtyId: "s5",
-        dateStr: dateStrTomorrow,
-        startTime: "08:00",
-        endTime: "08:30",
-        status: "NO_SHOW",
-        bookingChannel: "RECEPTION",
-        bookingSource: "RECEPTIONIST",
-        createdBy: "u5",
-        forSelf: true,
-        consultationFee: 280000,
-        patientEmail: "lehoainam@email.com",
-        reason: "Khám viêm da cơ địa dị ứng thời tiết",
-        note: "Đã quá 30 phút từ ca khám, gọi điện 2 lần không liên lạc được để làm thủ tục."
-      },
-      {
-        id: "a32",
-        code: "CP9876543232",
-        patientId: "u_phamthie",
-        patientName: "Phạm Minh Hằng",
-        patientPhone: "0934567890",
-        patientGender: "FEMALE",
-        patientDob: new Date("1994-07-24"),
-        patientAddress: "Tân Bình, TP HCM",
-        doctorId: "d3",
-        specialtyId: "s4",
-        dateStr: dateStrTomorrow,
-        startTime: "08:30",
-        endTime: "09:00",
-        status: "CHECKED_IN",
-        bookingChannel: "ONLINE",
-        bookingSource: "PATIENT_WEB",
-        createdBy: "u_phamthie",
-        forSelf: true,
-        consultationFee: 250000,
-        patientEmail: "phamminhhang@email.com",
-        reason: "Bé ho nhiều kèm sổ mũi nhẹ từ tối qua"
-      },
-      {
-        id: "a33",
-        code: "CP9876543233",
-        patientId: "u1",
-        patientName: "Nguyễn Anh Tuấn",
-        patientPhone: "0901234567",
-        patientGender: "MALE",
-        patientDob: new Date("1990-05-15"),
-        patientAddress: "Quận 1, TP HCM",
-        doctorId: "d2",
-        specialtyId: "s1",
-        dateStr: dateStrTomorrow,
-        startTime: "08:30",
-        endTime: "09:00",
-        status: "CANCELLED",
-        bookingChannel: "ONLINE",
-        bookingSource: "PATIENT_WEB",
-        createdBy: "u1",
-        forSelf: true,
-        consultationFee: 350000,
-        patientEmail: "nguyenanhtuan@email.com",
-        reason: "Khám sưng đau khớp cổ tay sau chấn thương nhẹ",
-        note: "Bệnh nhân chủ động hủy lúc 07:45 sáng do có việc bận đột xuất."
-      },
-
-      // === Tomorrow's Appointments (02/07/2026) - After 9:00 AM ===
+      // === Tomorrow's Appointments (03/07/2026) ===
       {
         id: "a20",
         code: "CP9876543220",
@@ -833,15 +764,6 @@ async function seed() {
         comment: "Rất hài lòng với thái độ làm việc chuyên nghiệp của bác sĩ. Lắng nghe và giải đáp mọi thắc mắc của bệnh nhân."
       },
       {
-        id: "r4",
-        appointmentId: "a12",
-        doctorId: "d3",
-        patientId: "u1",
-        patientName: "Nguyễn Anh Tuấn",
-        rating: 5,
-        comment: "Bác sĩ Vy khéo léo dỗ dành bé nên bé không sợ hãi khi khám. Thuốc kê uống 2 ngày đã thấy giảm hẳn ho sốt."
-      },
-      {
         id: "r5",
         appointmentId: "a30",
         doctorId: "d1",
@@ -998,7 +920,7 @@ async function seed() {
       {
         userId: "u3", // Doctor Minh Anh
         title: "Lịch hẹn mới",
-        content: "Bạn có lịch hẹn mới mã CP9876543220 vào ngày 02/07/2026 lúc 09:30 từ bệnh nhân Nguyễn Anh Tuấn.",
+        content: "Bạn có lịch hẹn mới mã CP9876543220 vào ngày 03/07/2026 lúc 09:30 từ bệnh nhân Nguyễn Anh Tuấn.",
         type: "APPOINTMENT",
         link: "/bac-si/lich-hen",
         isRead: false
