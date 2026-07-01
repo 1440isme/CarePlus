@@ -44,6 +44,25 @@ class UserRepository {
     });
   }
 
+  async findUserByPhone(phone) {
+    return prisma.user.findFirst({
+      where: { phone },
+      select: USER_SELECT,
+    });
+  }
+
+  async findUserByPhoneExceptId(phone, userId) {
+    return prisma.user.findFirst({
+      where: {
+        phone,
+        NOT: {
+          id: userId,
+        },
+      },
+      select: USER_SELECT,
+    });
+  }
+
   async createStaffUser(data, doctorData) {
     if (!doctorData) {
       return prisma.user.create({

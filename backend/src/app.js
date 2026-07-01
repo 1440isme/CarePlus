@@ -28,6 +28,7 @@ const elasticClient = require('./infrastructure/search/elastic.client');
 const prismaClient = require('./infrastructure/database/prisma.client');
 
 const app = express();
+app.disable('x-powered-by');
 
 function getAllowedCorsOrigins() {
   const configuredOrigins = process.env.CORS_ORIGIN;

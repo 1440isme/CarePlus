@@ -58,7 +58,7 @@ function createDriver() {
  */
 async function login(driver, email, password) {
   await driver.get(`${config.baseUrl}/dang-nhap`);
-  
+
   // Wait for login form to load
   const emailInput = await driver.wait(until.elementLocated(By.id('login-email')), 20000);
   const passwordInput = await driver.wait(until.elementLocated(By.id('login-password')), 20000);
@@ -236,25 +236,8 @@ async function cleanupUserByEmail(email) {
 }
 
 async function closeBackendTestClients() {
-  if (redisClient) {
-    try {
-      await redisClient.quit();
-    } catch (e) {}
-    redisClient = undefined;
-    try {
-      delete require.cache[require.resolve('../backend/src/infrastructure/cache/redis.client')];
-    } catch (e) {}
-  }
-
-  if (prismaClient) {
-    try {
-      await prismaClient.$disconnect();
-    } catch (e) {}
-    prismaClient = undefined;
-    try {
-      delete require.cache[require.resolve('../backend/src/infrastructure/database/prisma.client')];
-    } catch (e) {}
-  }
+  // Do nothing to prevent closing shared singletons from require cache.
+  // Mocha --exit will clean up all connections.
 }
 
 module.exports = {
