@@ -302,7 +302,10 @@ export default function ReceptionistBookingPage() {
 
         setStep(5);
       } catch (error) {
-        setStepError(`Lỗi đặt lịch: ${error.message || 'Đã có lỗi xảy ra'}`);
+        const msg = error.response?.data?.error?.message ||
+          error.message ||
+          'Đã có lỗi xảy ra';
+        setStepError(`Lỗi đặt lịch: ${msg}`);
       }
     }
   };

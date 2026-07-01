@@ -415,9 +415,10 @@ class AppointmentService {
           statusCode: 409,
         });
       }
-      if (error instanceof AppointmentServiceError) {
+      if (error instanceof AppointmentServiceError || (error && error.code && error.statusCode)) {
         throw error;
       }
+      console.error('[createReceptionistAppointment Error]:', error);
       throw this._wrapUnexpectedError(
         error,
         APPOINTMENT_ERROR_CODES.CREATE_APPOINTMENT_FAILED,
@@ -1338,7 +1339,13 @@ class AppointmentService {
   }
 
   async _validateReceptionistPatientStatus(user, patientId) {
-    if (!user) return;
+    if (!user) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.PATIENT_NOT_FOUND,
+        message: 'Không tìm thấy thông tin bệnh nhân',
+        statusCode: 404,
+      });
+    }
 
     if (user.status === 'LOCKED') {
       throw new AppointmentServiceError({
