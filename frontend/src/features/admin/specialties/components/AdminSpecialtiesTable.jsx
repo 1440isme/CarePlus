@@ -9,17 +9,6 @@ function EditIcon() {
   );
 }
 
-function TrashIcon() {
-  return (
-    <svg viewBox="0 0 20 20" aria-hidden="true">
-      <path d="M4.5 5.5h11" />
-      <path d="M7.25 5.5V4.25c0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1V5.5" />
-      <path d="M6.25 5.5l.6 9.15c.04.61.55 1.1 1.16 1.1h3.98c.61 0 1.12-.48 1.16-1.1l.6-9.15" />
-      <path d="M8.5 8.25v4.75M11.5 8.25v4.75" />
-    </svg>
-  );
-}
-
 function LoadingState() {
   return (
     <div className="admin-specialties-loading-body">
@@ -73,7 +62,6 @@ export default function AdminSpecialtiesTable({
   onRetry,
   onCreate,
   onEdit,
-  onDelete,
   onPreviousPage,
   onNextPage,
 }) {
@@ -132,15 +120,6 @@ export default function AdminSpecialtiesTable({
                       onClick={() => onEdit(specialty)}
                     >
                       <EditIcon />
-                    </button>
-
-                    <button
-                      className="admin-specialties-action-button is-danger"
-                      type="button"
-                      aria-label={`Tắt ${specialty.name}`}
-                      onClick={() => onDelete(specialty)}
-                    >
-                      <TrashIcon />
                     </button>
                   </div>
                 </td>
