@@ -58,7 +58,7 @@ function createDriver() {
  */
 async function login(driver, email, password) {
   await driver.get(`${config.baseUrl}/dang-nhap`);
-  
+
   // Wait for login form to load
   const emailInput = await driver.wait(until.elementLocated(By.id('login-email')), 20000);
   const passwordInput = await driver.wait(until.elementLocated(By.id('login-password')), 20000);

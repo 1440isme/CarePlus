@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from 'react';
+import { useState, useMemo, useEffect, Fragment, useRef } from 'react';
 import { Heart, Bone, Baby, Sparkles, Activity, HeartPulse, Stethoscope, Ear } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import '../public/booking-wizard.css';
@@ -64,6 +64,21 @@ export default function ReceptionistBookingPage() {
     reason: '',
     note: ''
   });
+
+  const [dobInputVal, setDobInputVal] = useState('');
+  const nativeDobPickerRef = useRef(null);
+
+  const parseDisplayDateToIso = (displayStr) => {
+    if (!displayStr) return '';
+    const parts = displayStr.trim().split('/');
+    if (parts.length !== 3) return '';
+    const [d, m, y] = parts;
+    const day = d.padStart(2, '0');
+    const month = m.padStart(2, '0');
+    const year = y;
+    if (day.length !== 2 || month.length !== 2 || year.length !== 4) return '';
+    return `${year}-${month}-${day}`;
+  };
 
   // 1. Fetch Specialties
   const specialtiesQuery = useSpecialties();
@@ -163,6 +178,7 @@ export default function ReceptionistBookingPage() {
   };
 
   const handleSelectPatientUser = (patientUser) => {
+    const dob = patientUser.dateOfBirth ? patientUser.dateOfBirth.slice(0, 10) : '';
     setBookingData((prev) => ({
       ...prev,
       patientUser,
@@ -172,9 +188,15 @@ export default function ReceptionistBookingPage() {
       phone: patientUser.phone || '',
       email: patientUser.email || '',
       gender: patientUser.gender || 'MALE',
-      dateOfBirth: patientUser.dateOfBirth ? patientUser.dateOfBirth.slice(0, 10) : '',
+      dateOfBirth: dob,
       address: patientUser.address || '',
     }));
+    if (dob) {
+      const [y, m, d] = dob.split('-');
+      setDobInputVal(`${d}/${m}/${y}`);
+    } else {
+      setDobInputVal('');
+    }
     setPatientSearch('');
   };
 
@@ -211,8 +233,30 @@ export default function ReceptionistBookingPage() {
           newErrors.email = 'Email không hợp lệ';
         }
       }
-      if (!bookingData.dateOfBirth) {
+      if (!dobInputVal.trim()) {
         newErrors.dateOfBirth = 'Vui lòng chọn ngày sinh';
+      } else {
+        const isoDate = parseDisplayDateToIso(dobInputVal);
+        if (!isoDate) {
+          newErrors.dateOfBirth = 'Ngày sinh không đúng định dạng dd/mm/yyyy';
+        } else {
+          const [year, month, day] = isoDate.split('-').map(Number);
+          const parsedDate = new Date(year, month - 1, day);
+          const today = new Date();
+          today.setHours(23, 59, 59, 999);
+
+          if (
+            parsedDate.getFullYear() !== year ||
+            parsedDate.getMonth() !== month - 1 ||
+            parsedDate.getDate() !== day
+          ) {
+            newErrors.dateOfBirth = 'Ngày sinh không hợp lệ';
+          } else if (parsedDate > today) {
+            newErrors.dateOfBirth = 'Ngày sinh không được ở trong tương lai';
+          } else {
+            bookingData.dateOfBirth = isoDate;
+          }
+        }
       }
       if (!bookingData.reason.trim()) {
         newErrors.reason = 'Vui lòng nhập triệu chứng & lý do khám bệnh';
@@ -281,6 +325,7 @@ export default function ReceptionistBookingPage() {
       reason: '',
       note: ''
     });
+    setDobInputVal('');
     setSuccessBookingData(null);
     setStepError(null);
     setValidationErrors({});
@@ -739,6 +784,7 @@ export default function ReceptionistBookingPage() {
                           dateOfBirth: '',
                           address: '',
                         }));
+                        setDobInputVal('');
                         setPatientSearch('');
                       }}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition"
@@ -789,6 +835,7 @@ export default function ReceptionistBookingPage() {
                               key={`profile-${profile.id}`}
                               className="flex flex-col pl-8 pr-4 py-2.5 cursor-pointer hover:bg-[#49BCE2]/5 bg-gray-50/60 border-b border-gray-100 last:border-0 transition"
                               onClick={() => {
+                                const dob = profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '';
                                 setBookingData((prev) => ({
                                   ...prev,
                                   patientUser: p,
@@ -798,9 +845,15 @@ export default function ReceptionistBookingPage() {
                                   phone: profile.phone || p.phone || '',
                                   email: profile.email || p.email || '',
                                   gender: profile.gender || 'MALE',
-                                  dateOfBirth: profile.dateOfBirth ? profile.dateOfBirth.slice(0, 10) : '',
+                                  dateOfBirth: dob,
                                   address: profile.address || p.address || '',
                                 }));
+                                if (dob) {
+                                  const [y, m, d] = dob.split('-');
+                                  setDobInputVal(`${d}/${m}/${y}`);
+                                } else {
+                                  setDobInputVal('');
+                                }
                                 setPatientSearch('');
                                 setStepError(null);
                                 setValidationErrors({});
@@ -918,18 +971,74 @@ export default function ReceptionistBookingPage() {
                   <label htmlFor="patientDobInput" className="block text-xs font-medium text-gray-600 mb-1.5">
                     Ngày sinh<Req />
                   </label>
-                  <input
-                    id="patientDobInput"
-                    type="date"
-                    value={bookingData.dateOfBirth}
-                    onChange={(e) => {
-                      setBookingData(prev => ({ ...prev, dateOfBirth: e.target.value }));
-                      setStepError(null);
-                      if (validationErrors.dateOfBirth) setValidationErrors(prev => ({ ...prev, dateOfBirth: null }));
-                    }}
-                    className={inputCls(validationErrors.dateOfBirth)}
-                    disabled={Boolean(bookingData.patientUser)}
-                  />
+                  <div className="relative">
+                    <input
+                      id="patientDobInput"
+                      type="text"
+                      placeholder="dd/mm/yyyy"
+                      value={dobInputVal}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setDobInputVal(val);
+                        setStepError(null);
+                        if (validationErrors.dateOfBirth) setValidationErrors(prev => ({ ...prev, dateOfBirth: null }));
+                        
+                        // Parse and sync to bookingData.dateOfBirth if it is a valid date
+                        const isoDate = parseDisplayDateToIso(val);
+                        if (isoDate) {
+                          const [year, month, day] = isoDate.split('-').map(Number);
+                          const parsedDate = new Date(year, month - 1, day);
+                          const today = new Date();
+                          today.setHours(23, 59, 59, 999);
+                          if (
+                            parsedDate.getFullYear() === year &&
+                            parsedDate.getMonth() === month - 1 &&
+                            parsedDate.getDate() === day &&
+                            parsedDate <= today
+                          ) {
+                            setBookingData(prev => ({ ...prev, dateOfBirth: isoDate }));
+                          }
+                        } else {
+                          setBookingData(prev => ({ ...prev, dateOfBirth: '' }));
+                        }
+                      }}
+                      className={`${inputCls(validationErrors.dateOfBirth)} pr-10`}
+                      disabled={Boolean(bookingData.patientUser)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (!bookingData.patientUser && nativeDobPickerRef.current) {
+                          if (typeof nativeDobPickerRef.current.showPicker === 'function') {
+                            nativeDobPickerRef.current.showPicker();
+                          } else {
+                            nativeDobPickerRef.current.click();
+                          }
+                        }
+                      }}
+                      disabled={Boolean(bookingData.patientUser)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <span className="text-sm">📅</span>
+                    </button>
+                    <input
+                      ref={nativeDobPickerRef}
+                      type="date"
+                      value={bookingData.dateOfBirth || ''}
+                      max={new Date().toLocaleDateString('sv').slice(0, 10)}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value;
+                        setBookingData(prev => ({ ...prev, dateOfBirth: selectedDate }));
+                        if (selectedDate) {
+                          const [y, m, d] = selectedDate.split('-');
+                          setDobInputVal(`${d}/${m}/${y}`);
+                        }
+                        setStepError(null);
+                        if (validationErrors.dateOfBirth) setValidationErrors(prev => ({ ...prev, dateOfBirth: null }));
+                      }}
+                      className="absolute w-0 h-0 opacity-0 pointer-events-none"
+                    />
+                  </div>
                   {validationErrors.dateOfBirth && (
                     <p className="text-xs text-red-500 mt-1">{validationErrors.dateOfBirth}</p>
                   )}
