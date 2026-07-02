@@ -43,6 +43,17 @@ class AppointmentService {
         });
       }
 
+      // Check gender and DOB for self booking
+      if (bookingData.forSelf === true) {
+        if (!user.gender || !user.dateOfBirth) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
+            message: 'Tài khoản chưa cập nhật đầy đủ thông tin ngày sinh và giới tính. Vui lòng bổ sung trong hồ sơ cá nhân để đặt lịch.',
+            statusCode: 400,
+          });
+        }
+      }
+
       if (user.status === 'LOCKED') {
         throw new AppointmentServiceError({
           code: APPOINTMENT_ERROR_CODES.PATIENT_LOCKED,
@@ -113,6 +124,13 @@ class AppointmentService {
           throw new AppointmentServiceError({
             code: APPOINTMENT_ERROR_CODES.PATIENT_PROFILE_NOT_FOUND,
             message: 'Hồ sơ người thân đã bị xóa',
+            statusCode: 400,
+          });
+        }
+        if (!profile.gender || !profile.dateOfBirth) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
+            message: 'Hồ sơ người thân chưa cập nhật đầy đủ thông tin ngày sinh và giới tính. Vui lòng bổ sung để đặt lịch.',
             statusCode: 400,
           });
         }
@@ -296,6 +314,42 @@ class AppointmentService {
       if (patientId) {
         user = await this.userRepository.findUserById(patientId);
         await this._validateReceptionistPatientStatus(user, patientId);
+
+        // Check and sync gender/DOB for existing patient
+        if (bookingData.forSelf !== false) {
+          const gender = bookingData.gender || user.gender;
+          const dob = bookingData.dateOfBirth || user.dateOfBirth;
+          if (!gender || !dob) {
+            throw new AppointmentServiceError({
+              code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
+              message: 'Bệnh nhân này chưa có đầy đủ thông tin ngày sinh và giới tính. Vui lòng bổ sung để đặt lịch.',
+              statusCode: 400,
+            });
+          }
+
+          const updateData = {};
+          if (!user.gender && bookingData.gender) {
+            updateData.gender = bookingData.gender;
+            user.gender = bookingData.gender; // sync local variable
+          }
+          if (!user.dateOfBirth && bookingData.dateOfBirth) {
+            const dobDate = new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`);
+            updateData.dateOfBirth = dobDate;
+            user.dateOfBirth = dobDate; // sync local variable
+          }
+          if (Object.keys(updateData).length > 0) {
+            await this.userRepository.updateUserProfile(user.id, updateData);
+          }
+        }
+      } else {
+        // New patient (no patientId) - gender and dateOfBirth must be provided in bookingData
+        if (!bookingData.gender || !bookingData.dateOfBirth) {
+          throw new AppointmentServiceError({
+            code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
+            message: 'Vui lòng cung cấp đầy đủ thông tin ngày sinh và giới tính của bệnh nhân để đặt lịch.',
+            statusCode: 400,
+          });
+        }
       }
 
       // 2. Resolve persisted slot or create one lazily
@@ -318,8 +372,8 @@ class AppointmentService {
         patientId: patientId || null,
         patientName: bookingData.name?.trim() || null,
         patientPhone: bookingData.phone?.trim() || null,
-        patientGender: bookingData.gender || null,
-        patientDob: bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : null,
+        patientGender: bookingData.gender || (user ? user.gender : null),
+        patientDob: bookingData.dateOfBirth ? new Date(`${bookingData.dateOfBirth}T00:00:00.000Z`) : (user ? user.dateOfBirth : null),
         patientAddress: bookingData.address?.trim() || null,
         patientProfileId,
         doctorId: doctor.id,
@@ -1407,6 +1461,15 @@ class AppointmentService {
       throw new AppointmentServiceError({
         code: APPOINTMENT_ERROR_CODES.PATIENT_PROFILE_NOT_FOUND,
         message: 'Hồ sơ người thân đã bị xóa',
+        statusCode: 400,
+      });
+    }
+
+    // Check gender and DOB for relative profile
+    if (!profile.gender || !profile.dateOfBirth) {
+      throw new AppointmentServiceError({
+        code: APPOINTMENT_ERROR_CODES.VALIDATION_ERROR,
+        message: 'Hồ sơ người thân này chưa có đầy đủ thông tin ngày sinh và giới tính. Vui lòng bổ sung để đặt lịch.',
         statusCode: 400,
       });
     }

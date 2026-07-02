@@ -714,6 +714,24 @@ export default function BookingWizardPage() {
         return;
       }
 
+      // Check gender and DOB
+      const patientGender = bookingData.forSelf
+        ? currentUserData?.gender
+        : relativeProfiles.find(p => p.id === bookingData.patientProfileId)?.gender;
+
+      const patientDob = bookingData.forSelf
+        ? currentUserData?.dateOfBirth
+        : relativeProfiles.find(p => p.id === bookingData.patientProfileId)?.dateOfBirth;
+
+      if (!patientGender || !patientDob) {
+        setStepError(
+          bookingData.forSelf
+            ? 'Hồ sơ cá nhân của bạn chưa cập nhật Giới tính hoặc Ngày sinh. Vui lòng cập nhật thông tin trong trang Hồ sơ cá nhân trước khi đặt lịch.'
+            : 'Hồ sơ người thân chưa cập nhật Giới tính hoặc Ngày sinh. Vui lòng cập nhật thông tin trước khi đặt lịch.'
+        );
+        return;
+      }
+
       // Check max active appointments limit
       const maxActiveLimit = systemSettingsResponse?.data?.maxActiveAppointmentsPerUser ?? 5;
       if (currentActiveCount >= maxActiveLimit) {

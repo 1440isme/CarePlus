@@ -58,7 +58,7 @@ export default function ReceptionistBookingPage() {
     name: '',
     phone: '',
     email: '',
-    gender: 'MALE',
+    gender: '',
     dateOfBirth: '',
     address: '',
     reason: '',
@@ -187,7 +187,7 @@ export default function ReceptionistBookingPage() {
       name: patientUser.name || '',
       phone: patientUser.phone || '',
       email: patientUser.email || '',
-      gender: patientUser.gender || 'MALE',
+      gender: patientUser.gender || '',
       dateOfBirth: dob,
       address: patientUser.address || '',
     }));
@@ -232,6 +232,9 @@ export default function ReceptionistBookingPage() {
         if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(bookingData.email.trim())) {
           newErrors.email = 'Email không hợp lệ';
         }
+      }
+      if (!bookingData.gender) {
+        newErrors.gender = 'Vui lòng chọn giới tính';
       }
       if (!dobInputVal.trim()) {
         newErrors.dateOfBirth = 'Vui lòng chọn ngày sinh';
@@ -847,7 +850,7 @@ export default function ReceptionistBookingPage() {
                                   name: profile.fullName || '',
                                   phone: profile.phone || p.phone || '',
                                   email: profile.email || p.email || '',
-                                  gender: profile.gender || 'MALE',
+                                  gender: profile.gender || '',
                                   dateOfBirth: dob,
                                   address: profile.address || p.address || '',
                                 }));
@@ -956,18 +959,23 @@ export default function ReceptionistBookingPage() {
                   </label>
                   <select
                     id="patientGenderSelect"
-                    value={bookingData.gender}
+                    value={bookingData.gender || ''}
                     onChange={(e) => {
                       setBookingData(prev => ({ ...prev, gender: e.target.value }));
                       setStepError(null);
+                      if (validationErrors.gender) setValidationErrors(prev => ({ ...prev, gender: null }));
                     }}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#49BCE2] bg-white disabled:bg-gray-50 disabled:cursor-not-allowed disabled:text-gray-500"
-                    disabled={Boolean(bookingData.patientUser)}
+                    className={inputCls(validationErrors.gender)}
+                    disabled={Boolean(bookingData.patientUser && bookingData.patientUser.gender)}
                   >
+                    <option value="" disabled>Chọn giới tính...</option>
                     <option value="MALE">Nam</option>
                     <option value="FEMALE">Nữ</option>
                     <option value="OTHER">Khác</option>
                   </select>
+                  {validationErrors.gender && (
+                    <p className="text-xs text-red-500 mt-1">{validationErrors.gender}</p>
+                  )}
                 </div>
 
                 <div>
@@ -1006,12 +1014,12 @@ export default function ReceptionistBookingPage() {
                         }
                       }}
                       className={`${inputCls(validationErrors.dateOfBirth)} pr-10`}
-                      disabled={Boolean(bookingData.patientUser)}
+                      disabled={Boolean(bookingData.patientUser && bookingData.patientUser.dateOfBirth)}
                     />
                     <button
                       type="button"
                       onClick={() => {
-                        if (!bookingData.patientUser && nativeDobPickerRef.current) {
+                        if ((!bookingData.patientUser || !bookingData.patientUser.dateOfBirth) && nativeDobPickerRef.current) {
                           if (typeof nativeDobPickerRef.current.showPicker === 'function') {
                             nativeDobPickerRef.current.showPicker();
                           } else {
@@ -1019,7 +1027,7 @@ export default function ReceptionistBookingPage() {
                           }
                         }
                       }}
-                      disabled={Boolean(bookingData.patientUser)}
+                      disabled={Boolean(bookingData.patientUser && bookingData.patientUser.dateOfBirth)}
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <span className="text-sm">📅</span>

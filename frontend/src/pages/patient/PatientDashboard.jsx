@@ -96,16 +96,8 @@ export default function PatientDashboard() {
     const maxCount = Math.max(...counts, 1);
 
     return months.map((m, index) => {
-      let displayCount = counts[index];
-      let displayHeight = (displayCount / maxCount) * 100;
-
-      // Fallback về mock data của Figma gốc nếu DB trống
-      if (appointmentsList.length === 0) {
-        const mockCounts = [0, 1, 0, 2, 1, 2];
-        const mockMax = 2;
-        displayCount = mockCounts[index];
-        displayHeight = (mockCounts[index] / mockMax) * 100;
-      }
+      const displayCount = counts[index];
+      const displayHeight = (displayCount / maxCount) * 100;
 
       return {
         label: `T${m + 1}`,
@@ -119,14 +111,8 @@ export default function PatientDashboard() {
   const specialtyData = useMemo(() => {
     const validAppts = appointmentsList.filter(appt => appt.status !== 'CANCELLED');
 
-    // Fallback về mock data của Figma gốc nếu DB trống
     if (validAppts.length === 0) {
-      return [
-        { name: 'Nội tổng quát', count: 3, percentage: 50, color: '#49BCE2' },
-        { name: 'Tim mạch', count: 1, percentage: 17, color: '#FFC10E' },
-        { name: 'Da liễu', count: 1, percentage: 17, color: '#A78BFA' },
-        { name: 'Nhi khoa', count: 1, percentage: 17, color: '#34D399' }
-      ];
+      return [];
     }
 
     const map = {};
@@ -279,20 +265,26 @@ export default function PatientDashboard() {
               <div>
                 <div className="text-xs text-gray-500 mb-2">Lịch hẹn theo chuyên khoa</div>
                 <div className="flex flex-col gap-2.5 pt-1">
-                  {specialtyData.map((s, idx) => (
-                    <div key={idx}>
-                      <div className="flex justify-between text-xs text-gray-600 mb-1">
-                        <span>{s.name}</span>
-                        <span className="text-gray-400">{s.count} lượt ({s.percentage}%)</span>
-                      </div>
-                      <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full rounded-full transition-all duration-300"
-                          style={{ width: `${s.percentage}%`, backgroundColor: s.color }}
-                        />
-                      </div>
+                  {specialtyData.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-[120px] text-gray-400 bg-gray-50/50 rounded-lg border border-dashed border-gray-200">
+                      <span className="text-xs">Chưa có dữ liệu chuyên khoa</span>
                     </div>
-                  ))}
+                  ) : (
+                    specialtyData.map((s, idx) => (
+                      <div key={idx}>
+                        <div className="flex justify-between text-xs text-gray-600 mb-1">
+                          <span>{s.name}</span>
+                          <span className="text-gray-400">{s.count} lượt ({s.percentage}%)</span>
+                        </div>
+                        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-300"
+                            style={{ width: `${s.percentage}%`, backgroundColor: s.color }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>

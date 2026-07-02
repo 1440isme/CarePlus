@@ -18,7 +18,7 @@ module.exports = {
       password: process.env.TEST_DOCTOR_PASSWORD || '123456',
     },
     patient: {
-      email: process.env.TEST_PATIENT_EMAIL || 'nguyenvana@email.com',
+      email: process.env.TEST_PATIENT_EMAIL || 'nguyenanhtuan@email.com',
       password: process.env.TEST_PATIENT_PASSWORD || '123456',
     },
   },
