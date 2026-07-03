@@ -44,6 +44,14 @@ class MailService {
 
       return { mocked: false };
     } catch (error) {
+      console.error('[MailService] sendMail failed', {
+        code: error?.code,
+        command: error?.command,
+        response: error?.response,
+        responseCode: error?.responseCode,
+        message: error?.message,
+      });
+
       if (error instanceof MailProviderError || error instanceof MailServiceError) {
         throw new MailServiceError({
           code: error.code,

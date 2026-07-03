@@ -168,6 +168,7 @@ class UserService {
   async updateMe(currentUser, dto) {
     try {
       await this._getUserOrThrow(currentUser.userId);
+      await this._ensurePhoneAvailableForUpdate(currentUser.userId, dto.phone);
 
       const updateData = this._buildProfileUpdateData(dto);
       const updatedUser = await this.userRepository.updateUserProfile(currentUser.userId, updateData);
@@ -327,6 +328,7 @@ class UserService {
   async adminUpdateUser(adminUser, userId, dto) {
     try {
       await this._getUserOrThrow(userId);
+      await this._ensurePhoneAvailableForUpdate(userId, dto.phone);
 
       const updateData = this._buildProfileUpdateData(dto);
       const updatedUser = await this.userRepository.updateUserProfile(userId, updateData);
@@ -367,6 +369,16 @@ class UserService {
         throw new UserServiceError({
           code: USER_ERROR_CODES.EMAIL_ALREADY_EXISTS,
           message: 'Email đã được sử dụng',
+          statusCode: 409,
+        });
+      }
+
+      const existingPhoneUser = await this.userRepository.findUserByPhone(normalizedDto.phone);
+
+      if (existingPhoneUser) {
+        throw new UserServiceError({
+          code: USER_ERROR_CODES.PHONE_ALREADY_EXISTS,
+          message: 'Số điện thoại đã được sử dụng',
           statusCode: 409,
         });
       }
@@ -663,6 +675,28 @@ class UserService {
     }
 
     return user;
+  }
+
+  async _ensurePhoneAvailableForUpdate(userId, phone) {
+    if (typeof phone !== 'string') {
+      return;
+    }
+
+    const normalizedPhone = phone.trim();
+
+    if (!normalizedPhone) {
+      return;
+    }
+
+    const existingPhoneUser = await this.userRepository.findUserByPhoneExceptId(normalizedPhone, userId);
+
+    if (existingPhoneUser) {
+      throw new UserServiceError({
+        code: USER_ERROR_CODES.PHONE_ALREADY_EXISTS,
+        message: 'Số điện thoại đã được sử dụng',
+        statusCode: 409,
+      });
+    }
   }
 
   _buildProfileUpdateData(dto) {

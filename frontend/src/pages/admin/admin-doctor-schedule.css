@@ -110,6 +110,49 @@
   border-bottom: 1px solid #f3f4f6;
 }
 
+.admin-schedule-filter-date {
+  flex: 0 0 180px;
+}
+
+.admin-schedule-filter-date .admin-figma-input-icon-wrap input {
+  width: 100%;
+  min-height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0 48px 0 36px;
+  box-sizing: border-box;
+  outline: none;
+  background: #ffffff;
+  color: #344054;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 20px;
+}
+
+.admin-schedule-filter-date .admin-figma-input-icon-wrap input:disabled {
+  cursor: not-allowed;
+  background: #f8fafc;
+  color: #98a2b3;
+}
+
+.admin-schedule-filter-date .admin-figma-input-icon-wrap::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  background: currentColor;
+  color: #98a2b3;
+  mask: url("data:image/svg+xml,%3Csvg viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='none' stroke='black' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' d='M6.25 3.75v2.5M13.75 3.75v2.5M4.75 7.25h10.5M5.75 5.25h8.5A1.75 1.75 0 0 1 16 7v8.25A1.75 1.75 0 0 1 14.25 17h-8.5A1.75 1.75 0 0 1 4 15.25V7A1.75 1.75 0 0 1 5.75 5.25Z'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.admin-schedule-filter-date .admin-figma-input-icon-wrap:focus-within input {
+  border-color: #70d7f0;
+  box-shadow: 0 0 0 3px rgba(0, 146, 184, 0.12);
+}
+
 .admin-figma-search-control {
   flex: 1 1 auto;
   min-width: 260px;
@@ -540,29 +583,87 @@
 }
 
 .admin-figma-input-icon-wrap input {
-  padding-right: 14px;
+  padding-right: 50px;
 }
 
-.admin-figma-input-icon-wrap input[type="date"]::-webkit-calendar-picker-indicator {
-  margin-right: -4px;
-  padding: 2px;
+.admin-schedule-date-picker-button {
+  position: absolute;
+  top: 50%;
+  right: 10px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
   cursor: pointer;
 }
 
-.admin-figma-input-icon-wrap svg {
-  position: absolute;
-  top: 50%;
-  right: 16px;
+.admin-schedule-date-picker-button:hover {
+  background: #ecfeff;
+  color: #0898b8;
+}
+
+.admin-schedule-date-picker-button:disabled {
+  cursor: not-allowed;
+  color: #cbd5e1;
+}
+
+.admin-schedule-date-picker-button svg {
   width: 18px;
   height: 18px;
-  transform: translateY(-50%);
-  color: #111827;
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.8;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+}
+
+.admin-schedule-native-date-input {
+  position: absolute;
+  width: 0 !important;
+  min-height: 0 !important;
+  height: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0;
   pointer-events: none;
+}
+
+.admin-schedule-view-toggle {
+  min-height: 40px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+}
+
+.admin-schedule-view-toggle button {
+  min-height: 32px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #344054;
+  padding: 0 12px;
+  font-family: Inter, Roboto, Arial, sans-serif;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.admin-schedule-view-toggle button:hover {
+  background: #ffffff;
+  color: #087f9f;
+}
+
+.admin-schedule-view-toggle button.is-active {
+  background: #0898b8;
+  color: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 146, 184, 0.16);
 }
 
 .admin-assignment-fieldset {
@@ -693,10 +794,16 @@
   .admin-figma-primary-button,
   .admin-figma-search-control,
   .admin-figma-date-control,
+  .admin-schedule-filter-date,
+  .admin-schedule-view-toggle,
   .admin-figma-select {
     width: 100%;
     min-width: 0;
     flex-basis: auto;
+  }
+
+  .admin-schedule-view-toggle button {
+    flex: 1;
   }
 
   .admin-figma-stat-grid {

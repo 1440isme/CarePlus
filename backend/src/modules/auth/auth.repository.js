@@ -20,6 +20,25 @@ class AuthRepository {
     });
   }
 
+  async findUserByPhone(phone) {
+    return prisma.user.findFirst({
+      where: { phone },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        role: true,
+        status: true,
+        noShowCount: true,
+        emailVerified: true,
+        passwordHash: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
+  }
+
   async findUserById(id) {
     return prisma.user.findUnique({
       where: { id },

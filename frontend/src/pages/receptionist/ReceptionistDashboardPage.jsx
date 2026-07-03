@@ -420,7 +420,7 @@ export default function ReceptionistDashboardPage() {
               ) : (
                 <>
                   {/* CONFIRMED actions */}
-                  {selectedAppointment.status === 'CONFIRMED' && !isCancelling && (
+                  {selectedAppointment.status === 'CONFIRMED' && !selectedAppointment.hasPendingCancellation && !isCancelling && (
                     <div className="flex flex-col gap-2">
                       <button
                         type="button"

@@ -1,10 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   AdminSpecialtiesTable,
-  AdminSpecialtyConfirmDialog,
   SpecialtyFormModal,
   useAdminSpecialties,
-  useDeleteSpecialty,
 } from '../../features/admin/specialties/index.js';
 import { Plus, Search, CheckCircle, XCircle } from 'lucide-react';
 import '../../features/admin/specialties/components/admin-specialties.css';
@@ -22,19 +20,6 @@ function getListErrorMessage(error) {
   }
 }
 
-function getDeleteErrorMessage(error) {
-  switch (error?.code) {
-    case 'SPECIALTY_NOT_FOUND':
-      return 'Không tìm thấy chuyên khoa.';
-    case 'SPECIALTY_IN_USE':
-      return 'Không thể tắt/xóa chuyên khoa đang được sử dụng.';
-    case 'DELETE_SPECIALTY_FAILED':
-      return 'Tắt chuyên khoa thất bại.';
-    default:
-      return error?.message ?? 'Đã có lỗi xảy ra trên hệ thống.';
-  }
-}
-
 export default function AdminSpecialtiesPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchInput, setSearchInput] = useState('');
@@ -43,10 +28,6 @@ export default function AdminSpecialtiesPage() {
   const [modalState, setModalState] = useState({
     open: false,
     mode: 'create',
-    specialty: null,
-  });
-  const [confirmState, setConfirmState] = useState({
-    open: false,
     specialty: null,
   });
 
@@ -75,16 +56,6 @@ export default function AdminSpecialtiesPage() {
     page: currentPage,
     limit: PAGE_LIMIT,
     search: searchKeyword || undefined,
-  });
-
-  const deleteMutation = useDeleteSpecialty({
-    onSuccess: (response) => {
-      setFeedback({
-        type: 'success',
-        message: response?.data?.message ?? 'Tắt chuyên khoa thành công.',
-      });
-      setConfirmState({ open: false, specialty: null });
-    },
   });
 
   const specialties = useMemo(
@@ -186,10 +157,6 @@ export default function AdminSpecialtiesPage() {
           onRetry={() => specialtiesQuery.refetch()}
           onCreate={handleOpenCreateModal}
           onEdit={handleOpenEditModal}
-          onDelete={(specialty) => {
-            setFeedback(null);
-            setConfirmState({ open: true, specialty });
-          }}
           onPreviousPage={() => {
             setCurrentPage((page) => Math.max(1, page - 1));
           }}
@@ -215,24 +182,6 @@ export default function AdminSpecialtiesPage() {
             ),
           });
           handleCloseModal();
-        }}
-      />
-
-      <AdminSpecialtyConfirmDialog
-        open={confirmState.open}
-        specialty={confirmState.specialty}
-        isPending={deleteMutation.isPending}
-        errorMessage={getDeleteErrorMessage(deleteMutation.error)}
-        onClose={() => {
-          if (!deleteMutation.isPending) {
-            deleteMutation.reset();
-            setConfirmState({ open: false, specialty: null });
-          }
-        }}
-        onConfirm={() => {
-          if (confirmState.specialty?.id) {
-            deleteMutation.mutate({ id: confirmState.specialty.id });
-          }
         }}
       />
     </div>

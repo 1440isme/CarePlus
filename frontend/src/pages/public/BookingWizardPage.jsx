@@ -262,7 +262,16 @@ export default function BookingWizardPage() {
     const errors = {};
     if (!newRelative.name.trim()) errors.name = 'Họ tên là bắt buộc';
     if (!newRelative.phone.trim()) errors.phone = 'SĐT là bắt buộc';
-    if (!newRelative.dateOfBirth) errors.dob = 'Ngày sinh là bắt buộc';
+    if (!newRelative.dateOfBirth) {
+      errors.dob = 'Ngày sinh là bắt buộc';
+    } else {
+      const dobDate = new Date(newRelative.dateOfBirth);
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      if (dobDate > today) {
+        errors.dob = 'Ngày sinh không được ở trong tương lai';
+      }
+    }
 
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
@@ -323,7 +332,27 @@ export default function BookingWizardPage() {
           timeSlot: parsed.timeSlot,
         }));
         if (isAuthenticated) {
-          setStep(parsed.step || 1);
+          const attemptLock = async () => {
+            if (parsed.timeSlot) {
+              try {
+                setIsTransitioning(true);
+                await lockTimeSlot(parsed.timeSlot.id, lockClientId);
+                setLockedSlotId(parsed.timeSlot.id);
+                setStep(parsed.step || 1);
+              } catch (err) {
+                const msg = err.response?.data?.error?.message ||
+                  err.message ||
+                  'Khung giờ khám này đã bị giữ bởi người khác. Vui lòng chọn lại.';
+                setStepError(msg);
+                setStep(2);
+              } finally {
+                setIsTransitioning(false);
+              }
+            } else {
+              setStep(parsed.step || 1);
+            }
+          };
+          attemptLock();
         } else {
           setStep(2);
           setStepError('Vui lòng đăng nhập để tiếp tục đặt lịch.');
@@ -334,7 +363,7 @@ export default function BookingWizardPage() {
         sessionStorage.removeItem('pending_booking');
       }
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, lockClientId]);
 
   // Protect step 3 and 4: prevent unauthenticated users from entering
   useEffect(() => {
@@ -685,6 +714,24 @@ export default function BookingWizardPage() {
         return;
       }
 
+      // Check gender and DOB
+      const patientGender = bookingData.forSelf
+        ? currentUserData?.gender
+        : relativeProfiles.find(p => p.id === bookingData.patientProfileId)?.gender;
+
+      const patientDob = bookingData.forSelf
+        ? currentUserData?.dateOfBirth
+        : relativeProfiles.find(p => p.id === bookingData.patientProfileId)?.dateOfBirth;
+
+      if (!patientGender || !patientDob) {
+        setStepError(
+          bookingData.forSelf
+            ? 'Hồ sơ cá nhân của bạn chưa cập nhật Giới tính hoặc Ngày sinh. Vui lòng cập nhật thông tin trong trang Hồ sơ cá nhân trước khi đặt lịch.'
+            : 'Hồ sơ người thân chưa cập nhật Giới tính hoặc Ngày sinh. Vui lòng cập nhật thông tin trước khi đặt lịch.'
+        );
+        return;
+      }
+
       // Check max active appointments limit
       const maxActiveLimit = systemSettingsResponse?.data?.maxActiveAppointmentsPerUser ?? 5;
       if (currentActiveCount >= maxActiveLimit) {
@@ -733,6 +780,7 @@ export default function BookingWizardPage() {
 
       // Save result and proceed to Step 5
       setBookingResult(response.data || response);
+      setLockedSlotId(null);
       setStep(5);
     } catch (err) {
       const msg = err.response?.data?.error?.message ||
@@ -1299,6 +1347,7 @@ export default function BookingWizardPage() {
                             <input
                               type="date"
                               value={newRelative.dateOfBirth}
+                              max={new Date().toLocaleDateString('sv').slice(0, 10)}
                               onChange={e => { setNewRelative({ ...newRelative, dateOfBirth: e.target.value }); setFormErrors(prev => ({ ...prev, dob: '' })); }}
                               style={{ ...inp, borderColor: formErrors.dob ? '#EF4444' : '#ddd' }}
                             />
@@ -1603,18 +1652,15 @@ export default function BookingWizardPage() {
             </div>
 
             <div className="success-actions">
-              <Link to="/patient/lich-hen" className="btn-primary-action">
-                Xem chi tiết lịch hẹn
-              </Link>
               <button
                 type="button"
-                className="btn-outline-action"
+                className="btn-primary-action"
                 onClick={handleResetBooking}
               >
                 Đặt lịch mới
               </button>
-              <Link to="/patient/lich-hen" className="btn-grey-action">
-                Quay về Quản lý lịch hẹn
+              <Link to="/" className="btn-outline-action">
+                Quay về trang chủ
               </Link>
             </div>
           </div>

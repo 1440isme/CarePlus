@@ -398,7 +398,7 @@ export default function ReceptionistAppointmentManagementPage() {
                         </td>
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2 justify-end">
-                            {appointment.status === 'CONFIRMED' && (
+                            {appointment.status === 'CONFIRMED' && !appointment.hasPendingCancellation && (
                               <button
                                 type="button"
                                 onClick={() => handleUpdateStatus(appointment.id, 'CHECKED_IN')}
@@ -627,7 +627,7 @@ export default function ReceptionistAppointmentManagementPage() {
                     </div>
                   ) : (
                     <>
-                      {selectedAppointment.status === 'CONFIRMED' && !isCancelling && (
+                      {selectedAppointment.status === 'CONFIRMED' && !selectedAppointment.hasPendingCancellation && !isCancelling && (
                         <div className="flex gap-2">
                           <button
                             type="button"

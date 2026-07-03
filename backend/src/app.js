@@ -31,16 +31,27 @@ const app = express();
 app.disable('x-powered-by');
 
 function getAllowedCorsOrigins() {
-  const configuredOrigins = process.env.CORS_ORIGIN;
+  const configuredOrigins = process.env.CORS_ORIGIN || process.env.APP_FRONTEND_URL;
+
+  const defaultOrigins = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:3000',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:3000'
+  ];
 
   if (!configuredOrigins) {
-    return ['http://localhost:5173'];
+    return defaultOrigins;
   }
 
-  return configuredOrigins
+  const origins = configuredOrigins
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
+
+  return [...new Set([...defaultOrigins, ...origins])];
 }
 
 const allowedCorsOrigins = getAllowedCorsOrigins();
@@ -52,15 +63,20 @@ app.use(cors({
       return callback(null, true);
     }
 
+    // Allow any localhost origin (with any port) for local development ease
+    const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
+    if (isLocalhost) {
+      return callback(null, true);
+    }
+
     if (allowedCorsOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    return callback(new Error('CORS origin is not allowed'));
+    return callback(null, false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

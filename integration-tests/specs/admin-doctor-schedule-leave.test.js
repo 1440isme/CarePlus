@@ -4,13 +4,13 @@ const { createDriver, login, waitForUrl } = require('../helper');
 const config = require('../config');
 
 const ADMIN_ACCOUNT = {
-  email: process.env.TEST_FLOW_ADMIN_EMAIL || config.users.admin.email,
-  password: process.env.TEST_FLOW_ADMIN_PASSWORD || config.users.admin.password,
+  email: process.env.TEST_FLOW_ADMIN_EMAIL || 'admin@careplus.vn',
+  password: process.env.TEST_FLOW_ADMIN_PASSWORD || '123456',
 };
 
 const DOCTOR_ACCOUNT = {
-  email: process.env.TEST_FLOW_DOCTOR_EMAIL || config.users.doctor.email,
-  password: process.env.TEST_FLOW_DOCTOR_PASSWORD || config.users.doctor.password,
+  email: process.env.TEST_FLOW_DOCTOR_EMAIL || 'bsminhanh@careplus.vn',
+  password: process.env.TEST_FLOW_DOCTOR_PASSWORD || '123456',
   name: 'Nguyễn Minh Anh',
   title: 'ThS.BS',
 };
@@ -272,7 +272,7 @@ describe('CarePlus Admin Schedule and Doctor Leave Request E2E Tests', function 
     const afternoonReason = `E2E nghỉ ca chiều ${timestamp}`;
     const rejectionReason = `E2E từ chối ca chiều ${timestamp}`;
 
-    // 1. Admin logs in and creates a 7-day all-day working schedule for BS Quốc Trung.
+    // 1. Admin logs in and creates a 7-day all-day working schedule for BS Nguyễn Minh Anh.
     console.log('[ScheduleLeave_001] Login admin and ensure weekly schedule.');
     await login(driver, ADMIN_ACCOUNT.email, ADMIN_ACCOUNT.password);
     const scheduleRange = await createWeeklyScheduleForDoctor(driver);
