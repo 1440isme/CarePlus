@@ -2,6 +2,7 @@ const prisma = require('../../infrastructure/database/prisma.client');
 const conversationRepository = require('./conversation.repository');
 const messageRepository = require('./message.repository');
 const socketService = require('../../infrastructure/realtime/socket.service');
+const { toConversationDto } = require('./chat.dto');
 const { CHAT_ERROR_CODES } = require('./chat.types');
 
 class ChatServiceError extends Error {
