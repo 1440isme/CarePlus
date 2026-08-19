@@ -1,6 +1,20 @@
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:5000';
+function getSocketUrl() {
+  const customSocketUrl = import.meta.env.VITE_SOCKET_URL;
+  if (customSocketUrl && customSocketUrl.trim()) {
+    return customSocketUrl.trim().replace(/\/api(\/v1)?\/?$/, '').replace(/\/+$/, '');
+  }
+
+  const apiUrl = import.meta.env.VITE_API_URL;
+  if (apiUrl && apiUrl.trim()) {
+    return apiUrl.trim().replace(/\/api(\/v1)?\/?$/, '').replace(/\/+$/, '');
+  }
+
+  return 'http://localhost:5000';
+}
+
+const SOCKET_URL = getSocketUrl();
 
 class SocketService {
   constructor() {
@@ -28,7 +42,8 @@ class SocketService {
       autoConnect: true,
       reconnection: true,
       reconnectionAttempts: 5,
-      reconnectionDelay: 2000
+      reconnectionDelay: 2000,
+      transports: ['websocket', 'polling']
     });
 
     this.socket.on('connect', () => {
