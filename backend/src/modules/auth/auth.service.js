@@ -770,10 +770,14 @@ class AuthService {
   }
 
   _buildRefreshCookieBaseOptions() {
+    const isProduction = process.env.NODE_ENV === 'production';
+    const sameSite = process.env.COOKIE_SAME_SITE || (isProduction ? 'none' : 'lax');
+    const secure = process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : isProduction;
+
     return {
       httpOnly: true,
-      sameSite: 'lax',
-      secure: process.env.NODE_ENV === 'production',
+      sameSite,
+      secure,
     };
   }
 
